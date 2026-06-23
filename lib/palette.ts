@@ -43,3 +43,19 @@ export const SECTION_COLORS: Record<string, string> = {
 };
 
 export const P = PALETTES[Math.floor(Date.now() / 86_400_000) % PALETTES.length];
+
+// Daily-rotating quote fonts for The Bottom Line — expressive, editorial, distinct
+const QUOTE_FONTS = [
+  { family: "'Abril Fatface', cursive",                    style: "normal", weight: 400 },
+  { family: "'Cormorant Garamond', serif",                 style: "italic", weight: 600 },
+  { family: "'DM Serif Display', serif",                   style: "italic", weight: 400 },
+  { family: "'Cinzel', serif",                             style: "normal", weight: 900 },
+  { family: "'Fraunces', serif",                           style: "italic", weight: 900 },
+  { family: "'Libre Baskerville', serif",                  style: "italic", weight: 700 },
+  { family: "'Bodoni Moda', serif",                        style: "italic", weight: 800 },
+  { family: "'Spectral', serif",                           style: "italic", weight: 800 },
+  { family: "'Playfair Display', serif",                   style: "italic", weight: 700 },
+  { family: "'Bebas Neue', sans-serif",                    style: "normal", weight: 400 },
+];
+
+export const QUOTE_FONT = QUOTE_FONTS[Math.floor(Date.now() / 86_400_000) % QUOTE_FONTS.length];

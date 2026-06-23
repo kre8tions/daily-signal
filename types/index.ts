@@ -3,6 +3,7 @@ export interface RawArticle {
   link: string;
   pubDate: string;
   source: string;
+  section: string;
   content?: string;
   imageUrl?: string;
 }
@@ -28,12 +29,21 @@ export interface TrendItem {
   reason: string;          // one-line AI explanation
 }
 
+export interface GoogleTrend {
+  rank: number;
+  title: string;
+  traffic: string;
+  relatedArticle?: string;
+  link?: string;
+}
+
 export interface Edition {
   date: string;
   generatedAt: string;
   hero: Story;
-  topStories: Story[];     // 2-3 sidebar stories
-  sections: Record<string, Story[]>;   // keyed by section name
+  topStories: Story[];
+  sections: Record<string, Story[]>;
   trends: TrendItem[];
+  googleTrends: GoogleTrend[];
   cachedUntil: string;
 }

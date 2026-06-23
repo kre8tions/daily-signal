@@ -1,84 +1,143 @@
-// Free RSS-based news fetching — zero cost.
-// NewsAPI key is optional for broader coverage.
 import Parser from "rss-parser";
-import { RawArticle } from "@/types";
+import { RawArticle, GoogleTrend } from "@/types";
 import { cacheGet, cacheSet } from "./cache";
 
 const parser = new Parser({
   customFields: { item: ["media:content", "media:thumbnail", "enclosure"] },
 });
 
-// Free, high-quality RSS feeds — no API key needed
-const RSS_FEEDS: { url: string; source: string; section: string }[] = [
-  { url: "https://feeds.reuters.com/reuters/topNews", source: "Reuters", section: "World" },
-  { url: "https://feeds.bbci.co.uk/news/world/rss.xml", source: "BBC", section: "World" },
-  { url: "https://feeds.bbci.co.uk/news/technology/rss.xml", source: "BBC", section: "Technology" },
-  { url: "https://feeds.bbci.co.uk/news/business/rss.xml", source: "BBC", section: "Markets" },
-  { url: "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml", source: "BBC", section: "Science" },
-  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml", source: "NYT", section: "Politics" },
-  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml", source: "NYT", section: "Technology" },
-  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Climate.xml", source: "NYT", section: "Climate" },
-  { url: "https://feeds.a.dj.com/rss/RSSMarketsMain.xml", source: "WSJ", section: "Markets" },
-  { url: "https://hnrss.org/frontpage", source: "HackerNews", section: "Technology" },
-];
-
-const CACHE_KEY = "raw_articles";
-const FEED_CACHE_TTL = 30 * 60 * 1000; // 30 min — RSS rarely updates faster
-
-export async function fetchRawArticles(): Promise<RawArticle[]> {
-  const cached = cacheGet<RawArticle[]>(CACHE_KEY);
-  if (cached) return cached;
-
-  const results = await Promise.allSettled(
-    RSS_FEEDS.map(async (feed) => {
-      const parsed = await parser.parseURL(feed.url);
-      return parsed.items.slice(0, 8).map((item): RawArticle => ({
-        title: item.title ?? "",
-        link: item.link ?? "",
-        pubDate: item.pubDate ?? new Date().toISOString(),
-        source: feed.source,
-        content: item.contentSnippet ?? item.content ?? "",
-        imageUrl: extractImage(item),
-      }));
-    })
-  );
-
-  const articles: RawArticle[] = [];
-  for (const result of results) {
-    if (result.status === "fulfilled") articles.push(...result.value);
-  }
-
-  // Deduplicate by similar title (simple overlap check)
-  const deduped = deduplicateByTitle(articles);
-  cacheSet(CACHE_KEY, deduped, FEED_CACHE_TTL);
-  return deduped;
-}
+// CDN domains known to watermark images — skip these
+const WATERMARKED_DOMAINS = ["ichef.bbci.co.uk", "media.guim.co.uk"];
 
 function extractImage(item: Record<string, unknown>): string | undefined {
+  const candidates: string[] = [];
   const mc = item["media:content"] as Record<string, unknown> | undefined;
-  if (mc?.url) return mc.url as string;
+  if (mc?.url) candidates.push(mc.url as string);
   const mt = item["media:thumbnail"] as Record<string, unknown> | undefined;
-  if (mt?.url) return mt.url as string;
+  if (mt?.url) candidates.push(mt.url as string);
   const enc = item["enclosure"] as Record<string, unknown> | undefined;
-  if (enc?.url && (enc.type as string)?.startsWith("image/")) return enc.url as string;
-  return undefined;
+  if (enc?.url && (enc.type as string)?.startsWith("image/")) candidates.push(enc.url as string);
+  return candidates.find((u) => !WATERMARKED_DOMAINS.some((d) => u.includes(d)));
 }
 
-function deduplicateByTitle(articles: RawArticle[]): RawArticle[] {
+const RSS_FEEDS: { url: string; source: string; section: string }[] = [
+  // World
+  { url: "https://feeds.bbci.co.uk/news/world/rss.xml", source: "BBC", section: "World" },
+  { url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", source: "NY Times", section: "World" },
+  { url: "https://www.theguardian.com/world/rss", source: "Guardian", section: "World" },
+  { url: "https://feeds.npr.org/1001/rss.xml", source: "NPR", section: "World" },
+  // Politics
+  { url: "https://feeds.bbci.co.uk/news/politics/rss.xml", source: "BBC", section: "Politics" },
+  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml", source: "NY Times", section: "Politics" },
+  { url: "https://www.theguardian.com/us-news/rss", source: "Guardian", section: "Politics" },
+  { url: "https://feeds.npr.org/1014/rss.xml", source: "NPR", section: "Politics" },
+  // Technology
+  { url: "https://feeds.bbci.co.uk/news/technology/rss.xml", source: "BBC", section: "Technology" },
+  { url: "https://www.theverge.com/rss/index.xml", source: "The Verge", section: "Technology" },
+  { url: "https://feeds.arstechnica.com/arstechnica/index", source: "Ars Technica", section: "Technology" },
+  { url: "https://www.wired.com/feed/rss", source: "Wired", section: "Technology" },
+  // Markets
+  { url: "https://feeds.bbci.co.uk/news/business/rss.xml", source: "BBC", section: "Markets" },
+  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml", source: "NY Times", section: "Markets" },
+  { url: "https://www.theguardian.com/business/rss", source: "Guardian", section: "Markets" },
+  // Science
+  { url: "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml", source: "BBC", section: "Science" },
+  { url: "https://feeds.npr.org/1019/rss.xml", source: "NPR", section: "Science" },
+  { url: "https://www.theguardian.com/science/rss", source: "Guardian", section: "Science" },
+  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml", source: "NY Times", section: "Science" },
+  // Climate
+  { url: "https://www.theguardian.com/environment/rss", source: "Guardian", section: "Climate" },
+  // Culture
+  { url: "https://www.theguardian.com/culture/rss", source: "Guardian", section: "Culture" },
+  { url: "https://www.theguardian.com/film/rss", source: "Guardian", section: "Culture" },
+  { url: "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml", source: "BBC", section: "Culture" },
+  { url: "https://variety.com/feed/", source: "Variety", section: "Entertainment" },
+  { url: "https://deadline.com/feed/", source: "Deadline", section: "Entertainment" },
+  // Sports
+  { url: "https://feeds.bbci.co.uk/sport/rss.xml", source: "BBC Sport", section: "Sports" },
+  { url: "https://www.theguardian.com/sport/rss", source: "Guardian", section: "Sports" },
+  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Sports.xml", source: "NY Times", section: "Sports" },
+  // Arts
+  { url: "https://www.theguardian.com/artanddesign/rss", source: "Guardian", section: "Arts" },
+  { url: "https://hyperallergic.com/feed/", source: "Hyperallergic", section: "Arts" },
+];
+
+async function fetchFeed(feed: typeof RSS_FEEDS[0]): Promise<RawArticle[]> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("timeout")), 8000)
+  );
+  const parsed = await Promise.race([parser.parseURL(feed.url), timeout]);
+  return parsed.items.slice(0, 5).map((item): RawArticle => ({
+    title: item.title ?? "",
+    link: item.link ?? "",
+    pubDate: item.pubDate ?? new Date().toISOString(),
+    source: feed.source,
+    section: feed.section,
+    content: item.contentSnippet || item.content || "",
+    imageUrl: extractImage(item as unknown as Record<string, unknown>),
+  }));
+}
+
+function dedup(articles: RawArticle[]): RawArticle[] {
   const seen: string[] = [];
   return articles.filter((a) => {
-    const normalized = a.title.toLowerCase().replace(/[^a-z0-9 ]/g, "").slice(0, 60);
-    const isDupe = seen.some((s) => similarity(s, normalized) > 0.7);
-    if (!isDupe) seen.push(normalized);
-    return !isDupe;
+    const key = a.title.toLowerCase().replace(/[^a-z0-9 ]/g, "").slice(0, 60);
+    const dupe = seen.some((s) => jaccardSim(s, key) > 0.8);
+    if (!dupe) seen.push(key);
+    return !dupe;
   });
 }
 
-// Jaccard word overlap — cheap similarity check, no ML needed
-function similarity(a: string, b: string): number {
-  const setA = new Set(a.split(" "));
-  const setB = new Set(b.split(" "));
-  const intersection = [...setA].filter((w) => setB.has(w)).length;
-  const union = new Set([...setA, ...setB]).size;
-  return union === 0 ? 0 : intersection / union;
+function jaccardSim(a: string, b: string): number {
+  const sa = new Set(a.split(" "));
+  const sb = new Set(b.split(" "));
+  const inter = [...sa].filter((w) => sb.has(w)).length;
+  return inter / new Set([...sa, ...sb]).size;
+}
+
+export async function fetchRawArticles(): Promise<RawArticle[]> {
+  const cached = cacheGet<RawArticle[]>("raw_articles");
+  if (cached) return cached;
+
+  const results = await Promise.allSettled(RSS_FEEDS.map(fetchFeed));
+  const articles: RawArticle[] = [];
+  for (let i = 0; i < results.length; i++) {
+    if (results[i].status === "fulfilled") {
+      articles.push(...(results[i] as PromiseFulfilledResult<RawArticle[]>).value);
+    } else {
+      const r = results[i] as PromiseRejectedResult;
+      console.warn(`[news] Feed failed: ${RSS_FEEDS[i].source} — ${r.reason}`);
+    }
+  }
+
+  const deduped = dedup(articles);
+  console.log("[news] Sources:", Object.entries(
+    deduped.reduce<Record<string, number>>((a, r) => { a[r.source] = (a[r.source] ?? 0) + 1; return a; }, {})
+  ).map(([k, v]) => `${k}:${v}`).join(" "), "total:", deduped.length);
+
+  cacheSet("raw_articles", deduped, 30 * 60 * 1000);
+  return deduped;
+}
+
+export async function fetchGoogleTrends(): Promise<GoogleTrend[]> {
+  const cached = cacheGet<GoogleTrend[]>("google_trends");
+  if (cached) return cached;
+  try {
+    const feed = await Promise.race([
+      parser.parseURL("https://trends.google.com/trends/trendingsearches/daily/rss?geo=US"),
+      new Promise<never>((_, r) => setTimeout(() => r(new Error("timeout")), 8000)),
+    ]);
+    const trends: GoogleTrend[] = feed.items.slice(0, 10).map((item, i) => {
+      const ex = item as unknown as Record<string, unknown>;
+      return {
+        rank: i + 1,
+        title: item.title ?? "",
+        traffic: (ex["ht:approx_traffic"] as string) ?? "",
+        relatedArticle: (ex["ht:news_item_title"] as string) ?? item.contentSnippet ?? "",
+        link: item.link ?? "",
+      };
+    });
+    cacheSet("google_trends", trends, 30 * 60 * 1000);
+    return trends;
+  } catch { return []; }
 }

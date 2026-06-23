@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchRawArticles } from "@/lib/news";
+import { fetchRawArticles, fetchGoogleTrends } from "@/lib/news";
 import { processArticles, generateTrends } from "@/lib/claude";
 import { Edition } from "@/types";
 
@@ -10,7 +10,18 @@ export const revalidate = 1800;
 
 export async function GET() {
   try {
-    const rawArticles = await fetchRawArticles();
+    const [rawArticles, googleTrends] = await Promise.all([
+      fetchRawArticles(),
+      fetchGoogleTrends(),
+    ]);
+
+    // Log source breakdown so we can see what's actually feeding in
+    const sourceCounts = rawArticles.reduce<Record<string, number>>((acc, a) => {
+      acc[a.source] = (acc[a.source] ?? 0) + 1;
+      return acc;
+    }, {});
+    console.log("[news] Article sources:", sourceCounts, "total:", rawArticles.length);
+
     const stories = await processArticles(rawArticles);
     const trends = await generateTrends(stories);
 
@@ -33,6 +44,7 @@ export async function GET() {
       topStories,
       sections,
       trends,
+      googleTrends,
       cachedUntil,
     };
 

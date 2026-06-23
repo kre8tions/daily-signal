@@ -56,10 +56,11 @@ function keywords(title: string): string[] {
   return title.toLowerCase().replace(/[^a-z ]/g, " ").split(/\s+/).filter(w => w.length > 3 && !STOP.has(w));
 }
 
+const DEAL_RE = /\b(prime\s*day|amazon\s*deal|amazon\s*prime|best\s*deal|prime\s*sale|deals?\s+you\s+can|deals?\s+we\s+found|guide\s+to\s+(amazon|prime)|prime\s+day\s+(deal|sale|pick|find|gear|offer))\b/i;
+
 function dedupeByTopic(items: RawItem[]): RawItem[] {
   const seen: string[][] = [];
-  // Hard cap: max 1 article matching deal/sale/prime/amazon promotional patterns
-  const DEAL_RE = /\b(prime\s*day|amazon\s*deal|amazon\s*prime|best\s*deal|prime\s*sale|deals?\s+you\s+can|deals?\s+we\s+found|guide\s+to\s+(amazon|prime)|prime\s+day\s+(deal|sale|pick|find|gear|offer))\b/i;
+  // Hard cap: max 1 deal article per edition
   let dealCount = 0;
   return items.filter(item => {
     if (DEAL_RE.test(item.title) || DEAL_RE.test(item.content)) {
@@ -241,7 +242,11 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
     else if (ARTS.includes(item.section)) arts.push(item);
     else other.push(item);
   }
-  const selected = [...tech.slice(0, 3), ...arts.slice(0, 4), ...other.slice(0, 2)].slice(0, 9);
+  const pool = [...tech.slice(0, 3), ...arts.slice(0, 4), ...other.slice(0, 2)].slice(0, 9);
+  // Deal articles must never be S1–S6; push them to the end (S7–S9)
+  const deals = pool.filter(s => DEAL_RE.test(s.title) || DEAL_RE.test(s.content));
+  const nonDeals = pool.filter(s => !DEAL_RE.test(s.title) && !DEAL_RE.test(s.content));
+  const selected = [...nonDeals, ...deals];
   cacheSet(key, selected, 8 * ONE_HOUR);
   return selected;
 }
