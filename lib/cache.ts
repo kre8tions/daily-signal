@@ -45,3 +45,18 @@ export function cacheDelete(key: string): void {
     if (fs.existsSync(file)) fs.unlinkSync(file);
   } catch {}
 }
+
+export function cacheClearAll(prefix?: string): number {
+  try {
+    if (!fs.existsSync(CACHE_DIR)) return 0;
+    const files = fs.readdirSync(CACHE_DIR);
+    let count = 0;
+    for (const f of files) {
+      if (!prefix || f.startsWith(prefix.replace(/[^a-z0-9_-]/gi, "_"))) {
+        fs.unlinkSync(path.join(CACHE_DIR, f));
+        count++;
+      }
+    }
+    return count;
+  } catch { return 0; }
+}
