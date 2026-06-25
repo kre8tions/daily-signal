@@ -1,8 +1,37 @@
 import { getPageData, getStoryBySlug, getFullArticle, getEdition, urlToSlug, type Story } from "@/lib/stories";
 import { notFound } from "next/navigation";
 import { P, SECTION_COLORS, contrastColor } from "@/lib/palette";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const story = await getStoryBySlug(slug);
+  if (!story) return { title: "The Daily Signal" };
+
+  const title = story.title;
+  const description = story.summary ?? "AI-curated news — the front page, intelligently edited.";
+  const image = story.imageUrl;
+
+  return {
+    title: `${title} — The Daily Signal`,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      siteName: "The Daily Signal",
+      ...(image ? { images: [{ url: image, width: 1200, height: 630, alt: title }] } : {}),
+    },
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(image ? { images: [image] } : {}),
+    },
+  };
+}
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

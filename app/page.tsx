@@ -1,7 +1,37 @@
 import { getPageData, urlToSlug, type Story, type Synthesis } from "@/lib/stories";
 import { P, QUOTE_FONT, SECTION_COLORS, TAGLINE, TAGLINE_FONT, ACTION_LABEL, ACTION_EMOJI } from "@/lib/palette";
+import type { Metadata } from "next";
+import { EmailCapture } from "./EmailCapture";
 
-export const revalidate = 14400; // 4 hours — matches 5-edition day
+export const revalidate = 14400;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { stories, synthesis } = await getPageData();
+  const heroImage = stories[0]?.imageUrl;
+  const title = synthesis?.theme
+    ? `${synthesis.theme} — The Daily Signal`
+    : "The Daily Signal";
+  const description = synthesis?.observation
+    ?? "AI-curated news — the front page, intelligently edited.";
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: "The Daily Signal",
+      ...(heroImage ? { images: [{ url: heroImage, width: 1200, height: 630, alt: title }] } : {}),
+    },
+    twitter: {
+      card: heroImage ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(heroImage ? { images: [heroImage] } : {}),
+    },
+  };
+}
 
 function SpaceInvaderSVG({ color }: { color: string }) {
   const frame1 = [
@@ -153,6 +183,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
           <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${P.tint}66`, background: "transparent", color: P.inkLight }}>Archive</span>
         </a>
         <span style={{ fontSize: 26, fontWeight: TAGLINE_FONT.weight, fontStyle: TAGLINE_FONT.style as "italic" | "normal", fontFamily: TAGLINE_FONT.family, color: P.accent, marginLeft: 16 }}>{TAGLINE}</span>
+      </div>
+
+      {/* ── Email capture ── */}
+      <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 20, marginLeft: "auto", marginRight: "auto" }}>
+        <EmailCapture accent={P.accent} ink={P.ink} cardBg={P.cardBg} fontBody={P.fontBody} />
       </div>
 
       {/* ── Top bento ── */}
