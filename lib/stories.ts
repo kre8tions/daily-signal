@@ -3,6 +3,7 @@ import Parser from "rss-parser";
 import { unstable_cache } from "next/cache";
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { put, head, list } from "@vercel/blob";
+import { createHash } from "crypto";
 
 const parser = new Parser({
   customFields: { item: ["media:content", "media:thumbnail", "enclosure"] },
@@ -370,7 +371,7 @@ export async function getStoryBySlug(slug: string): Promise<Story | null> {
 // ── Full editorial rewrite for article detail ─────────────────────────────────
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string): Promise<string> {
   const PROMPT_V = "v3"; // bump when prompt changes to invalidate old cached articles
-  const slug = Buffer.from(story.link).toString("base64").slice(0, 28).replace(/[^a-z0-9]/gi, "_");
+  const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.txt`;
 
   // Check Blob cache first
