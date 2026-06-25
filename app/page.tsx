@@ -269,7 +269,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       </div>
 
       {/* ── Synthesis ── */}
-      {!activeSection && synthesis?.theme && <Synthesis synthesis={synthesis} />}
+      {!activeSection && synthesis?.theme && <Synthesis synthesis={synthesis} stories={stories} />}
 
       {/* ── Row 2: s4–s9 ── */}
       {[s4, s5, s6, s7, s8, s9].filter(Boolean).length > 0 && (
@@ -310,7 +310,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
 }
 
 // ── Synthesis component ───────────────────────────────────────────────────────
-function Synthesis({ synthesis }: { synthesis: Synthesis }) {
+function Synthesis({ synthesis, stories }: { synthesis: Synthesis; stories: Story[] }) {
   return (
     <>
     <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
