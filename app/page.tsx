@@ -1,5 +1,5 @@
 import { getPageData, urlToSlug, type Story, type Synthesis } from "@/lib/stories";
-import { P, QUOTE_FONT, SECTION_COLORS } from "@/lib/palette";
+import { P, QUOTE_FONT, SECTION_COLORS, TAGLINE, TAGLINE_FONT } from "@/lib/palette";
 
 export const revalidate = 14400; // 4 hours — matches 5-edition day
 
@@ -145,13 +145,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       </div>
 
       {/* ── Nav pills ── */}
-      <div style={{ display: "flex", gap: 8, maxWidth: 1200, marginTop: 0, marginBottom: 14, marginLeft: "auto", marginRight: "auto" }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", maxWidth: 1200, marginTop: 0, marginBottom: 14, marginLeft: "auto", marginRight: "auto" }}>
         <a href="/" style={{ textDecoration: "none" }}>
           <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${P.accent}`, background: P.accent + "22", color: P.accent }}>Today</span>
         </a>
         <a href="/archive" style={{ textDecoration: "none" }}>
           <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${P.tint}66`, background: "transparent", color: P.inkLight }}>Archive</span>
         </a>
+        <span style={{ fontSize: 18, fontWeight: TAGLINE_FONT.weight, fontStyle: TAGLINE_FONT.style as "italic" | "normal", fontFamily: TAGLINE_FONT.family, color: P.accent, marginLeft: 12, opacity: 0.85 }}>{TAGLINE}</span>
       </div>
 
       {/* ── Top bento ── */}

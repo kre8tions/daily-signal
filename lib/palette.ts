@@ -60,6 +60,30 @@ const QUOTE_FONTS = [
 
 export const QUOTE_FONT = QUOTE_FONTS[Math.floor(Date.now() / 86_400_000) % QUOTE_FONTS.length];
 
+const TAGLINE_PHRASES = [
+  "Our take on the headlines that matter.",
+  "Sharp eyes on the stories shaping the world.",
+  "The news, with an opinion.",
+  "Insight, not just information.",
+  "What happened. What it means.",
+  "The signal in all the noise.",
+  "Real stories. Real perspective.",
+];
+
+const TAGLINE_FONTS = [
+  { family: "'Cormorant Garamond', serif", style: "italic", weight: 600 },
+  { family: "'DM Serif Display', serif", style: "italic", weight: 400 },
+  { family: "'Fraunces', serif", style: "italic", weight: 900 },
+  { family: "'Libre Baskerville', serif", style: "italic", weight: 400 },
+  { family: "'Spectral', serif", style: "italic", weight: 600 },
+  { family: "'Playfair Display', serif", style: "italic", weight: 400 },
+  { family: "'Bodoni Moda', serif", style: "italic", weight: 500 },
+];
+
+const _day = Math.floor(Date.now() / 86_400_000);
+export const TAGLINE = TAGLINE_PHRASES[_day % TAGLINE_PHRASES.length];
+export const TAGLINE_FONT = TAGLINE_FONTS[_day % TAGLINE_FONTS.length];
+
 // Returns #000 or #fff — whichever contrasts better against the given hex color
 export function contrastColor(hex: string): string {
   const c = hex.replace("#", "");
