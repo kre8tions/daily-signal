@@ -2,7 +2,7 @@ import { getPageData, getStoryBySlug, getFullArticle, urlToSlug, type Story } fr
 import { notFound } from "next/navigation";
 import { P, SECTION_COLORS, contrastColor } from "@/lib/palette";
 
-export const revalidate = 14400;
+export const dynamic = "force-dynamic";
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
