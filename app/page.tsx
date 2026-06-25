@@ -1,5 +1,5 @@
 import { getPageData, urlToSlug, actionSlug, type Story, type Synthesis } from "@/lib/stories";
-import { P, QUOTE_FONT, SECTION_COLORS, TAGLINE, TAGLINE_FONT, ACTION_LABEL, ACTION_EMOJI } from "@/lib/palette";
+import { P, QUOTE_FONT, SECTION_COLORS, TAGLINE, TAGLINE_FONT, ACTION_LABEL, ACTION_EMOJI, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL } from "@/lib/palette";
 import type { Metadata } from "next";
 import { EmailCapture } from "./EmailCapture";
 
@@ -160,6 +160,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
 
   return (
     <div className="ds-page" style={{ minHeight: "100vh", background: P.pageBg, fontFamily: P.fontBody, paddingTop: 24, paddingBottom: 60, paddingLeft: 20, paddingRight: 20, color: P.ink }}>
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link rel="stylesheet" href={CURSIVE_FONT_URL} />
       {/* Masthead */}
       <div className="ds-masthead" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1200, marginTop: 0, marginBottom: 20, marginLeft: "auto", marginRight: "auto" }}>
         <div>
@@ -183,7 +185,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
           <a href="/archive" style={{ textDecoration: "none" }}>
             <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${P.tint}66`, background: "transparent", color: P.inkLight }}>Archive</span>
           </a>
-          <span style={{ fontSize: 26, fontWeight: TAGLINE_FONT.weight, fontStyle: TAGLINE_FONT.style as "italic" | "normal", fontFamily: TAGLINE_FONT.family, color: P.accent, marginLeft: 16 }}>{TAGLINE}</span>
+          <span style={{ fontSize: 26, fontWeight: 700, fontStyle: "normal", fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, color: P.accent, marginLeft: 16 }}>{TAGLINE}</span>
         </div>
         <EmailCapture accent={P.accent} ink={P.ink} cardBg={P.cardBg} fontBody={P.fontBody} />
       </div>
