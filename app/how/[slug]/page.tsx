@@ -29,7 +29,7 @@ export default async function HowToPage({ params, searchParams }: {
   const action = a ? Buffer.from(a, "base64").toString("utf8") : null;
   if (!action) notFound();
 
-  const articleTitle = articleTitleB64 ? Buffer.from(articleTitleB64, "base64").toString("utf8") : null;
+  const articleTitle = articleTitleB64 ? decodeURIComponent(articleTitleB64) : null;
 
   const howto = await getHowTo(action, slug);
   if (!howto) notFound();
@@ -81,8 +81,8 @@ export default async function HowToPage({ params, searchParams }: {
         <div style={{ borderTop: `1px solid ${P.tint}44`, paddingTop: 24, display: "flex", gap: 16, flexWrap: "wrap" as const, alignItems: "center" }}>
           <a href="/" style={{ display: "inline-flex", alignItems: "center", background: P.accent, color: contrastColor(P.accent), textDecoration: "none", paddingTop: 12, paddingBottom: 12, paddingLeft: 24, paddingRight: 24, borderRadius: 50, fontSize: 13, fontWeight: 700, fontFamily: P.fontBody }}>Home</a>
           {articleSlug && articleTitle && (
-            <a href={`/article/${articleSlug}`} style={{ fontSize: 13, color: P.accent, textDecoration: "none", fontFamily: P.fontBody, fontWeight: 600 }}>
-              Read: {articleTitle.length > 50 ? articleTitle.slice(0, 50) + "…" : articleTitle} →
+            <a href={`/article/${articleSlug}`} style={{ fontSize: 15, color: P.ink, textDecoration: "none", fontFamily: P.fontBody, fontWeight: 600 }}>
+              {articleTitle.length > 60 ? articleTitle.slice(0, 60) + "…" : articleTitle}
             </a>
           )}
         </div>

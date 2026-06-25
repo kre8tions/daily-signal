@@ -397,7 +397,7 @@ function Synthesis({ synthesis, stories }: { synthesis: Synthesis; stories: Stor
               const encoded = Buffer.from(action).toString("base64");
               const relStory = stories[i] ?? stories[0];
               const relSlug = relStory ? urlToSlug(relStory.link) : "";
-              const relTitle = relStory ? Buffer.from(relStory.title).toString("base64") : "";
+              const relTitle = relStory ? encodeURIComponent(relStory.title) : "";
               const href = `/how/${slug}?a=${encoded}&as=${relSlug}&at=${relTitle}`;
               return (
                 <div key={i} style={{ background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 16, paddingBottom: 16, paddingLeft: 18, paddingRight: 18, display: "flex", flexDirection: "column", gap: 12, minHeight: 120 }}>
