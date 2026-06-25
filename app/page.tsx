@@ -395,14 +395,18 @@ function Synthesis({ synthesis }: { synthesis: Synthesis }) {
             {synthesis.actions.map((action, i) => {
               const slug = actionSlug(action);
               const encoded = Buffer.from(action).toString("base64");
+              const relStory = stories[i] ?? stories[0];
+              const relSlug = relStory ? urlToSlug(relStory.link) : "";
+              const relTitle = relStory ? Buffer.from(relStory.title).toString("base64") : "";
+              const href = `/how/${slug}?a=${encoded}&as=${relSlug}&at=${relTitle}`;
               return (
-                <div key={i} style={{ background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 16, paddingBottom: 16, paddingLeft: 18, paddingRight: 18, display: "flex", flexDirection: "column", gap: 10, minHeight: 120 }}>
+                <div key={i} style={{ background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 16, paddingBottom: 16, paddingLeft: 18, paddingRight: 18, display: "flex", flexDirection: "column", gap: 12, minHeight: 120 }}>
                   <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                     <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{i + 1}</div>
                     <div style={{ fontSize: 15, lineHeight: 1.6, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
                   </div>
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
-                    <a href={`/how/${slug}?a=${encoded}`} style={{ fontSize: 11, fontWeight: 900, letterSpacing: 1.5, color: P.accent, textDecoration: "none", fontFamily: P.fontBody, textTransform: "uppercase" as const, borderBottom: `1px solid ${P.accent}66` }}>How?</a>
+                    <a href={href} style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: P.accent, textDecoration: "none", fontFamily: P.fontBody, textTransform: "uppercase" as const, background: "transparent", border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 5, paddingBottom: 5, paddingLeft: 14, paddingRight: 14 }}>How?</a>
                   </div>
                 </div>
               );

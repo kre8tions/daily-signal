@@ -2,6 +2,9 @@ import { getHowTo } from "@/lib/stories";
 import { P, contrastColor } from "@/lib/palette";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { Caveat } from "next/font/google";
+
+const caveat = Caveat({ subsets: ["latin"], weight: ["700"] });
 
 export const dynamic = "force-dynamic";
 
@@ -19,17 +22,17 @@ export async function generateMetadata({ params, searchParams }: {
 
 export default async function HowToPage({ params, searchParams }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ a?: string }>;
+  searchParams: Promise<{ a?: string; as?: string; at?: string }>;
 }) {
   const { slug } = await params;
-  const { a } = await searchParams;
+  const { a, as: articleSlug, at: articleTitleB64 } = await searchParams;
   const action = a ? Buffer.from(a, "base64").toString("utf8") : null;
   if (!action) notFound();
 
+  const articleTitle = articleTitleB64 ? Buffer.from(articleTitleB64, "base64").toString("utf8") : null;
+
   const howto = await getHowTo(action, slug);
   if (!howto) notFound();
-
-  const stepColors = [P.accent, P.accent + "cc", P.accent + "99"];
 
   return (
     <div style={{ minHeight: "100vh", background: P.pageBg, color: P.ink, fontFamily: P.fontBody, paddingBottom: 80 }}>
@@ -44,22 +47,23 @@ export default async function HowToPage({ params, searchParams }: {
 
       <div style={{ maxWidth: 760, marginLeft: "auto", marginRight: "auto", paddingTop: 48, paddingLeft: 24, paddingRight: 24 }}>
 
-        {/* Label */}
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 14, fontFamily: P.fontBody }}>How To</div>
+        {/* "How To" label in cursive */}
+        <div style={{ fontSize: 32, color: P.accent, marginBottom: 8, fontFamily: caveat.style.fontFamily, lineHeight: 1 }}>How To</div>
 
         {/* Title */}
-        <h1 style={{ fontFamily: P.fontHeading, fontSize: "clamp(24px, 5vw, 38px)", fontWeight: P.dark ? 400 : 900, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" : "none" as const, marginBottom: 48 }}>
+        <h1 style={{ fontFamily: P.fontHeading, fontSize: "clamp(24px, 5vw, 38px)", fontWeight: P.dark ? 400 : 900, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" : "none" as const, marginBottom: 48, marginTop: 8 }}>
           {howto.title}
         </h1>
 
         {/* Steps */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 24, marginBottom: 48 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 28, marginBottom: 48 }}>
           {howto.steps.map((step, i) => (
             <div key={i} style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-              <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: "50%", background: stepColors[i], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 900, color: contrastColor(P.accent), fontFamily: P.fontBody }}>
+              {/* Cursive number, no circle */}
+              <div style={{ flexShrink: 0, fontSize: 48, lineHeight: 1, color: P.accent, fontFamily: caveat.style.fontFamily, width: 36, textAlign: "center" as const }}>
                 {i + 1}
               </div>
-              <div style={{ paddingTop: 6 }}>
+              <div style={{ paddingTop: 4 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 6, fontFamily: P.fontBody }}>{step.heading}</div>
                 <div style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, fontFamily: "Georgia, 'Times New Roman', serif" }}>{step.instruction}</div>
               </div>
@@ -75,8 +79,12 @@ export default async function HowToPage({ params, searchParams }: {
 
         {/* Nav */}
         <div style={{ borderTop: `1px solid ${P.tint}44`, paddingTop: 24, display: "flex", gap: 16, flexWrap: "wrap" as const, alignItems: "center" }}>
-          <a href="/" style={{ display: "inline-flex", alignItems: "center", background: P.accent, color: contrastColor(P.accent), textDecoration: "none", paddingTop: 12, paddingBottom: 12, paddingLeft: 24, paddingRight: 24, borderRadius: 50, fontSize: 13, fontWeight: 700, fontFamily: P.fontBody }}>Today&apos;s Edition</a>
-          <a href="/archive" style={{ fontSize: 13, color: P.inkLight, textDecoration: "none", fontFamily: P.fontBody }}>Archive →</a>
+          <a href="/" style={{ display: "inline-flex", alignItems: "center", background: P.accent, color: contrastColor(P.accent), textDecoration: "none", paddingTop: 12, paddingBottom: 12, paddingLeft: 24, paddingRight: 24, borderRadius: 50, fontSize: 13, fontWeight: 700, fontFamily: P.fontBody }}>Home</a>
+          {articleSlug && articleTitle && (
+            <a href={`/article/${articleSlug}`} style={{ fontSize: 13, color: P.accent, textDecoration: "none", fontFamily: P.fontBody, fontWeight: 600 }}>
+              Read: {articleTitle.length > 50 ? articleTitle.slice(0, 50) + "…" : articleTitle} →
+            </a>
+          )}
         </div>
 
       </div>
