@@ -96,6 +96,7 @@ export const FEEDS = [
 
 const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
 const ONE_HOUR   =      60 * 60 * 1000;
+const SEVEN_DAYS = 7 * 24 * ONE_HOUR;
 
 // ── Edition windows (5 per day, ~4 hrs each) ─────────────────────────────────
 export function getEdition(): { label: string; key: string } {
