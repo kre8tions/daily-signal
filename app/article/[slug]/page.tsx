@@ -1,6 +1,6 @@
 import { getPageData, getStoryBySlug, getFullArticle, urlToSlug, type Story } from "@/lib/stories";
 import { notFound } from "next/navigation";
-import { P, SECTION_COLORS } from "@/lib/palette";
+import { P, SECTION_COLORS, contrastColor } from "@/lib/palette";
 
 export const revalidate = 14400;
 
@@ -104,7 +104,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             <div style={{ fontSize: 11, color: P.inkLight, marginBottom: 4, fontFamily: P.fontBody }}>Originally published by</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading }}>{story.source}</div>
           </div>
-          <a href={story.link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: P.accent, color: "#fff", textDecoration: "none", paddingTop: 14, paddingBottom: 14, paddingLeft: 28, paddingRight: 28, borderRadius: 50, fontSize: 14, fontWeight: 700, fontFamily: P.fontBody }}>
+          <a href={story.link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: P.accent, color: contrastColor(P.accent), textDecoration: "none", paddingTop: 14, paddingBottom: 14, paddingLeft: 28, paddingRight: 28, borderRadius: 50, fontSize: 14, fontWeight: 700, fontFamily: P.fontBody }}>
             Read Full Article ↗
           </a>
         </div>

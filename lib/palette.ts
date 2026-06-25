@@ -59,3 +59,14 @@ const QUOTE_FONTS = [
 ];
 
 export const QUOTE_FONT = QUOTE_FONTS[Math.floor(Date.now() / 86_400_000) % QUOTE_FONTS.length];
+
+// Returns #000 or #fff — whichever contrasts better against the given hex color
+export function contrastColor(hex: string): string {
+  const c = hex.replace("#", "");
+  const r = parseInt(c.slice(0, 2), 16);
+  const g = parseInt(c.slice(2, 4), 16);
+  const b = parseInt(c.slice(4, 6), 16);
+  // Perceived luminance (WCAG formula)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.55 ? "#000000" : "#ffffff";
+}
