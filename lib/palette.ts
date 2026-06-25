@@ -97,6 +97,23 @@ const ACTION_EMOJIS = ["✏️", "🌱", "💡", "🎯", "🛠️", "📝", "�
 const _edition = Math.floor(Date.now() / 14_400_000);
 export const ACTION_EMOJI = ACTION_EMOJIS[_edition % ACTION_EMOJIS.length];
 
+// Cursive/handwritten font pool — rotates per edition
+// Each entry: [fontFamily CSS name, Google Fonts family param]
+const CURSIVE_FONTS: [string, string][] = [
+  ["Dancing Script",  "Dancing+Script:wght@700"],       // flowing elegant script
+  ["Pacifico",        "Pacifico"],                       // bold casual retro
+  ["Sacramento",      "Sacramento"],                     // thin tall calligraphy
+  ["Satisfy",         "Satisfy"],                        // bold brush script
+  ["Caveat",          "Caveat:wght@700"],                // casual ballpoint
+  ["Kalam",           "Kalam:wght@700"],                 // natural handwritten
+  ["Pinyon Script",   "Pinyon+Script"],                  // elegant ink calligraphy
+  ["Cookie",          "Cookie"],                         // rounded flowing script
+  ["Allura",          "Allura"],                         // thin calligraphy
+  ["Amatic SC",       "Amatic+SC:wght@700"],             // tall thin print-hand
+];
+export const CURSIVE_FONT_FAMILY = CURSIVE_FONTS[_edition % CURSIVE_FONTS.length][0];
+export const CURSIVE_FONT_URL = `https://fonts.googleapis.com/css2?family=${CURSIVE_FONTS[_edition % CURSIVE_FONTS.length][1]}&display=swap`;
+
 // Returns #000 or #fff — whichever contrasts better against the given hex color
 export function contrastColor(hex: string): string {
   const c = hex.replace("#", "");

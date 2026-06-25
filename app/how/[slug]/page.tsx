@@ -1,10 +1,7 @@
 import { getHowTo } from "@/lib/stories";
-import { P, contrastColor } from "@/lib/palette";
+import { P, contrastColor, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL } from "@/lib/palette";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Caveat } from "next/font/google";
-
-const caveat = Caveat({ subsets: ["latin"], weight: ["700"] });
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +33,8 @@ export default async function HowToPage({ params, searchParams }: {
 
   return (
     <div style={{ minHeight: "100vh", background: P.pageBg, color: P.ink, fontFamily: P.fontBody, paddingBottom: 80 }}>
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link rel="stylesheet" href={CURSIVE_FONT_URL} />
 
       {/* Masthead */}
       <div style={{ paddingTop: 20, paddingBottom: 20, paddingLeft: 24, paddingRight: 24, borderBottom: `1px solid ${P.tint}44` }}>
@@ -48,7 +47,7 @@ export default async function HowToPage({ params, searchParams }: {
       <div style={{ maxWidth: 760, marginLeft: "auto", marginRight: "auto", paddingTop: 48, paddingLeft: 24, paddingRight: 24 }}>
 
         {/* "How To" label in cursive */}
-        <div style={{ fontSize: 32, color: P.accent, marginBottom: 8, fontFamily: caveat.style.fontFamily, lineHeight: 1 }}>How To</div>
+        <div style={{ fontSize: 32, color: P.accent, marginBottom: 8, fontFamily: CURSIVE_FONT_FAMILY, lineHeight: 1 }}>How To</div>
 
         {/* Title */}
         <h1 style={{ fontFamily: P.fontHeading, fontSize: "clamp(24px, 5vw, 38px)", fontWeight: P.dark ? 400 : 900, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" : "none" as const, marginBottom: 48, marginTop: 8 }}>
@@ -60,7 +59,7 @@ export default async function HowToPage({ params, searchParams }: {
           {howto.steps.map((step, i) => (
             <div key={i} style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
               {/* Cursive number, no circle */}
-              <div style={{ flexShrink: 0, fontSize: 48, lineHeight: 1, color: P.accent, fontFamily: caveat.style.fontFamily, width: 36, textAlign: "center" as const }}>
+              <div style={{ flexShrink: 0, fontSize: 48, lineHeight: 1, color: P.accent, fontFamily: CURSIVE_FONT_FAMILY, width: 36, textAlign: "center" as const }}>
                 {i + 1}
               </div>
               <div style={{ paddingTop: 4 }}>
