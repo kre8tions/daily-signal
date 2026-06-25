@@ -243,7 +243,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
         <div className="ds-row2" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 0, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
           {[s4, s5, s6, s7, s8, s9].filter(Boolean).map((s, i) => s && (
             <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
-              <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, position: "relative", flex: 1, paddingBottom: 24 }}>
+              <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
                 {s.imageUrl && (
                   <div style={{ position: "relative", height: 150, background: P.tint + "44", flexShrink: 0 }}>
                     <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -251,13 +251,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                     <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
                   </div>
                 )}
-                <div style={{ paddingTop: 20, paddingLeft: 22, paddingRight: 22, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ paddingTop: 20, paddingLeft: 22, paddingRight: 22, paddingBottom: 10, display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
                   {!s.imageUrl && <Pill section={s.section} />}
                   <div className="ds-card-h" style={hStyle}>{s.title}</div>
                   {s.summary && <div className="ds-card-body" style={bodyStyle}>{s.summary}</div>}
                   {s.insight && <div className="ds-card-insight" style={insightStyle}>{s.insight}</div>}
+                  <div style={{ marginTop: "auto", paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody }}>{s.source} · {timeAgo(s.pubDate)}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, fontFamily: P.fontBody, letterSpacing: 0.3 }}>More →</span>
+                  </div>
                 </div>
-                <span className="ds-card-meta" style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 22 }}>{s.source} · {timeAgo(s.pubDate)}</span>
               </div>
             </a>
           ))}

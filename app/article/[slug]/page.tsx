@@ -61,7 +61,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         {/* Editorial commentary */}
         {fullArticle && (
           <div style={{ marginBottom: 36 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 20, fontFamily: P.fontBody }}>The Signal Take</div>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 20, fontFamily: P.fontBody }}>The Signal Take</div>
             {fullArticle.split("\n\n").filter(Boolean).map((para, i) => (
               <p key={i} style={{ fontSize: 17, lineHeight: 1.85, color: P.inkMid, marginBottom: 22, fontFamily: P.fontBody }}>{para.trim()}</p>
             ))}
@@ -72,7 +72,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         {/* Key Facts */}
         {story.bullets?.length ? (
           <div style={{ background: P.cardBg, borderRadius: 16, paddingTop: 22, paddingBottom: 22, paddingLeft: 28, paddingRight: 28, marginBottom: 28, boxShadow: P.shadow }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 14, fontFamily: P.fontBody }}>Key Facts</div>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 14, fontFamily: P.fontBody }}>Key Facts</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {story.bullets.map((b, i) => (
                 <div key={i} style={{ display: "flex", gap: 12, fontSize: 14, lineHeight: 1.6, color: P.inkMid, fontFamily: P.fontBody }}>
@@ -93,7 +93,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         {/* Signal Insight */}
         {story.insight && (
           <div style={{ background: `${P.accent}12`, borderRadius: 16, paddingTop: 20, paddingBottom: 20, paddingLeft: 26, paddingRight: 26, marginBottom: 36, border: `1px solid ${P.accent}33` }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Signal Insight</div>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Signal Insight</div>
             <p style={{ fontSize: 15, lineHeight: 1.7, color: P.inkMid, fontStyle: "italic", fontFamily: P.fontBody, marginBottom: 0 }}>{story.insight}</p>
           </div>
         )}
@@ -112,7 +112,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         {/* Related Stories */}
         {related.length > 0 && (
           <div style={{ marginBottom: 48 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>More From Today&apos;s Edition</div>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>More From Today&apos;s Edition</div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               {related.slice(0, 5).map((s) => (
                 <RelatedCard key={s.link} story={s} />
