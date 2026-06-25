@@ -151,14 +151,38 @@ async function scrapeOgImage(url: string): Promise<string | undefined> {
 }
 
 // ── Unsplash fallback ─────────────────────────────────────────────────────────
-export async function fetchUnsplash(headline: string): Promise<string | undefined> {
+// Common first/last names that produce irrelevant image searches
+const NAME_RE = /^(coco|gauff|lebron|elon|trump|biden|taylor|swift|bezos|musk|zuck|serena|oprah|drake|kanye|adele|rihanna|beyonce|kendall|kim|kylie|jeff|tim|mark|lisa|john|james|mike|david|sarah|emma|anna|maria|carlos|alex|chris|ryan|kate|amy|paul|peter|joe|bob|dan|tom|brad|leo|will|sam|max|ben|jack|eric|scott|adam|nick|jake|noah|matt|luke|owen|ethan|liam|tyler|jason|aaron|brian|kevin|sean|gary|frank|tony|henry)$/i;
+
+export async function fetchUnsplash(headline: string, section?: string): Promise<string | undefined> {
   const key = process.env.UNSPLASH_ACCESS_KEY;
   if (!key) return undefined;
-  const words = headline.replace(/[^a-zA-Z ]/g, "").split(" ").filter((w) => w.length > 3);
-  for (const q of [words.slice(0, 2).join(" "), words[0], "news culture technology"]) {
-    if (!q) continue;
+
+  // Extract meaningful content words — skip short words and known names
+  const words = headline.replace(/[^a-zA-Z ]/g, " ").split(/\s+/)
+    .filter((w) => w.length > 3 && !NAME_RE.test(w));
+
+  // Section-based safe fallback queries that always produce relevant images
+  const sectionFallback: Record<string, string> = {
+    Technology: "technology innovation",
+    Science: "science research",
+    Entertainment: "entertainment media stage",
+    Sports: "sports athlete competition",
+    Business: "business finance office",
+    Health: "health wellness",
+    Politics: "politics government",
+    Culture: "culture art creative",
+  };
+  const fallback = (section && sectionFallback[section]) ?? "news media editorial";
+
+  const queries = [
+    words.slice(0, 3).join(" "),
+    words.slice(0, 2).join(" "),
+    fallback,
+  ].filter(Boolean);
+
+  for (const q of queries) {
     try {
-      // Use search (not random) so the same query always returns the same top result
       const res = await fetch(
         `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&orientation=landscape&per_page=1&client_id=${key}`,
         { cache: "no-store" }
@@ -176,7 +200,7 @@ function imgCacheKey(link: string) {
   return `artimg_${Buffer.from(link).toString("base64").slice(0, 24).replace(/[^a-z0-9]/gi, "_")}`;
 }
 
-async function getArticleImage(article: { link: string; title: string; rssImageUrl?: string }): Promise<string | undefined> {
+async function getArticleImage(article: { link: string; title: string; section?: string; rssImageUrl?: string }): Promise<string | undefined> {
   const cKey = imgCacheKey(article.link);
   const hit = cacheGet<string>(cKey);
   if (hit) return hit === "__none__" ? undefined : hit;
@@ -187,7 +211,7 @@ async function getArticleImage(article: { link: string; title: string; rssImageU
   }
   const og = await scrapeOgImage(article.link);
   if (og) { cacheSet(cKey, og, THREE_DAYS); return og; }
-  const unsplash = await fetchUnsplash(article.title);
+  const unsplash = await fetchUnsplash(article.title, article.section);
   if (unsplash) { cacheSet(cKey, unsplash, THREE_DAYS); return unsplash; }
   cacheSet(cKey, "__none__", ONE_HOUR);
   return undefined;
