@@ -385,7 +385,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const related = relatedStories.filter((s) => s.link !== story.link).slice(0, 5);
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 200,
+    max_tokens: 450,
     messages: [{
       role: "user",
       content: `You are a deeply curious editor-at-large with a centrist, intellectually honest perspective. A story lands on your desk. Your job: write 200-350 words of sharp, conversational commentary — not a summary, not a rewrite. Think out loud about what it actually means. Challenge assumptions from all sides. Avoid ideological framing, virtue signaling, or moralizing. Be equally skeptical of institutional power, activist narratives, and reactionary takes. Focus on what's real, what's at stake, and who actually benefits or loses.
@@ -417,7 +417,7 @@ FORMAT — this is critical:
 - Open with 1 sentence. Then another 1-sentence paragraph. Hook them fast.
 - Middle: 1-2 sentences per paragraph. Vary rhythm.
 - Final paragraph: up to 3 sentences. Land a sharp question or provocation if it fits naturally.
-- Total: 75-100 words. Tight, punchy, no filler.
+- Total: 150-260 words. Smart and tight, no filler.
 
 STORY: ${story.title}
 SOURCE: ${story.source}
