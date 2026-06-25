@@ -392,6 +392,61 @@ export async function getStoryBySlug(slug: string): Promise<Story | null> {
   return stories.find((s) => s.link === url) ?? null;
 }
 
+// ── How-to article generation ─────────────────────────────────────────────────
+export interface HowTo {
+  title: string;
+  steps: { heading: string; instruction: string }[];
+  why: string;
+}
+
+export function actionSlug(action: string): string {
+  return createHash("md5").update(action).digest("hex").slice(0, 16);
+}
+
+export async function getHowTo(action: string, slug: string): Promise<HowTo | null> {
+  const blobKey = `howto/${slug}.json`;
+
+  try {
+    const existing = await head(blobKey);
+    if (existing) {
+      const res = await fetch(existing.url);
+      if (res.ok) return await res.json() as HowTo;
+    }
+  } catch { /* generate fresh */ }
+
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  try {
+    const msg = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 400,
+      messages: [{
+        role: "user",
+        content: `You are a practical, encouraging coach for beginners and early creators. Someone just read this action step and wants to know how to actually do it:
+
+ACTION: "${action}"
+
+Return JSON with this exact shape:
+{
+  "title": "The action step, rewritten as a clear imperative title (max 10 words)",
+  "steps": [
+    { "heading": "Step 1 label (3-5 words)", "instruction": "One concrete sentence telling them exactly what to do. Simple, specific, no jargon." },
+    { "heading": "Step 2 label (3-5 words)", "instruction": "One concrete sentence. The next logical move." },
+    { "heading": "Step 3 label (3-5 words)", "instruction": "One concrete sentence. How to finish or follow through." }
+  ],
+  "why": "One sentence explaining why this action matters — the real payoff. Motivating, not preachy."
+}
+
+Return only valid JSON.`,
+      }],
+    });
+
+    const text = msg.content[0].type === "text" ? msg.content[0].text.trim() : "";
+    const json = JSON.parse(text.replace(/^```json\n?/, "").replace(/\n?```$/, "")) as HowTo;
+    await put(blobKey, JSON.stringify(json), { access: "public", contentType: "application/json", addRandomSuffix: false });
+    return json;
+  } catch { return null; }
+}
+
 // ── Full editorial rewrite for article detail ─────────────────────────────────
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string): Promise<string> {
   const PROMPT_V = "v3"; // bump when prompt changes to invalidate old cached articles

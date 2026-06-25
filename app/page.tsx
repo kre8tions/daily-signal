@@ -1,4 +1,4 @@
-import { getPageData, urlToSlug, type Story, type Synthesis } from "@/lib/stories";
+import { getPageData, urlToSlug, actionSlug, type Story, type Synthesis } from "@/lib/stories";
 import { P, QUOTE_FONT, SECTION_COLORS, TAGLINE, TAGLINE_FONT, ACTION_LABEL, ACTION_EMOJI } from "@/lib/palette";
 import type { Metadata } from "next";
 import { EmailCapture } from "./EmailCapture";
@@ -392,12 +392,21 @@ function Synthesis({ synthesis }: { synthesis: Synthesis }) {
             <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{ACTION_LABEL}</div>
           </div>
           <div className="action-grid">
-            {synthesis.actions.map((action, i) => (
-              <div key={i} style={{ background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 16, paddingBottom: 16, paddingLeft: 18, paddingRight: 18, display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{i + 1}</div>
-                <div style={{ fontSize: 15, lineHeight: 1.6, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
-              </div>
-            ))}
+            {synthesis.actions.map((action, i) => {
+              const slug = actionSlug(action);
+              const encoded = Buffer.from(action).toString("base64");
+              return (
+                <div key={i} style={{ background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 16, paddingBottom: 16, paddingLeft: 18, paddingRight: 18, display: "flex", flexDirection: "column", gap: 10, minHeight: 120 }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{i + 1}</div>
+                    <div style={{ fontSize: 15, lineHeight: 1.6, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
+                    <a href={`/how/${slug}?a=${encoded}`} style={{ fontSize: 11, fontWeight: 900, letterSpacing: 1.5, color: P.accent, textDecoration: "none", fontFamily: P.fontBody, textTransform: "uppercase" as const, borderBottom: `1px solid ${P.accent}66` }}>How?</a>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
         {/* Sketchy pen-outline border overlay */}
