@@ -3,6 +3,72 @@ import { P, QUOTE_FONT, SECTION_COLORS } from "@/lib/palette";
 
 export const revalidate = 14400; // 4 hours — matches 5-edition day
 
+function SpaceInvaderSVG({ color }: { color: string }) {
+  const frame1 = [
+    [2,0],[8,0],
+    [3,1],[7,1],
+    [2,2],[3,2],[4,2],[5,2],[6,2],[7,2],[8,2],
+    [1,3],[2,3],[4,3],[5,3],[6,3],[8,3],[9,3],
+    [0,4],[1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[7,4],[8,4],[9,4],[10,4],
+    [0,5],[2,5],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],[10,5],
+    [0,6],[2,6],[8,6],[10,6],
+    [3,7],[4,7],[7,7],[8,7],
+  ];
+  // Frame 2: claws tuck in, feet spread out
+  const frame2 = [
+    [2,0],[8,0],
+    [3,1],[7,1],
+    [2,2],[3,2],[4,2],[5,2],[6,2],[7,2],[8,2],
+    [1,3],[2,3],[4,3],[5,3],[6,3],[8,3],[9,3],
+    [0,4],[1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[7,4],[8,4],[9,4],[10,4],
+    [0,5],[2,5],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],[10,5],
+    [1,6],[2,6],[8,6],[9,6],
+    [0,7],[1,7],[9,7],[10,7],
+  ];
+  const S = 4;
+  const mode = Math.floor(Date.now() / 14_400_000) % 3; // changes each edition: 0=wiggle 1=float 2=pulse
+
+  if (mode === 0) {
+    // Wiggle — two-frame arcade flip
+    return (
+      <div style={{ width: 44, height: 32, position: "relative" }}>
+        <style>{`
+          @keyframes si-f1 { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+          @keyframes si-f2 { 0%,49%{opacity:0} 50%,100%{opacity:1} }
+        `}</style>
+        <svg width="44" height="32" viewBox="0 0 44 32" xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", top: 0, left: 0, animation: "si-f1 0.8s steps(1) infinite" }}>
+          {frame1.map(([x, y]) => <rect key={`${x}-${y}`} x={x*S} y={y*S} width="3.5" height="3.5" fill={color} />)}
+        </svg>
+        <svg width="44" height="32" viewBox="0 0 44 32" xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", top: 0, left: 0, animation: "si-f2 0.8s steps(1) infinite" }}>
+          {frame2.map(([x, y]) => <rect key={`${x}-${y}`} x={x*S} y={y*S} width="3.5" height="3.5" fill={color} />)}
+        </svg>
+      </div>
+    );
+  }
+
+  if (mode === 1) {
+    // Float — gentle up/down bob
+    return (
+      <div style={{ width: 44, height: 32 }}>
+        <style>{`@keyframes si-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }`}</style>
+        <svg width="44" height="32" viewBox="0 0 44 32" xmlns="http://www.w3.org/2000/svg" style={{ animation: "si-float 1.6s ease-in-out infinite" }}>
+          {frame1.map(([x, y]) => <rect key={`${x}-${y}`} x={x*S} y={y*S} width="3.5" height="3.5" fill={color} />)}
+        </svg>
+      </div>
+    );
+  }
+
+  // Pulse — scale breathe
+  return (
+    <div style={{ width: 44, height: 32 }}>
+      <style>{`@keyframes si-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }`}</style>
+      <svg width="44" height="32" viewBox="0 0 44 32" xmlns="http://www.w3.org/2000/svg" style={{ animation: "si-pulse 1.4s ease-in-out infinite", transformOrigin: "center" }}>
+        {frame1.map(([x, y]) => <rect key={`${x}-${y}`} x={x*S} y={y*S} width="3.5" height="3.5" fill={color} />)}
+      </svg>
+    </div>
+  );
+}
+
 function timeAgo(iso: string) {
   const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
   if (h < 1) return "Just now";
@@ -37,8 +103,15 @@ function MorePill({ story }: { story: Story }) {
   );
 }
 
-export default async function Home() {
-  const { stories, synthesis, editionLabel } = await getPageData();
+export default async function Home({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
+  const { section: activeSection } = await searchParams;
+  const { stories: allStories, synthesis, editionLabel } = await getPageData();
+
+  const sections = Array.from(new Set(allStories.map((s) => s.section)));
+  const stories = activeSection
+    ? allStories.filter((s) => s.section === activeSection)
+    : allStories;
+
   const [s1, s2, s3, s4, s5, s6, s7, s8, s9] = stories;
 
   const card: React.CSSProperties = { background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, position: "relative" };
@@ -69,6 +142,22 @@ export default async function Home() {
           <div style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody }}>{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</div>
           <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody, marginTop: 3, marginBottom: 0, marginLeft: 0, marginRight: 0 }}>{editionLabel}</div>
         </div>
+      </div>
+
+      {/* ── Section filter nav ── */}
+      <div style={{ display: "flex", gap: 8, maxWidth: 1200, marginTop: 0, marginBottom: 14, marginLeft: "auto", marginRight: "auto", flexWrap: "wrap" as const }}>
+        <a href="/" style={{ textDecoration: "none" }}>
+          <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${!activeSection ? P.accent : P.tint + "66"}`, background: !activeSection ? P.accent + "22" : "transparent", color: !activeSection ? P.accent : P.inkLight }}>All</span>
+        </a>
+        {sections.map((sec) => {
+          const c = SECTION_COLORS[sec] ?? "#888";
+          const active = activeSection === sec;
+          return (
+            <a key={sec} href={`/?section=${encodeURIComponent(sec)}`} style={{ textDecoration: "none" }}>
+              <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${active ? c : c + "44"}`, background: active ? c + "22" : "transparent", color: active ? c : P.inkLight }}>{sec}</span>
+            </a>
+          );
+        })}
       </div>
 
       {/* ── Top bento ── */}
@@ -147,14 +236,14 @@ export default async function Home() {
       </div>
 
       {/* ── Synthesis ── */}
-      {synthesis?.theme && <Synthesis synthesis={synthesis} />}
+      {!activeSection && synthesis?.theme && <Synthesis synthesis={synthesis} />}
 
       {/* ── Row 2: s4–s9 ── */}
       {[s4, s5, s6, s7, s8, s9].filter(Boolean).length > 0 && (
         <div className="ds-row2" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 0, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
           {[s4, s5, s6, s7, s8, s9].filter(Boolean).map((s, i) => s && (
             <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
-              <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, position: "relative", flex: 1, paddingBottom: 62 }}>
+              <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, position: "relative", flex: 1, paddingBottom: 24 }}>
                 {s.imageUrl && (
                   <div style={{ position: "relative", height: 150, background: P.tint + "44", flexShrink: 0 }}>
                     <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -169,7 +258,6 @@ export default async function Home() {
                   {s.insight && <div className="ds-card-insight" style={insightStyle}>{s.insight}</div>}
                 </div>
                 <span className="ds-card-meta" style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 22 }}>{s.source} · {timeAgo(s.pubDate)}</span>
-                <MorePill story={s} />
               </div>
             </a>
           ))}
@@ -183,15 +271,27 @@ export default async function Home() {
 // ── Synthesis component ───────────────────────────────────────────────────────
 function Synthesis({ synthesis }: { synthesis: Synthesis }) {
   return (
-    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
+    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
       <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden" }}>
         {/* Header band */}
-        <div style={{ background: `linear-gradient(120deg, ${P.gradFrom}, ${P.gradTo})`, paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 44, height: 44, borderRadius: "50%", background: P.cardBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>👾</div>
+        <div style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 55, height: 55, borderRadius: "50%", background: P.cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><SpaceInvaderSVG color={P.accent} /></div>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: "rgba(255,255,255,0.65)", marginBottom: 4, fontFamily: P.fontBody }}>The Signal</div>
-            <div style={{ fontSize: 22, fontWeight: 400, color: "#fff", lineHeight: 1.1, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 2 : 0 }}>{synthesis.theme}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>The Signal</div>
+            <div style={{ fontSize: 22, fontWeight: 400, color: P.ink, lineHeight: 1.1, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 2 : 0 }}>{synthesis.theme}</div>
           </div>
+        </div>
+        {/* Sketchy divider line */}
+        <div style={{ paddingLeft: 28, paddingRight: 28, marginBottom: 0 }}>
+          <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="sketchy-line" x="-5%" y="-100%" width="110%" height="300%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="3" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" />
+              </filter>
+            </defs>
+            <line x1="0" y1="6" x2="100%" y2="6" stroke={P.accent} strokeWidth="2.5" filter="url(#sketchy-line)" />
+          </svg>
         </div>
         {/* Observation */}
         {synthesis.observation && (
@@ -221,6 +321,16 @@ function Synthesis({ synthesis }: { synthesis: Synthesis }) {
           </div>
         </div>
       </div>
+      {/* Sketchy pen-outline border overlay */}
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="sketchy-border" x="-8%" y="-8%" width="116%" height="116%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="7" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+        <rect x="3" y="3" width="99%" height="97%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border)" />
+      </svg>
     </div>
   );
 }
