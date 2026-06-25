@@ -7,7 +7,16 @@ export const revalidate = 3600;
 export default async function ArchiveEditionPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = await params;
   const data = await getArchivedPageData(key);
-  if (!data) notFound();
+  if (!data) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#1a1225", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, color: "#fff", fontFamily: "sans-serif" }}>
+        <div style={{ fontSize: 32 }}>👾</div>
+        <div style={{ fontSize: 18, fontWeight: 700 }}>Edition not available</div>
+        <div style={{ fontSize: 14, opacity: 0.6 }}>This edition was archived before persistent storage was set up.</div>
+        <a href="/archive" style={{ marginTop: 8, fontSize: 13, color: "#FAED26", textDecoration: "none" }}>← Back to Archive</a>
+      </div>
+    );
+  }
 
   const { stories, synthesis, editionLabel } = data;
   const [datePart, editionType] = key.split("_");
