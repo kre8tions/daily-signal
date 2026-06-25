@@ -299,9 +299,9 @@ Return JSON with two keys:
   ],
   "conclusion": "One sharp opinionated sentence. Do not start with 'Today'.",
   "actions": [
-    "A specific, concrete action a creative professional (writer, designer, filmmaker, entrepreneur) can take TODAY based on what these stories reveal — make it tactical, not vague",
-    "A second distinct action — different domain or angle from the first",
-    "A third bold move — the contrarian or unexpected play that most people won't make"
+    "One sharp sentence. A tactical move for a creator/maker based on today's stories. No explanation — just the action. Max 20 words.",
+    "One sharp sentence. Different domain or angle. Max 20 words.",
+    "One sharp sentence. The contrarian play most won't make. Max 20 words."
   ]
 }
 
