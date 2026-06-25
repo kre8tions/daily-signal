@@ -84,11 +84,16 @@ const _day = Math.floor(Date.now() / 86_400_000);
 export const TAGLINE = TAGLINE_PHRASES[_day % TAGLINE_PHRASES.length];
 export const TAGLINE_FONT = TAGLINE_FONTS[_day % TAGLINE_FONTS.length];
 
-export const ACTION_LABELS = ["What To Do", "Your Move", "Do This Today", "Act On This", "Take Action", "Next Step", "Creative Prompt"];
+export const ACTION_LABELS = [
+  "What To Do", "Your Move", "Do This Today", "Start Here", "Creative Next Steps",
+  "Try This Now", "Begin Here", "Make Your Move", "First Steps", "This Week's Prompt",
+  "Do This Now", "Get Started", "Your First Move", "Take This Step", "One Thing To Do",
+  "This Is Your Cue", "Act On This", "Low-Lift, High-Impact", "Today's Nudge", "Start Small",
+];
 export const ACTION_LABEL = ACTION_LABELS[_day % ACTION_LABELS.length];
 
 // Animated emoji — rotates per edition (4-hour window)
-const ACTION_EMOJIS = ["💣", "⚡", "🔥", "🚀", "🎯", "💥", "✊", "🛠️", "⚔️", "🧨"];
+const ACTION_EMOJIS = ["✏️", "🌱", "💡", "🎯", "🛠️", "📝", "🚀", "🔑", "🎨", "📣", "⚡", "🌟", "🧩", "🪄", "🎬", "📱", "🗺️", "🔥", "💬", "🎤"];
 const _edition = Math.floor(Date.now() / 14_400_000);
 export const ACTION_EMOJI = ACTION_EMOJIS[_edition % ACTION_EMOJIS.length];
 

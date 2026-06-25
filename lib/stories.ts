@@ -301,9 +301,9 @@ Return JSON with two keys:
   ],
   "conclusion": "One sharp opinionated sentence. Do not start with 'Today'.",
   "actions": [
-    "One sharp sentence. A tactical move for a creator/maker based on today's stories. No explanation — just the action. Max 20 words.",
-    "One sharp sentence. Different domain or angle. Max 20 words.",
-    "One sharp sentence. The contrarian play most won't make. Max 20 words."
+    "One sharp sentence. A beginner-friendly action a first-time creator or early achiever can do today — specific, doable, no experience needed. Max 20 words.",
+    "One sharp sentence. A different angle — something small and low-risk a newcomer can try this week. Max 20 words.",
+    "One sharp sentence. The simplest possible first step someone just starting out would actually take. Max 20 words."
   ]
 }
 
