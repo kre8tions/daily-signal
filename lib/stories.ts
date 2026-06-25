@@ -318,11 +318,11 @@ Return JSON with two keys:
 
 "synthesis": {
   "theme": "One evocative noun phrase naming the underlying force or tension",
-  "observation": "2-3 sentences of direct editorial interpretation. Name the pattern, irony, or contradiction. Be opinionated. Never count or reference how many articles or stories are covered.",
+  "observation": "STRUCTURE: First sentence stands alone — one sharp, opinionated hook. Then 1-2 follow-up sentences that deepen it. Never count or reference how many articles or stories are covered. Be specific, name the pattern or contradiction.",
   "takeaways": [
-    "Non-obvious connection between at least two stories — name the mechanism (1-2 sentences)",
-    "The deeper structural tension or irony (1-2 sentences)",
-    "Concrete prediction or implication — where this leads, who benefits, what breaks (1-2 sentences)"
+    "Non-obvious connection between at least two stories — name the mechanism. 1 sentence, 2 max.",
+    "The deeper structural tension or irony. 1 sentence, 2 max.",
+    "Concrete prediction or implication — where this leads, who benefits, what breaks. 1 sentence, 2 max."
   ],
   "conclusion": "One sharp opinionated sentence. Do not start with 'Today'.",
   "actions": [
