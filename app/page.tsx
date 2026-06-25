@@ -159,19 +159,28 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gridTemplateRows: "minmax(400px, auto) minmax(92px, auto) minmax(380px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
 
         {s1 && (
-          <div style={{ ...card, paddingTop: 28, paddingBottom: 62, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16, gridRow: "1 / 3" }}>
-            <Pill section={s1.section} />
-            <h1 className="ds-card-h" style={hStyle}><ArticleLink story={s1}>{s1.title}</ArticleLink></h1>
-            {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{s1.summary}</p>}
-            {s1.bullets?.length ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {s1.bullets.map((b, i) => (
-                  <div key={i} className="ds-card-body" style={{ display: "flex", gap: 14, alignItems: "flex-start", ...bodyStyle }}>
-                    <span className="ds-bullet" style={{ color: P.accent, flexShrink: 0, fontSize: 36, lineHeight: 0.75, marginTop: 6, fontWeight: 900 }}>✱</span>{b}
-                  </div>
-                ))}
+          <div style={{ ...card, paddingBottom: 62, display: "flex", flexDirection: "column", gap: 0, gridRow: "1 / 3", overflow: "hidden" }}>
+            {s1.imageUrl && (
+              <div style={{ position: "relative", height: 220, flexShrink: 0 }}>
+                <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 40%, ${P.cardBg}ee 100%)` }} />
+                <div style={{ position: "absolute", bottom: 12, left: 20 }}><Pill section={s1.section} /></div>
               </div>
-            ) : null}
+            )}
+            <div style={{ paddingTop: 20, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
+              {!s1.imageUrl && <Pill section={s1.section} />}
+              <h1 className="ds-card-h" style={hStyle}><ArticleLink story={s1}>{s1.title}</ArticleLink></h1>
+              {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{s1.summary}</p>}
+              {s1.bullets?.length ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {s1.bullets.map((b, i) => (
+                    <div key={i} className="ds-card-body" style={{ display: "flex", gap: 14, alignItems: "flex-start", ...bodyStyle }}>
+                      <span className="ds-bullet" style={{ color: P.accent, flexShrink: 0, fontSize: 36, lineHeight: 0.75, marginTop: 6, fontWeight: 900 }}>✱</span>{b}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
             <span className="ds-card-meta" style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 28 }}>{s1.source} · {timeAgo(s1.pubDate)}</span>
             <MorePill story={s1} />
           </div>
@@ -240,19 +249,24 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
             <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
               <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
                 {s.imageUrl && (
-                  <div style={{ position: "relative", height: 150, background: P.tint + "44", flexShrink: 0 }}>
+                  <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
                     <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                    <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 50%, ${P.accent}22 100%)` }} />
+                    <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 40%, ${P.cardBg}cc 100%)` }} />
                     <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
+                    <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{s.source} · {timeAgo(s.pubDate)}</div>
                   </div>
                 )}
-                <div style={{ paddingTop: 20, paddingLeft: 22, paddingRight: 22, paddingBottom: 10, display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-                  {!s.imageUrl && <Pill section={s.section} />}
+                <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+                  {!s.imageUrl && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <Pill section={s.section} />
+                      <span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody }}>{s.source} · {timeAgo(s.pubDate)}</span>
+                    </div>
+                  )}
                   <div className="ds-card-h" style={hStyle}>{s.title}</div>
                   {s.summary && <div className="ds-card-body" style={bodyStyle}>{s.summary}</div>}
                   {s.insight && <div className="ds-card-insight" style={insightStyle}>{s.insight}</div>}
-                  <div style={{ marginTop: "auto", paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody }}>{s.source} · {timeAgo(s.pubDate)}</span>
+                  <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
                   </div>
                 </div>
