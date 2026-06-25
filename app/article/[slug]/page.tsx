@@ -63,7 +63,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           <div style={{ marginBottom: 36 }}>
             <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 20, fontFamily: P.fontBody }}>The Signal Take</div>
             {fullArticle.split("\n\n").filter(Boolean).map((para, i) => (
-              <p key={i} style={{ fontSize: 17, lineHeight: 1.85, color: P.inkMid, marginBottom: 22, fontFamily: P.fontBody }}>{para.trim()}</p>
+              <p key={i} style={{ fontSize: 19, lineHeight: 1.9, color: P.ink, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720 }}
+                dangerouslySetInnerHTML={{ __html: para.trim()
+                  .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                  .replace(/\*(.+?)\*/g, "<em>$1</em>") }} />
             ))}
             <div style={{ height: 1, background: `${P.tint}66`, marginTop: 8, marginBottom: 36 }} />
           </div>
