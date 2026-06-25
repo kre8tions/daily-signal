@@ -144,20 +144,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
         </div>
       </div>
 
-      {/* ── Section filter nav ── */}
-      <div style={{ display: "flex", gap: 8, maxWidth: 1200, marginTop: 0, marginBottom: 14, marginLeft: "auto", marginRight: "auto", flexWrap: "wrap" as const }}>
+      {/* ── Nav pills ── */}
+      <div style={{ display: "flex", gap: 8, maxWidth: 1200, marginTop: 0, marginBottom: 14, marginLeft: "auto", marginRight: "auto" }}>
         <a href="/" style={{ textDecoration: "none" }}>
-          <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${!activeSection ? P.accent : P.tint + "66"}`, background: !activeSection ? P.accent + "22" : "transparent", color: !activeSection ? P.accent : P.inkLight }}>All</span>
+          <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${P.accent}`, background: P.accent + "22", color: P.accent }}>Today</span>
         </a>
-        {sections.map((sec) => {
-          const c = SECTION_COLORS[sec] ?? "#888";
-          const active = activeSection === sec;
-          return (
-            <a key={sec} href={`/?section=${encodeURIComponent(sec)}`} style={{ textDecoration: "none" }}>
-              <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${active ? c : c + "44"}`, background: active ? c + "22" : "transparent", color: active ? c : P.inkLight }}>{sec}</span>
-            </a>
-          );
-        })}
+        <a href="/archive" style={{ textDecoration: "none" }}>
+          <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${P.tint}66`, background: "transparent", color: P.inkLight }}>Archive</span>
+        </a>
       </div>
 
       {/* ── Top bento ── */}

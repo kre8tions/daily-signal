@@ -335,7 +335,7 @@ async function buildPageData(editionKey: string, editionLabel: string): Promise<
   const pageData: PageData = { stories, synthesis, editionLabel };
   // Also save to file-based archive for /archive page
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
-  saveToArchive({ key: editionKey, label: editionLabel, date: editionKey.split("_")[0], theme: synthesis.theme });
+  saveToArchive({ key: editionKey, label: editionLabel, date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl });
   return pageData;
 }
 
@@ -407,7 +407,7 @@ Return only the commentary. No title, no byline, no headers. 200-350 words, flow
 }
 
 // ── Archive ───────────────────────────────────────────────────────────────────
-export interface ArchiveEntry { key: string; label: string; date: string; theme: string }
+export interface ArchiveEntry { key: string; label: string; date: string; theme: string; imageUrl?: string }
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
 export function saveToArchive(entry: ArchiveEntry) {

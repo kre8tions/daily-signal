@@ -28,19 +28,25 @@ export default async function ArchivePage() {
             <div style={{ fontSize: 15, color: P.inkMid, fontFamily: P.fontBody }}>No archived editions yet. Check back after the next edition loads.</div>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
             {editions.map((e) => {
               const dateStr = new Date(e.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
               const editionType = e.key.split("_").pop() ?? "";
               return (
-                <a key={e.key} href={`/archive/${e.key}`} style={{ display: "flex", alignItems: "center", gap: 20, paddingTop: 20, paddingBottom: 20, borderBottom: `1px solid ${P.tint}44`, textDecoration: "none" }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: P.accent + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 20 }}>👾</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>{editionType} · {dateStr}</div>
-                    {e.theme && <div style={{ fontSize: 16, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const }}>{e.theme}</div>}
-                    <div style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, marginTop: 3 }}>{e.label}</div>
+                <a key={e.key} href={`/archive/${e.key}`} style={{ textDecoration: "none", display: "flex", flexDirection: "column", borderRadius: 16, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow }}>
+                  <div style={{ position: "relative", height: 160, background: P.tint + "44", flexShrink: 0 }}>
+                    {e.imageUrl
+                      ? <img src={e.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.tint}, ${P.accent}44)` }} />
+                    }
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)" }} />
+                    <div style={{ position: "absolute", bottom: 10, left: 12, fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{editionType} · {dateStr}</div>
                   </div>
-                  <div style={{ fontSize: 18, color: P.accent, opacity: 0.5 }}>→</div>
+                  <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                    {e.theme && <div style={{ fontSize: 15, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, lineHeight: 1.2 }}>{e.theme}</div>}
+                    <div style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody }}>{e.label}</div>
+                    <div style={{ marginTop: "auto", paddingTop: 10, fontSize: 12, color: P.accent, fontFamily: P.fontBody, fontWeight: 700 }}>Read edition →</div>
+                  </div>
                 </a>
               );
             })}
