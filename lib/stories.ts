@@ -69,7 +69,7 @@ function dedupeByTopic(items: RawItem[]): RawItem[] {
       if (dealCount > 1) return false;
     }
     const words = keywords(item.title);
-    const isDupe = seen.some(prev => words.filter(w => prev.includes(w)).length >= 2);
+    const isDupe = seen.some(prev => words.filter(w => prev.includes(w)).length >= 1);
     if (!isDupe) seen.push(words);
     return !isDupe;
   });
