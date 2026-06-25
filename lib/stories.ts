@@ -197,7 +197,7 @@ export async function fetchUnsplash(headline: string, section?: string): Promise
 }
 
 function imgCacheKey(link: string) {
-  return `artimg_${Buffer.from(link).toString("base64").slice(0, 24).replace(/[^a-z0-9]/gi, "_")}`;
+  return `artimg_v2_${Buffer.from(link).toString("base64").slice(0, 24).replace(/[^a-z0-9]/gi, "_")}`;
 }
 
 async function getArticleImage(article: { link: string; title: string; section?: string; rssImageUrl?: string }): Promise<string | undefined> {
@@ -318,7 +318,7 @@ Return JSON with two keys:
 
 "synthesis": {
   "theme": "One evocative noun phrase naming the underlying force or tension",
-  "observation": "STRUCTURE: First sentence stands alone — one sharp, opinionated hook. Then 1-2 follow-up sentences that deepen it. Never count or reference how many articles or stories are covered. Be specific, name the pattern or contradiction.",
+  "observation": "STRUCTURE REQUIRED: Write the first sentence as a standalone hook. Then insert \\n\\n. Then write 1-2 follow-up sentences that deepen it. Example format: 'Capital is fleeing hardware.\\n\\nThe pattern is clear: wherever supply chains constrain growth, money moves to narrative and IP instead.' Never count or reference how many articles or stories are covered.",
   "takeaways": [
     "Non-obvious connection between at least two stories — name the mechanism. 1 sentence, 2 max.",
     "The deeper structural tension or irony. 1 sentence, 2 max.",

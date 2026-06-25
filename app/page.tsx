@@ -339,7 +339,9 @@ function Synthesis({ synthesis }: { synthesis: Synthesis }) {
         {synthesis.observation && (
           <div style={{ paddingTop: 16, paddingBottom: 14, paddingLeft: 28, paddingRight: 28, borderBottom: `1px solid ${P.tint}44` }}>
             <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Observation</div>
-            <p style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: 0, maxWidth: 820, fontFamily: P.fontBody }}>{synthesis.observation}</p>
+            {synthesis.observation.split("\n\n").filter(Boolean).map((para, i) => (
+              <p key={i} style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: i < synthesis.observation.split("\n\n").length - 1 ? 14 : 0, maxWidth: 820, fontFamily: P.fontBody }}>{para}</p>
+            ))}
           </div>
         )}
         {/* Insights + Bottom Line */}
