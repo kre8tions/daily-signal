@@ -21,7 +21,7 @@ export interface Story {
 }
 
 export interface Synthesis {
-  theme: string; observation: string; takeaways: string[]; conclusion: string;
+  theme: string; observation: string; takeaways: string[]; conclusion: string; actions: string[];
 }
 
 export interface PageData {
@@ -297,7 +297,12 @@ Return JSON with two keys:
     "The deeper structural tension or irony (1-2 sentences)",
     "Concrete prediction or implication — where this leads, who benefits, what breaks (1-2 sentences)"
   ],
-  "conclusion": "One sharp opinionated sentence. Do not start with 'Today'."
+  "conclusion": "One sharp opinionated sentence. Do not start with 'Today'.",
+  "actions": [
+    "A specific, concrete action a creative professional (writer, designer, filmmaker, entrepreneur) can take TODAY based on what these stories reveal — make it tactical, not vague",
+    "A second distinct action — different domain or angle from the first",
+    "A third bold move — the contrarian or unexpected play that most people won't make"
+  ]
 }
 
 Return only valid JSON, no markdown.`,

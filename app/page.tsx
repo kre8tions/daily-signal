@@ -1,5 +1,5 @@
 import { getPageData, urlToSlug, type Story, type Synthesis } from "@/lib/stories";
-import { P, QUOTE_FONT, SECTION_COLORS, TAGLINE, TAGLINE_FONT } from "@/lib/palette";
+import { P, QUOTE_FONT, SECTION_COLORS, TAGLINE, TAGLINE_FONT, ACTION_LABEL, ACTION_EMOJI } from "@/lib/palette";
 
 export const revalidate = 14400; // 4 hours — matches 5-edition day
 
@@ -152,7 +152,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
         <a href="/archive" style={{ textDecoration: "none" }}>
           <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${P.tint}66`, background: "transparent", color: P.inkLight }}>Archive</span>
         </a>
-        <span style={{ fontSize: 18, fontWeight: TAGLINE_FONT.weight, fontStyle: TAGLINE_FONT.style as "italic" | "normal", fontFamily: TAGLINE_FONT.family, color: P.accent, marginLeft: 12, opacity: 0.85 }}>{TAGLINE}</span>
+        <span style={{ fontSize: 26, fontWeight: TAGLINE_FONT.weight, fontStyle: TAGLINE_FONT.style as "italic" | "normal", fontFamily: TAGLINE_FONT.family, color: P.accent, marginLeft: 16 }}>{TAGLINE}</span>
       </div>
 
       {/* ── Top bento ── */}
@@ -318,6 +318,27 @@ function Synthesis({ synthesis }: { synthesis: Synthesis }) {
             <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 4, textAlign: "right" as const }}>"</div>
           </div>
         </div>
+
+        {/* ── What To Do ── */}
+        {synthesis.actions?.length > 0 && (
+          <div style={{ borderTop: `1px solid ${P.tint}44`, paddingTop: 22, paddingBottom: 26, paddingLeft: 28, paddingRight: 28 }}>
+            <style>{`
+              @keyframes action-pop { 0%,100%{transform:scale(1) rotate(-3deg)} 50%{transform:scale(1.3) rotate(5deg)} }
+            `}</style>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
+              <span style={{ fontSize: 36, display: "inline-block", animation: "action-pop 1.2s ease-in-out infinite" }}>{ACTION_EMOJI}</span>
+              <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{ACTION_LABEL}</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+              {synthesis.actions.map((action, i) => (
+                <div key={i} style={{ background: P.accent + "12", border: `1px solid ${P.accent}33`, borderRadius: 14, paddingTop: 16, paddingBottom: 16, paddingLeft: 18, paddingRight: 18, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{i + 1}</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.6, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       {/* Sketchy pen-outline border overlay */}
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
@@ -327,7 +348,7 @@ function Synthesis({ synthesis }: { synthesis: Synthesis }) {
             <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" />
           </filter>
         </defs>
-        <rect x="3" y="3" width="99%" height="97%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border)" />
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border)" />
       </svg>
     </div>
   );
