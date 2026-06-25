@@ -385,7 +385,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const related = relatedStories.filter((s) => s.link !== story.link).slice(0, 5);
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 600,
+    max_tokens: 200,
     messages: [{
       role: "user",
       content: `You are a deeply curious editor-at-large with a centrist, intellectually honest perspective. A story lands on your desk. Your job: write 200-350 words of sharp, conversational commentary — not a summary, not a rewrite. Think out loud about what it actually means. Challenge assumptions from all sides. Avoid ideological framing, virtue signaling, or moralizing. Be equally skeptical of institutional power, activist narratives, and reactionary takes. Focus on what's real, what's at stake, and who actually benefits or loses.
@@ -413,7 +413,11 @@ POP CULTURE & SPECIFIC MOMENTS: HAL 9000's "I'm sorry Dave" as machine alignment
 
 SPECIFIC STUDIES & EXPERIMENTS: the Terman longitudinal study on giftedness, the Grant Study (Harvard longitudinal on adult development), the Framingham Heart Study on social contagion of obesity and happiness, the Nurses' Health Study, Harlow's cloth vs wire mother monkeys, Bowlby's attachment observations, Ainsworth's strange situation, Spitz on hospitalism, the Perry Preschool Project, the Abecedarian Project, the Moving to Opportunity experiment, the Oregon Medicaid lottery, the RAND Health Insurance Experiment, the Negative Income Tax experiments (Mincome), the Tennessee STAR class size study, Project STAR vs HeadStart divergence, the Robbers Cave experiment, Muzafer Sherif's realistic conflict theory, the Jigsaw classroom, the Pygmalion study's replication issues, the blue-eyes/brown-eyes experiment, Zimbardo's Stanford Prison Experiment's theatrical staging (Le Texier's exposé), Milgram's obedience study's ecological validity, the Bystander Effect studies' replication (and the 2019 revision), Latané and Darley's diffusion of responsibility, the Good Samaritan experiment (Darley and Batson), Festinger's cognitive dissonance original study, Festinger's "When Prophecy Fails", Leon Festinger on social comparison, the Iowa Gambling Task, the Ultimatum Game's cross-cultural variations, the Dictator Game's experimenter effects, the Prisoner's Dilemma in repeated play, Axelrod's tit-for-tat tournament, the Public Goods Game's punishment dynamics, the Trust Game's oxytocin controversy, Paul Zak's oxytocin-trust claims (and failures), the marshmallow test's socioeconomic confounds, ego depletion's failed replication, the Power Pose controversy (Cuddy vs Simmons), priming studies' collapse, the money priming effect, the Florida effect, the facial feedback hypothesis (pen in mouth), the pen-in-mouth replication, embodied cognition's checkered replication record, growth mindset's implementation failures, grit's limited predictive validity beyond IQ, stereotype threat's boundary conditions, implicit bias training's null effects, the contact hypothesis's conditions (Pettigrew), the Robbers Cave follow-up (failed reconciliation attempts), the Realistic Conflict Theory's limits, social identity theory's minimal group paradigm, Tajfel's original studies, Terror Management Theory's mortality salience (and Covid-era tests), the Kitty Genovese story's factual errors, the broken windows policing evidence (mixed), the Scared Straight program's backfire, the D.A.R.E. program's null effects, the Cambridge-Somerville Youth Study's harm, Scared Straight's criminogenic effects, sex offender registries' counterproductive effects
 
-Speak directly. One or two paragraphs max. End with a sharp question or a provocation if it lands naturally.
+FORMAT — this is critical:
+- Open with 1 sentence. Then another 1-sentence paragraph. Hook them fast.
+- Middle: 1-2 sentences per paragraph. Vary rhythm.
+- Final paragraph: up to 3 sentences. Land a sharp question or provocation if it fits naturally.
+- Total: 75-100 words. Tight, punchy, no filler.
 
 STORY: ${story.title}
 SOURCE: ${story.source}
@@ -425,7 +429,7 @@ INSIGHT: ${story.insight ?? ""}
 TODAY'S OTHER STORIES (mention one only if the parallel is genuinely striking):
 ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
 
-Return only the commentary. No title, no byline, no headers. 200-350 words, flowing paragraphs.`,
+Return only the commentary. No title, no byline, no headers. Short paragraphs separated by blank lines.`,
     }],
   });
 
