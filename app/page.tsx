@@ -319,26 +319,6 @@ function Synthesis({ synthesis }: { synthesis: Synthesis }) {
           </div>
         </div>
 
-        {/* ── What To Do ── */}
-        {synthesis.actions?.length > 0 && (
-          <div style={{ borderTop: `1px solid ${P.tint}44`, paddingTop: 22, paddingBottom: 26, paddingLeft: 28, paddingRight: 28 }}>
-            <style>{`
-              @keyframes action-pop { 0%,100%{transform:scale(1) rotate(-3deg)} 50%{transform:scale(1.3) rotate(5deg)} }
-            `}</style>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
-              <span style={{ fontSize: 36, display: "inline-block", animation: "action-pop 1.2s ease-in-out infinite" }}>{ACTION_EMOJI}</span>
-              <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{ACTION_LABEL}</div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-              {synthesis.actions.map((action, i) => (
-                <div key={i} style={{ background: P.accent + "12", border: `1px solid ${P.accent}33`, borderRadius: 14, paddingTop: 16, paddingBottom: 16, paddingLeft: 18, paddingRight: 18, display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{i + 1}</div>
-                  <div style={{ fontSize: 15, lineHeight: 1.6, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
       {/* Sketchy pen-outline border overlay */}
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
@@ -351,5 +331,26 @@ function Synthesis({ synthesis }: { synthesis: Synthesis }) {
         <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border)" />
       </svg>
     </div>
+
+    {/* ── What To Do — separate card ── */}
+    {synthesis.actions?.length > 0 && (
+      <div style={{ maxWidth: 1200, marginTop: 16, marginBottom: 10, marginLeft: "auto", marginRight: "auto", background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 28, paddingBottom: 32, paddingLeft: 32, paddingRight: 32 }}>
+        <style>{`
+          @keyframes action-pop { 0%,100%{transform:scale(1) rotate(-3deg)} 50%{transform:scale(1.3) rotate(5deg)} }
+        `}</style>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
+          <span style={{ fontSize: 36, display: "inline-block", animation: "action-pop 1.2s ease-in-out infinite" }}>{ACTION_EMOJI}</span>
+          <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{ACTION_LABEL}</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+          {synthesis.actions.map((action, i) => (
+            <div key={i} style={{ background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 20, paddingRight: 20, display: "flex", gap: 14, alignItems: "flex-start" }}>
+              <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{i + 1}</div>
+              <div style={{ fontSize: 15, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
   );
 }
