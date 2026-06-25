@@ -104,6 +104,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
         {/* Read original */}
         <div style={{ borderTop: `1px solid ${P.tint}55`, paddingTop: 28, marginBottom: 48, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+          <a href="/" style={{ fontSize: 12, color: P.accent, textDecoration: "none", fontFamily: P.fontBody, fontWeight: 600 }}>← Today&apos;s Edition</a>
           <div>
             <div style={{ fontSize: 11, color: P.inkLight, marginBottom: 4, fontFamily: P.fontBody }}>Originally published by</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading }}>{story.source}</div>
