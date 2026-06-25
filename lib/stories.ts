@@ -318,7 +318,7 @@ Return only valid JSON, no markdown.`,
   } catch {
     return {
       stories: items.map((_, i) => ({ style: styles[i] })),
-      synthesis: { theme: "", observation: "", takeaways: [], conclusion: "" },
+      synthesis: { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] },
     };
   }
 }
