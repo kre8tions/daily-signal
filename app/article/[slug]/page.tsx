@@ -1,4 +1,4 @@
-import { getPageData, getStoryBySlug, getFullArticle, urlToSlug, type Story } from "@/lib/stories";
+import { getPageData, getStoryBySlug, getFullArticle, getEdition, urlToSlug, type Story } from "@/lib/stories";
 import { notFound } from "next/navigation";
 import { P, SECTION_COLORS, contrastColor } from "@/lib/palette";
 
@@ -11,7 +11,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   const { stories } = await getPageData();
   const related = stories.filter((s) => s.link !== story.link);
-  const fullArticle = await getFullArticle(story, related);
+  const { key: editionKey } = getEdition();
+  const fullArticle = await getFullArticle(story, related, editionKey);
 
   const sectionColor = SECTION_COLORS[story.section] ?? "#888";
   const pubDate = new Date(story.pubDate).toLocaleDateString("en-US", {

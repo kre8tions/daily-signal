@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import Parser from "rss-parser";
 import { unstable_cache } from "next/cache";
 import { cacheGet, cacheSet } from "@/lib/cache";
+import { put, head, list } from "@vercel/blob";
 
 const parser = new Parser({
   customFields: { item: ["media:content", "media:thumbnail", "enclosure"] },
@@ -340,7 +341,7 @@ async function buildPageData(editionKey: string, editionLabel: string): Promise<
   const pageData: PageData = { stories, synthesis, editionLabel };
   // Also save to file-based archive for /archive page
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
-  saveToArchive({ key: editionKey, label: editionLabel, date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl });
+  saveToArchive({ key: editionKey, label: editionLabel, date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl }).catch(() => {});
   return pageData;
 }
 
@@ -363,7 +364,19 @@ export async function getStoryBySlug(slug: string): Promise<Story | null> {
 }
 
 // ── Full editorial rewrite for article detail ─────────────────────────────────
-export async function getFullArticle(story: Story, relatedStories: Story[]): Promise<string> {
+export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string): Promise<string> {
+  const slug = Buffer.from(story.link).toString("base64").slice(0, 28).replace(/[^a-z0-9]/gi, "_");
+  const blobKey = `articles/${editionKey}/${slug}.txt`;
+
+  // Check Blob cache first
+  try {
+    const existing = await head(blobKey);
+    if (existing) {
+      const res = await fetch(existing.url);
+      if (res.ok) return await res.text();
+    }
+  } catch { /* not found — generate fresh */ }
+
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const related = relatedStories.filter((s) => s.link !== story.link).slice(0, 5);
   const msg = await client.messages.create({
@@ -413,24 +426,63 @@ Return only the commentary. No title, no byline, no headers. 200-350 words, flow
   });
 
   const text = msg.content[0].type === "text" ? msg.content[0].text.trim() : "";
+
+  // Save to Blob for this edition
+  try {
+    await put(blobKey, text, { access: "public", contentType: "text/plain", addRandomSuffix: false });
+  } catch { /* non-fatal */ }
+
   return text;
 }
 
 // ── Archive ───────────────────────────────────────────────────────────────────
 export interface ArchiveEntry { key: string; label: string; date: string; theme: string; imageUrl?: string }
-const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
-export function saveToArchive(entry: ArchiveEntry) {
-  const list = cacheGet<ArchiveEntry[]>("archive_index") ?? [];
-  if (!list.find((e) => e.key === entry.key)) {
-    list.unshift(entry);
-    if (list.length > 42) list.pop();
-    cacheSet("archive_index", list, SEVEN_DAYS);
-  }
+export async function saveToArchive(entry: ArchiveEntry) {
+  try {
+    // Fetch and persist the hero image to Blob
+    let blobImageUrl = entry.imageUrl;
+    if (entry.imageUrl && !entry.imageUrl.includes("blob.vercel-storage.com")) {
+      try {
+        const imgRes = await fetch(entry.imageUrl);
+        if (imgRes.ok) {
+          const imgBuffer = await imgRes.arrayBuffer();
+          const imgBlob = await put(`archive/photos/${entry.key}.jpg`, imgBuffer, {
+            access: "public", contentType: "image/jpeg", addRandomSuffix: false,
+          });
+          blobImageUrl = imgBlob.url;
+        }
+      } catch { /* use original URL as fallback */ }
+    }
+
+    // Load existing index, add entry, save back
+    let list: ArchiveEntry[] = [];
+    try {
+      const existing = await head("archive/index.json");
+      if (existing) {
+        const res = await fetch(existing.url);
+        if (res.ok) list = await res.json();
+      }
+    } catch { /* fresh start */ }
+
+    if (!list.find((e) => e.key === entry.key)) {
+      list.unshift({ ...entry, imageUrl: blobImageUrl });
+      if (list.length > 90) list.pop();
+      await put("archive/index.json", JSON.stringify(list), {
+        access: "public", contentType: "application/json", addRandomSuffix: false,
+      });
+    }
+  } catch { /* non-fatal */ }
 }
 
-export function getArchiveList(): ArchiveEntry[] {
-  return cacheGet<ArchiveEntry[]>("archive_index") ?? [];
+export async function getArchiveList(): Promise<ArchiveEntry[]> {
+  try {
+    const existing = await head("archive/index.json");
+    if (!existing) return [];
+    const res = await fetch(existing.url + "?t=" + Date.now()); // bypass CDN cache
+    if (!res.ok) return [];
+    return await res.json();
+  } catch { return []; }
 }
 
 export async function getArchivedPageData(key: string): Promise<PageData | null> {

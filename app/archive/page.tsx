@@ -4,7 +4,7 @@ import { P } from "@/lib/palette";
 export const revalidate = 3600;
 
 export default async function ArchivePage() {
-  const editions = getArchiveList();
+  const editions = await getArchiveList();
 
   return (
     <div style={{ minHeight: "100vh", background: P.pageBg, color: P.ink, fontFamily: P.fontBody, paddingBottom: 80 }}>
