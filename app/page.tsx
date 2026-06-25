@@ -156,7 +156,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       </div>
 
       {/* ── Top bento ── */}
-      <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gridTemplateRows: "minmax(380px, auto) minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
+      <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gridTemplateRows: "minmax(380px, auto) minmax(400px, auto) minmax(100px, 140px)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
 
         {/* s1: text only, no image, row 1 left */}
         {s1 && (
