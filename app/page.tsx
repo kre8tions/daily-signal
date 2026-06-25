@@ -156,60 +156,43 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       </div>
 
       {/* ── Top bento ── */}
-      <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gridTemplateRows: "minmax(400px, auto) minmax(92px, auto) minmax(380px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
+      <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gridTemplateRows: "minmax(380px, auto) minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
 
+        {/* s1: text only, no image, row 1 left */}
         {s1 && (
-          <div style={{ ...card, paddingBottom: 62, display: "flex", flexDirection: "column", gap: 0, gridRow: "1 / 3", overflow: "hidden" }}>
-            {s1.imageUrl && (
-              <div style={{ position: "relative", height: 220, flexShrink: 0 }}>
-                <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 40%, ${P.cardBg}ee 100%)` }} />
-                <div style={{ position: "absolute", bottom: 12, left: 20 }}><Pill section={s1.section} /></div>
+          <div style={{ ...card, gridColumn: "1", gridRow: "1", paddingTop: 28, paddingBottom: 62, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
+            <Pill section={s1.section} />
+            <h1 className="ds-card-h" style={hStyle}><ArticleLink story={s1}>{s1.title}</ArticleLink></h1>
+            {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{s1.summary}</p>}
+            {s1.bullets?.length ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {s1.bullets.map((b, i) => (
+                  <div key={i} className="ds-card-body" style={{ display: "flex", gap: 14, alignItems: "flex-start", ...bodyStyle }}>
+                    <span className="ds-bullet" style={{ color: P.accent, flexShrink: 0, fontSize: 36, lineHeight: 0.75, marginTop: 6, fontWeight: 900 }}>✱</span>{b}
+                  </div>
+                ))}
               </div>
-            )}
-            <div style={{ paddingTop: 20, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
-              {!s1.imageUrl && <Pill section={s1.section} />}
-              <h1 className="ds-card-h" style={hStyle}><ArticleLink story={s1}>{s1.title}</ArticleLink></h1>
-              {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{s1.summary}</p>}
-              {s1.bullets?.length ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {s1.bullets.map((b, i) => (
-                    <div key={i} className="ds-card-body" style={{ display: "flex", gap: 14, alignItems: "flex-start", ...bodyStyle }}>
-                      <span className="ds-bullet" style={{ color: P.accent, flexShrink: 0, fontSize: 36, lineHeight: 0.75, marginTop: 6, fontWeight: 900 }}>✱</span>{b}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+            ) : null}
             <span className="ds-card-meta" style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 28 }}>{s1.source} · {timeAgo(s1.pubDate)}</span>
             <MorePill story={s1} />
           </div>
         )}
 
+        {/* s1 image: row 1 right */}
         {s1 && (
-          <div style={{ ...imgCard, gridRow: "1" }}>
+          <div style={{ ...imgCard, gridColumn: "2", gridRow: "1" }}>
             {s1.imageUrl ? <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.gradFrom}, ${P.gradTo})` }} />}
             <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to top, ${P.accent}44 0%, transparent 60%)` }} />
           </div>
         )}
 
+        {/* s2 image card: moved UP to row 2 left */}
         {s2 && (
-          <div style={{ ...card, gridColumn: "2", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 100, gap: 18 }}>
-            <div style={{ fontSize: 52, color: P.accent, fontFamily: P.fontHeading, flexShrink: 0, lineHeight: 0.8, opacity: 0.35, marginTop: 6 }}>"</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 17, fontStyle: "italic", color: P.ink, lineHeight: 1.5, fontFamily: P.fontBody, fontWeight: 500 }}>{s2.pullquote || s2.summary || s2.title}</div>
-              <div style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody, marginTop: 6 }}>{s2.source} · {timeAgo(s2.pubDate)}</div>
-            </div>
-            <MorePill story={s2} />
-          </div>
-        )}
-
-        {s2 && (
-          <div className="ds-s2-img" style={{ ...imgCard, gridColumn: "1" }}>
+          <div className="ds-s2-img" style={{ ...imgCard, gridColumn: "1", gridRow: "2" }}>
             {s2.imageUrl ? <img src={s2.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.tint}, ${P.accent}66)` }} />}
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.05) 55%, transparent 100%)" }} />
             <div style={{ position: "absolute", bottom: 20, left: 20, right: 100 }}>
-              <div style={{ marginBottom: 6, marginTop: 0, marginLeft: 0, marginRight: 0 }}><Pill section={s2.section} /></div>
+              <div style={{ marginBottom: 6 }}><Pill section={s2.section} /></div>
               <div className="ds-card-h" style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.15, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 1 : -0.5, marginBottom: 8 }}>
                 <ArticleLink story={s2}>{s2.title}</ArticleLink>
               </div>
@@ -219,10 +202,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
           </div>
         )}
 
+        {/* s3: right col, spans rows 2–3, taller */}
         {s3 && (
-          <div style={{ gridColumn: "2", ...card, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ gridColumn: "2", gridRow: "2 / 4", ...card, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             {s3.imageUrl && (
-              <div style={{ position: "relative", height: 130, flexShrink: 0 }}>
+              <div style={{ position: "relative", flex: "0 0 55%", minHeight: 200 }}>
                 <img src={s3.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                 <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to top, ${P.cardBg} 0%, transparent 50%)` }} />
               </div>
@@ -235,6 +219,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
               <span className="ds-card-meta" style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 22 }}>{s3.source} · {timeAgo(s3.pubDate)}</span>
             </div>
             <MorePill story={s3} />
+          </div>
+        )}
+
+        {/* s2 pullquote: moved DOWN to row 3 left */}
+        {s2 && (
+          <div style={{ ...card, gridColumn: "1", gridRow: "3", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 100, gap: 18 }}>
+            <div style={{ fontSize: 52, color: P.accent, fontFamily: P.fontHeading, flexShrink: 0, lineHeight: 0.8, opacity: 0.35, marginTop: 6 }}>"</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 17, fontStyle: "italic", color: P.ink, lineHeight: 1.5, fontFamily: P.fontBody, fontWeight: 500 }}>{s2.pullquote || s2.summary || s2.title}</div>
+              <div style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody, marginTop: 6 }}>{s2.source} · {timeAgo(s2.pubDate)}</div>
+            </div>
+            <MorePill story={s2} />
           </div>
         )}
       </div>
