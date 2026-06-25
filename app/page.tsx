@@ -203,7 +203,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {s1.bullets.map((b, i) => (
                   <div key={i} className="ds-card-body" style={{ display: "flex", gap: 14, alignItems: "flex-start", ...bodyStyle }}>
-                    <span className="ds-bullet" style={{ color: P.accent, flexShrink: 0, fontSize: 27, lineHeight: 0.75, marginTop: 6, fontWeight: 900, fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive` }}>*</span>{b}
+                    <span className="ds-bullet" style={{ color: P.accent, flexShrink: 0, fontSize: 34, lineHeight: 0.75, marginTop: 6, fontWeight: 900, fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive` }}>*</span>{b}
                   </div>
                 ))}
               </div>
