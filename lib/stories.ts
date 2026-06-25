@@ -364,10 +364,6 @@ export async function getStoryBySlug(slug: string): Promise<Story | null> {
 
 // ── Full editorial rewrite for article detail ─────────────────────────────────
 export async function getFullArticle(story: Story, relatedStories: Story[]): Promise<string> {
-  const cKey = `full_${Buffer.from(story.link).toString("base64").slice(0, 28).replace(/[^a-z0-9]/gi, "_")}`;
-  const hit = cacheGet<string>(cKey);
-  if (hit) return hit;
-
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const related = relatedStories.filter((s) => s.link !== story.link).slice(0, 5);
   const msg = await client.messages.create({
@@ -417,7 +413,6 @@ Return only the commentary. No title, no byline, no headers. 200-350 words, flow
   });
 
   const text = msg.content[0].type === "text" ? msg.content[0].text.trim() : "";
-  cacheSet(cKey, text, 8 * ONE_HOUR);
   return text;
 }
 
