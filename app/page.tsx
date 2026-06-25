@@ -335,22 +335,34 @@ function Synthesis({ synthesis }: { synthesis: Synthesis }) {
 
     {/* ── What To Do — separate card ── */}
     {synthesis.actions?.length > 0 && (
-      <div style={{ maxWidth: 1200, marginTop: 16, marginBottom: 10, marginLeft: "auto", marginRight: "auto", background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 28, paddingBottom: 32, paddingLeft: 32, paddingRight: 32 }}>
-        <style>{`
-          @keyframes action-pop { 0%,100%{transform:scale(1) rotate(-3deg)} 50%{transform:scale(1.3) rotate(5deg)} }
-        `}</style>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
-          <span style={{ fontSize: 36, display: "inline-block", animation: "action-pop 1.2s ease-in-out infinite" }}>{ACTION_EMOJI}</span>
-          <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{ACTION_LABEL}</div>
+      <div style={{ maxWidth: 1200, marginTop: 16, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+        <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 28, paddingBottom: 32, paddingLeft: 32, paddingRight: 32 }}>
+          <style>{`
+            @keyframes action-pop { 0%,100%{transform:scale(1) rotate(-3deg)} 50%{transform:scale(1.3) rotate(5deg)} }
+          `}</style>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
+            <span style={{ fontSize: 36, display: "inline-block", animation: "action-pop 1.2s ease-in-out infinite" }}>{ACTION_EMOJI}</span>
+            <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{ACTION_LABEL}</div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            {synthesis.actions.map((action, i) => (
+              <div key={i} style={{ background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 20, paddingRight: 20, display: "flex", gap: 14, alignItems: "flex-start" }}>
+                <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{i + 1}</div>
+                <div style={{ fontSize: 15, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-          {synthesis.actions.map((action, i) => (
-            <div key={i} style={{ background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 20, paddingRight: 20, display: "flex", gap: 14, alignItems: "flex-start" }}>
-              <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{i + 1}</div>
-              <div style={{ fontSize: 15, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
-            </div>
-          ))}
-        </div>
+        {/* Sketchy pen-outline border overlay */}
+        <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="sketchy-border-action" x="-8%" y="-8%" width="116%" height="116%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="12" result="noise" />
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+          </defs>
+          <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-action)" />
+        </svg>
       </div>
     )}
     </>
