@@ -269,6 +269,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
 // ── Synthesis component ───────────────────────────────────────────────────────
 function Synthesis({ synthesis }: { synthesis: Synthesis }) {
   return (
+    <>
     <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
       <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden" }}>
         {/* Header band */}
@@ -352,5 +353,6 @@ function Synthesis({ synthesis }: { synthesis: Synthesis }) {
         </div>
       </div>
     )}
+    </>
   );
 }
