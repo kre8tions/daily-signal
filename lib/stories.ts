@@ -340,8 +340,11 @@ async function buildPageData(editionKey: string, editionLabel: string): Promise<
     pullquote: analyses[i]?.pullquote, insight: analyses[i]?.insight,
   }));
   const pageData: PageData = { stories, synthesis, editionLabel };
-  // Also save to file-based archive for /archive page
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
+  // Save edition data to Blob for persistent archive
+  put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
+    access: "public", contentType: "application/json", addRandomSuffix: false,
+  }).catch(() => {});
   saveToArchive({ key: editionKey, label: editionLabel, date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl }).catch(() => {});
   return pageData;
 }
@@ -487,5 +490,15 @@ export async function getArchiveList(): Promise<ArchiveEntry[]> {
 }
 
 export async function getArchivedPageData(key: string): Promise<PageData | null> {
-  return cacheGet<PageData>(`edition_${key}`) ?? null;
+  // Check file cache first (fast, same instance)
+  const cached = cacheGet<PageData>(`edition_${key}`);
+  if (cached) return cached;
+  // Fall back to Blob (persistent across instances)
+  try {
+    const existing = await head(`archive/editions/${key}.json`);
+    if (!existing) return null;
+    const res = await fetch(existing.url + "?t=" + Date.now());
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
 }
