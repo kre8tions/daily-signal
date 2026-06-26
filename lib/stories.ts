@@ -608,7 +608,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v6/${editionKey}.json`;
+  const blobKey = `feature-creature/v7/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -667,8 +667,13 @@ Return JSON only:
     const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
     const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const parsed = JSON.parse(text);
-    // Use the generated title for a smarter mid-article image search, different from hero
-    const imageUrl2Raw = await fetchUnsplash(parsed.title ?? `${FC_UNIVERSE} ${FC_ANGLE.label}`, "Arts", 3);
+    // Mid-article image: angle-specific visual keywords so it's thematically different from the hero
+    const angleVisual: Record<string, string> = {
+      science: `${FC_UNIVERSE} laboratory technology experiment`,
+      build:   `${FC_UNIVERSE} architecture engineering blueprint`,
+      culture: `${FC_UNIVERSE} fashion lifestyle aesthetic`,
+    };
+    const imageUrl2Raw = await fetchUnsplash(angleVisual[FC_ANGLE.key] ?? `${FC_UNIVERSE} ${FC_ANGLE.label}`, "Arts", 2);
     const imageUrl2 = imageUrl2Raw !== imageUrl ? imageUrl2Raw : undefined;
     const result: FeatureCreature = {
       universe: FC_UNIVERSE,
