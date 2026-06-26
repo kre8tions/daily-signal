@@ -151,16 +151,30 @@ async function scrapeOgImage(url: string): Promise<string | undefined> {
 }
 
 // ── Unsplash fallback ─────────────────────────────────────────────────────────
-// Common first/last names that produce irrelevant image searches
+// Common first names that alone produce irrelevant image searches
 const NAME_RE = /^(coco|gauff|lebron|elon|trump|biden|taylor|swift|bezos|musk|zuck|serena|oprah|drake|kanye|adele|rihanna|beyonce|kendall|kim|kylie|jeff|tim|mark|lisa|john|james|mike|david|sarah|emma|anna|maria|carlos|alex|chris|ryan|kate|amy|paul|peter|joe|bob|dan|tom|brad|leo|will|sam|max|ben|jack|eric|scott|adam|nick|jake|noah|matt|luke|owen|ethan|liam|tyler|jason|aaron|brian|kevin|sean|gary|frank|tony|henry)$/i;
+// Words that produce morbid/wrong images when used as search queries
+const MORBID_RE = /^(dead|dies|died|death|killed|kill|murder|murdered|shooting|stabbed|crash|crashes|fatal|fatally|suicide|overdose|cancer|disease|illness|sick|hospital|obituary|obit|funeral|buried|burial|skeleton|corpse|victim|victims|massacre|genocide|tragedy|tragic|devastat)$/i;
+// Detect obituary headlines
+const OBIT_RE = /\b(dead|dies|died|has died|passed away|obituary|obit|in memoriam)\b/i;
 
 export async function fetchUnsplash(headline: string, section?: string): Promise<string | undefined> {
   const key = process.env.UNSPLASH_ACCESS_KEY;
   if (!key) return undefined;
 
-  // Extract meaningful content words — skip short words and known names
+  const isObit = OBIT_RE.test(headline);
+
+  // Extract meaningful content words — skip short words, known names, and morbid terms
   const words = headline.replace(/[^a-zA-Z ]/g, " ").split(/\s+/)
-    .filter((w) => w.length > 3 && !NAME_RE.test(w));
+    .filter((w) => w.length > 3 && !NAME_RE.test(w) && !MORBID_RE.test(w));
+
+  // For obituaries, try to extract the person's full name (words before "dead"/"dies")
+  // e.g. "Ann Blyth Dead" → "Ann Blyth"
+  let personQuery: string | undefined;
+  if (isObit) {
+    const nameMatch = headline.match(/^([A-Z][a-z]+(?: [A-Z][a-z']+)+)/);
+    if (nameMatch) personQuery = nameMatch[1];
+  }
 
   // Section-based safe fallback queries that always produce relevant images
   const sectionFallback: Record<string, string> = {
@@ -173,9 +187,12 @@ export async function fetchUnsplash(headline: string, section?: string): Promise
     Politics: "politics government",
     Culture: "culture art creative",
   };
-  const fallback = (section && sectionFallback[section]) ?? "news media editorial";
+  const fallback = isObit
+    ? "portrait tribute memorial flowers"
+    : (section && sectionFallback[section]) ?? "news media editorial";
 
   const queries = [
+    ...(personQuery ? [personQuery, `${personQuery} portrait`] : []),
     words.slice(0, 3).join(" "),
     words.slice(0, 2).join(" "),
     fallback,
@@ -197,7 +214,7 @@ export async function fetchUnsplash(headline: string, section?: string): Promise
 }
 
 function imgCacheKey(link: string) {
-  return `artimg_v2_${Buffer.from(link).toString("base64").slice(0, 24).replace(/[^a-z0-9]/gi, "_")}`;
+  return `artimg_v3_${Buffer.from(link).toString("base64").slice(0, 24).replace(/[^a-z0-9]/gi, "_")}`;
 }
 
 async function getArticleImage(article: { link: string; title: string; section?: string; rssImageUrl?: string }): Promise<string | undefined> {
