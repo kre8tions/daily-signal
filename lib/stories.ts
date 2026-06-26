@@ -59,15 +59,35 @@ function keywords(title: string): string[] {
 }
 
 const DEAL_RE = /\b(prime\s*day|amazon\s*deal|amazon\s*prime|best\s*deal|prime\s*sale|deals?\s+you\s+can|deals?\s+we\s+found|guide\s+to\s+(amazon|prime)|prime\s+day\s+(deal|sale|pick|find|gear|offer))\b/i;
+const POLITICS_RE = /\b(trump|biden|congress|senate|democrat|republican|gop|election|ballot|white\s*house|oval\s*office|legislation|filibuster|partisan|maga|progressive\s+primary|political\s+party|campaign\s+trail|tariff|fcc\s+(chair|commission)|federal\s+reserve\s+chair)\b/i;
+
+function isSundayEarlyMorning(): boolean {
+  const now = new Date();
+  return now.getDay() === 0 && now.getHours() >= 5 && now.getHours() < 9;
+}
+function isWednesdayMorning(): boolean {
+  const now = new Date();
+  return now.getDay() === 3 && now.getHours() >= 9 && now.getHours() < 13;
+}
 
 function dedupeByTopic(items: RawItem[]): RawItem[] {
   const seen: string[][] = [];
-  // Hard cap: max 1 deal article per edition
+  const allowDeals = isWednesdayMorning();
+  const allowPolitics = isSundayEarlyMorning();
+  // Hard cap: max 1 deal article, only on Wednesday morning
   let dealCount = 0;
+  // Hard cap: max 1 politics article, only on Sunday early morning
+  let politicsCount = 0;
   return items.filter(item => {
     if (DEAL_RE.test(item.title) || DEAL_RE.test(item.content)) {
+      if (!allowDeals) return false;
       dealCount++;
       if (dealCount > 1) return false;
+    }
+    if (POLITICS_RE.test(item.title) || POLITICS_RE.test(item.content)) {
+      if (!allowPolitics) return false;
+      politicsCount++;
+      if (politicsCount > 1) return false;
     }
     const words = keywords(item.title);
     const isDupe = seen.some(prev => words.filter(w => prev.includes(w)).length >= 1);
@@ -111,6 +131,9 @@ export const FEEDS = [
   { url: "https://www.dezeen.com/feed/",                                    source: "Dezeen",              section: "Arts"          },
   { url: "https://www.thisiscolossal.com/feed/",                            source: "Colossal",            section: "Arts"          },
   { url: "https://news.artnet.com/feed/",                                   source: "Artnet News",         section: "Arts"          },
+  // Faith — Sunday early morning only (filtered below)
+  { url: "https://feeds.feedburner.com/AeonIdeas",                          source: "Aeon",                section: "Faith"         },
+  { url: "https://www.patheos.com/blogs/religionprof/feed",                 source: "Patheos",             section: "Faith"         },
 ];
 
 const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
@@ -202,6 +225,7 @@ export async function fetchUnsplash(headline: string, section?: string): Promise
     Film: "cinema film director",
     Entertainment: "music concert stage performance",
     Arts: "art design studio gallery",
+    Faith: "light candle meditation spiritual",
   };
   const fallback = isObit
     ? "portrait tribute memorial flowers"
@@ -281,8 +305,9 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   const hit = cacheGet<RawItem[]>(key);
   if (hit) return hit;
 
+  const activeFeeds = FEEDS.filter(f => f.section !== "Faith" || isSundayEarlyMorning());
   const results = await Promise.allSettled(
-    FEEDS.map(async (feed) => {
+    activeFeeds.map(async (feed) => {
       const timeout = new Promise<never>((_, r) => setTimeout(() => r(new Error("t")), 8000));
       const parsed = await Promise.race([parser.parseURL(feed.url), timeout]);
       return parsed.items.slice(0, 3).map((item) => ({
@@ -295,7 +320,7 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   );
 
   const all = dedupeByTopic(results.flatMap((r) => r.status === "fulfilled" ? r.value : []));
-  const CREATIVE = ["Entertainment", "Arts", "Culture", "Film"];
+  const CREATIVE = ["Entertainment", "Arts", "Culture", "Film", "Faith"];
   const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [];
   for (const item of all) {
     if (item.section === "Technology") tech.push(item);
