@@ -508,7 +508,7 @@ Return only valid JSON.`,
 
 // ── Full editorial rewrite for article detail ─────────────────────────────────
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string): Promise<string> {
-  const PROMPT_V = "v3"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v4"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.txt`;
 
@@ -553,11 +553,12 @@ POP CULTURE & SPECIFIC MOMENTS: HAL 9000's "I'm sorry Dave" as machine alignment
 
 SPECIFIC STUDIES & EXPERIMENTS: the Terman longitudinal study on giftedness, the Grant Study (Harvard longitudinal on adult development), the Framingham Heart Study on social contagion of obesity and happiness, the Nurses' Health Study, Harlow's cloth vs wire mother monkeys, Bowlby's attachment observations, Ainsworth's strange situation, Spitz on hospitalism, the Perry Preschool Project, the Abecedarian Project, the Moving to Opportunity experiment, the Oregon Medicaid lottery, the RAND Health Insurance Experiment, the Negative Income Tax experiments (Mincome), the Tennessee STAR class size study, Project STAR vs HeadStart divergence, the Robbers Cave experiment, Muzafer Sherif's realistic conflict theory, the Jigsaw classroom, the Pygmalion study's replication issues, the blue-eyes/brown-eyes experiment, Zimbardo's Stanford Prison Experiment's theatrical staging (Le Texier's exposé), Milgram's obedience study's ecological validity, the Bystander Effect studies' replication (and the 2019 revision), Latané and Darley's diffusion of responsibility, the Good Samaritan experiment (Darley and Batson), Festinger's cognitive dissonance original study, Festinger's "When Prophecy Fails", Leon Festinger on social comparison, the Iowa Gambling Task, the Ultimatum Game's cross-cultural variations, the Dictator Game's experimenter effects, the Prisoner's Dilemma in repeated play, Axelrod's tit-for-tat tournament, the Public Goods Game's punishment dynamics, the Trust Game's oxytocin controversy, Paul Zak's oxytocin-trust claims (and failures), the marshmallow test's socioeconomic confounds, ego depletion's failed replication, the Power Pose controversy (Cuddy vs Simmons), priming studies' collapse, the money priming effect, the Florida effect, the facial feedback hypothesis (pen in mouth), the pen-in-mouth replication, embodied cognition's checkered replication record, growth mindset's implementation failures, grit's limited predictive validity beyond IQ, stereotype threat's boundary conditions, implicit bias training's null effects, the contact hypothesis's conditions (Pettigrew), the Robbers Cave follow-up (failed reconciliation attempts), the Realistic Conflict Theory's limits, social identity theory's minimal group paradigm, Tajfel's original studies, Terror Management Theory's mortality salience (and Covid-era tests), the Kitty Genovese story's factual errors, the broken windows policing evidence (mixed), the Scared Straight program's backfire, the D.A.R.E. program's null effects, the Cambridge-Somerville Youth Study's harm, Scared Straight's criminogenic effects, sex offender registries' counterproductive effects
 
-FORMAT — this is critical:
-- Open with 1 sentence. Then another 1-sentence paragraph. Hook them fast.
-- Middle: 1-2 sentences per paragraph. Vary rhythm.
-- Final paragraph: up to 3 sentences. Land a sharp question or provocation if it fits naturally.
-- Total: 150-260 words. Smart and tight, no filler.
+FORMAT — NON-NEGOTIABLE. Separate every paragraph with a blank line:
+- Paragraph 1: EXACTLY 1 sentence. The hook. No exceptions.
+- Paragraph 2: EXACTLY 1 sentence. Deepen or reframe.
+- Middle paragraphs: 1-2 sentences each. Vary rhythm.
+- Final paragraph: 1-3 sentences. Sharp landing — question, provocation, or implication.
+- Total: 150-260 words. Every sentence must earn its place.
 
 STORY: ${story.title}
 SOURCE: ${story.source}
@@ -599,7 +600,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v3/${editionKey}.json`;
+  const blobKey = `feature-creature/v4/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -628,19 +629,22 @@ Write a punchy, fascinating Feature Creature editorial. Rules:
 - Title: 6-10 words, electrifying, no clickbait clichés
 - Header 1: 1-2 evocative words, placed before paragraph 1 (sets the scene/theme)
 - Header 2: 1-2 evocative words, placed before paragraph 3 (marks a turn or escalation)
-- Body paragraph structure (STRICT):
-  - Paragraph 1: exactly 1 sentence — the hook, the bomb, the irreversible opening
-  - Paragraph 2: 1-2 sentences — expand, complicate, reframe
-  - Paragraph 3: 1-3 sentences — the surprising turn or revelation
+- Body paragraph structure — NON-NEGOTIABLE, each paragraph separated by \\n\\n:
+  - Paragraph 1: EXACTLY 1 sentence. The opening bomb. No more.
+  - Paragraph 2: EXACTLY 1-2 sentences. Expand or complicate.
+  - Paragraph 3: EXACTLY 1-3 sentences. The turn, the payoff.
 - Voice: brilliant friend who just read 12 books and wants to tell you about it — smart but never dry
 - Dig Deeper: 1 sentence — a specific book, film, essay, or rabbit hole
+
+EXAMPLE of correct body format:
+"Akira didn't predict the future — it designed it.\\n\\nOtomo understood that collapsed societies don't look grey and broken; they look neon and kinetic.\\n\\nEvery streetwear brand, every dystopian ad campaign, every TikTok aesthetic owes a debt to Neo-Tokyo — we've been wearing Akira's apocalypse as fashion ever since, which is either ironic or prophetic depending on your mood."
 
 Return JSON only:
 {
   "title": "...",
   "synopsis": "...",
   "headers": ["word or two", "word or two"],
-  "body": "one sentence.\\n\\none or two sentences.\\n\\none to three sentences.",
+  "body": "exactly one sentence.\\n\\none or two sentences max.\\n\\none to three sentences max.",
   "digDeeper": "..."
 }`
         }],
