@@ -609,7 +609,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v11/${editionKey}.json`;
+  const blobKey = `feature-creature/v12/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -621,75 +621,91 @@ export async function getFeatureCreature(editionKey: string): Promise<FeatureCre
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   try {
-    const [msg, imageUrl] = await Promise.all([
+    // ── Pass 1: free-write — Claude focuses purely on quality, voice, insight ──
+    const [pass1msg, imageUrl] = await Promise.all([
       client.messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1200,
         messages: [{
           role: "user",
-          content: `You are the "Feature Creature" — a wildly curious editorial voice for a publication aimed at energetic, intelligent, culturally-aware readers (creators, entrepreneurs, curious minds).
+          content: `You are the "Feature Creature" — a wildly curious editorial voice for creators, entrepreneurs, and culturally-aware readers. Write with the energy of a brilliant friend who just read 12 books and can't wait to tell you about it. Smart but never dry. NO markdown.
 
 Universe: ${FC_UNIVERSE}
 Angle: ${FC_ANGLE.label}
 Task: ${FC_ANGLE.prompt}
 
-Write a punchy, fascinating Feature Creature editorial. NO markdown — no asterisks, no bold, no italics syntax. Plain prose only.
+Write the best possible Feature Creature editorial. Focus entirely on quality — sharp ideas, surprising connections, vivid prose. Do not worry about paragraph length or structure yet.
 
-Rules:
-- Synopsis: 1-2 electrifying sentences that make someone HAVE to click — the essential hook
-- Title: 6-10 words, electrifying, no clickbait clichés
-- Header 1: 1-2 evocative words, placed before paragraph 1 (sets the scene/theme)
-- Header 2: 1-2 evocative words, placed before paragraph 3 (marks a turn or escalation)
-- CTA header: 2-4 words — a sharp, active phrase (e.g. "Make Your Move", "Start Tonight", "Build This Now")
-- Body: THREE separate JSON fields (para1, para2, para3). Each is its own string. Hard limits:
-  - para1: EXACTLY 1 sentence. One period. Full stop. Nothing else.
-  - para2: 1-2 sentences maximum. Two periods maximum.
-  - para3: 1-3 sentences maximum. Three periods maximum.
-  - Combined word count: 160-200 words across all three.
-- Call to action: 1 imperative sentence. What to DO/MAKE/WATCH/BUILD today. Specific, not generic.
-- Dig Deeper: 1 sentence — a specific book, film, essay, or rabbit hole
-- Pull quote: the single most electrifying sentence from the body — standalone, no context needed, makes a reader stop scrolling
-- Image query: 4-6 words optimised for Unsplash stock photo search. Use concrete visual nouns + atmosphere words that will find a REAL photo. Think: "neon rain cyberpunk street night" not "aesthetic collapse permission". Must be visually distinct from the hero (which already covers the universe directly).
-
-CORRECT example:
-para1: "Akira didn't predict the future — it designed it."
-para2: "Otomo understood that collapsed societies don't look grey and broken; they look neon and kinetic. The film is less a warning than a mood board."
-para3: "Every streetwear brand, every dystopian ad campaign, every TikTok filter owes a debt to Neo-Tokyo. We've internalized the idea that apocalypse looks good. The question is whether we're fans of the aesthetic or participants in the collapse."
+Fields:
+- title: 6-10 words, electrifying, no clickbait
+- synopsis: 1-2 sentences that make someone HAVE to read this
+- body: your best 160-200 word editorial. Write it as flowing prose, no artificial breaks. Make every sentence earn its place.
+- headers: two evocative 1-2 word section titles (header1 = opening theme, header2 = the turn)
+- ctaHeader: 2-4 word active phrase for the CTA section
+- callToAction: 1 specific imperative sentence — what to DO/MAKE/WATCH/BUILD today
+- digDeeper: 1 sentence — a specific book, film, essay, or rabbit hole
+- pullQuote: the single most electrifying sentence from the body, verbatim
+- imageQuery: 4-6 concrete visual words for Unsplash (e.g. "neon rain tokyo street night") — must differ visually from the universe itself
 
 Return JSON only — no markdown fences:
 {
   "title": "...",
   "synopsis": "...",
+  "body": "160-200 word flowing prose",
   "headers": ["word or two", "word or two"],
-  "ctaHeader": "2-4 word phrase",
-  "para1": "exactly one sentence",
-  "para2": "one or two sentences max",
-  "para3": "one to three sentences max",
-  "pullQuote": "the best sentence from para1/2/3 verbatim",
-  "imageQuery": "4-6 concrete visual words for Unsplash",
+  "ctaHeader": "...",
   "callToAction": "...",
-  "digDeeper": "..."
+  "digDeeper": "...",
+  "pullQuote": "...",
+  "imageQuery": "..."
 }`
         }],
       }),
       fetchUnsplash(`${FC_UNIVERSE} ${FC_ANGLE.key}`, "Culture"),
     ]);
-    const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
-    const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-    const parsed = JSON.parse(text);
 
-    // Assemble body from separate paragraph fields; fall back to legacy "body" string
+    const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
+    const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const pass1 = JSON.parse(text1);
+
+    // ── Pass 2: scaffold — restructure the free-write into the para cadence ──
+    const scaffoldMsg = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 600,
+      messages: [{
+        role: "user",
+        content: `Restructure this article body into exactly 3 paragraphs. Keep ALL the ideas and the original voice — only reorganise, do not rewrite or add new content.
+
+Rules:
+- para1: EXACTLY 1 sentence — pick the best hook sentence from the body
+- para2: 1-2 sentences — the expansion or complication
+- para3: 1-3 sentences — the turn, payoff, or consequence
+
+Body to restructure:
+"${pass1.body}"
+
+Return JSON only:
+{"para1": "...", "para2": "...", "para3": "..."}`
+      }],
+    });
+
+    const raw2 = scaffoldMsg.content[0].type === "text" ? scaffoldMsg.content[0].text : "{}";
+    const text2 = raw2.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const scaffold = JSON.parse(text2);
+
     function trimSentences(s: string, max: number): string {
       const matches = s.match(/[^.!?]*[.!?]+["']?/g) ?? [s];
       return matches.slice(0, max).join(" ").trim();
     }
-    const body = parsed.para1 && parsed.para2 && parsed.para3
+    const body = scaffold.para1 && scaffold.para2 && scaffold.para3
       ? [
-          trimSentences(parsed.para1, 1),
-          trimSentences(parsed.para2, 2),
-          trimSentences(parsed.para3, 3),
+          trimSentences(scaffold.para1, 1),
+          trimSentences(scaffold.para2, 2),
+          trimSentences(scaffold.para3, 3),
         ].join("\n\n")
-      : (parsed.body ?? "");
+      : (pass1.body ?? "");
+
+    const parsed = pass1;
 
     // Mid-article image: use Claude-generated imageQuery, then vision-review the result
     const imageQuery = parsed.imageQuery as string | undefined;
