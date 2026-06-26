@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 async function loadFC(slug: string): Promise<FeatureCreature | null> {
   try {
-    const existing = await head(`feature-creature/v4/${slug}.json`);
+    const existing = await head(`feature-creature/v5/${slug}.json`);
     if (!existing) return null;
     const res = await fetch(existing.url, { cache: "no-store" });
     if (!res.ok) return null;
@@ -74,7 +74,7 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
           </div>
         )}
 
-        {/* Body with mid-article cursive headers */}
+        {/* Body with mid-article cursive headers + mid image */}
         <div style={{ marginBottom: 40 }}>
           {fc.body.split("\n\n").filter(Boolean).map((para, i) => (
             <div key={i}>
@@ -85,9 +85,26 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
                 </div>
               )}
               <p style={{ fontSize: 19, lineHeight: 1.9, color: P.inkMid, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 0, marginBottom: 24 }}>{para}</p>
+              {/* Mid-article image after paragraph 1 */}
+              {i === 1 && fc.imageUrl2 && (
+                <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 32, marginTop: 8, aspectRatio: "16/9" }}>
+                  <img src={fc.imageUrl2} alt={`${fc.universe} — ${fc.angleLabel}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                </div>
+              )}
             </div>
           ))}
         </div>
+
+        {/* Call To Action */}
+        {fc.callToAction && (
+          <div style={{ background: `linear-gradient(135deg, ${color}22, ${color}08)`, border: `2px solid ${color}`, borderRadius: 20, paddingTop: 28, paddingBottom: 28, paddingLeft: 30, paddingRight: 30, marginBottom: 28, display: "flex", alignItems: "flex-start", gap: 16 }}>
+            <span style={{ fontSize: 28, flexShrink: 0 }}>⚡</span>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color, marginBottom: 10, fontFamily: P.fontBody }}>Your Move</div>
+              <p style={{ fontSize: 18, lineHeight: 1.7, color: P.ink, fontFamily: P.fontBody, fontWeight: 600, margin: 0 }}>{fc.callToAction}</p>
+            </div>
+          </div>
+        )}
 
         {/* Dig Deeper */}
         {fc.digDeeper && (

@@ -590,17 +590,19 @@ export interface FeatureCreature {
   angleLabel: string;
   angleKey: string;
   title: string;
-  synopsis: string; // 1-2 sentence hook for homepage card
-  body: string;     // 3 paragraphs separated by \n\n
-  headers: [string, string]; // two cursive mid-article headers
+  synopsis: string;
+  body: string;          // 3 paragraphs separated by \n\n
+  headers: [string, string];
   digDeeper: string;
-  imageUrl?: string;
+  callToAction: string;  // strong closing CTA — 1 imperative sentence
+  imageUrl?: string;     // hero image
+  imageUrl2?: string;    // mid-article image (different query)
   editionKey?: string;
 }
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v4/${editionKey}.json`;
+  const blobKey = `feature-creature/v5/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -612,10 +614,10 @@ export async function getFeatureCreature(editionKey: string): Promise<FeatureCre
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   try {
-    const [msg, imageUrl] = await Promise.all([
+    const [msg, imageUrl, imageUrl2] = await Promise.all([
       client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 700,
+        max_tokens: 800,
         messages: [{
           role: "user",
           content: `You are the "Feature Creature" — a wildly curious editorial voice for a publication aimed at energetic, intelligent, culturally-aware readers (creators, entrepreneurs, curious minds).
@@ -629,15 +631,17 @@ Write a punchy, fascinating Feature Creature editorial. Rules:
 - Title: 6-10 words, electrifying, no clickbait clichés
 - Header 1: 1-2 evocative words, placed before paragraph 1 (sets the scene/theme)
 - Header 2: 1-2 evocative words, placed before paragraph 3 (marks a turn or escalation)
-- Body paragraph structure — NON-NEGOTIABLE, each paragraph separated by \\n\\n:
-  - Paragraph 1: EXACTLY 1 sentence. The opening bomb. No more.
-  - Paragraph 2: EXACTLY 1-2 sentences. Expand or complicate.
-  - Paragraph 3: EXACTLY 1-3 sentences. The turn, the payoff.
+- Body paragraph structure — COUNT YOUR SENTENCES, each paragraph separated by \\n\\n:
+  - Paragraph 1: EXACTLY 1 sentence. The opening bomb. One period. Done.
+  - Paragraph 2: EXACTLY 1-2 sentences. Expand or complicate. Maximum 2 periods.
+  - Paragraph 3: EXACTLY 1-3 sentences. The turn, the payoff. Maximum 3 periods.
+  - Total body: 160-200 words across all 3 paragraphs.
+- Call to action: 1 strong imperative sentence — tell the reader exactly what to DO or MAKE or WATCH or BUILD today, directly connected to the universe and angle. Energetic, specific, not generic.
 - Voice: brilliant friend who just read 12 books and wants to tell you about it — smart but never dry
 - Dig Deeper: 1 sentence — a specific book, film, essay, or rabbit hole
 
-EXAMPLE of correct body format:
-"Akira didn't predict the future — it designed it.\\n\\nOtomo understood that collapsed societies don't look grey and broken; they look neon and kinetic.\\n\\nEvery streetwear brand, every dystopian ad campaign, every TikTok aesthetic owes a debt to Neo-Tokyo — we've been wearing Akira's apocalypse as fashion ever since, which is either ironic or prophetic depending on your mood."
+EXAMPLE of correct body format (count: 1 sentence / 2 sentences / 3 sentences):
+"Akira didn't predict the future — it designed it.\\n\\nOtomo understood that collapsed societies don't look grey and broken; they look neon and kinetic. The film is less a warning than a mood board.\\n\\nEvery streetwear brand, every dystopian ad campaign, every TikTok filter owes a debt to Neo-Tokyo. We've internalized the idea that apocalypse looks good. The question is whether we're fans of the aesthetic or participants in the collapse."
 
 Return JSON only:
 {
@@ -645,11 +649,13 @@ Return JSON only:
   "synopsis": "...",
   "headers": ["word or two", "word or two"],
   "body": "exactly one sentence.\\n\\none or two sentences max.\\n\\none to three sentences max.",
+  "callToAction": "...",
   "digDeeper": "..."
 }`
         }],
       }),
       fetchUnsplash(FC_UNIVERSE, "Culture"),
+      fetchUnsplash(`${FC_UNIVERSE} ${FC_ANGLE.key}`, "Arts"),
     ]);
 
     const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
@@ -663,8 +669,10 @@ Return JSON only:
       synopsis: parsed.synopsis ?? "",
       headers: [parsed.headers?.[0] ?? "", parsed.headers?.[1] ?? ""],
       body: parsed.body ?? "",
+      callToAction: parsed.callToAction ?? "",
       digDeeper: parsed.digDeeper ?? "",
       imageUrl,
+      imageUrl2: imageUrl2 !== imageUrl ? imageUrl2 : undefined,
       editionKey,
     };
     await put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false });
