@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 async function loadFC(slug: string): Promise<FeatureCreature | null> {
   try {
-    const existing = await head(`feature-creature/v14/${slug}.json`);
+    const existing = await head(`feature-creature/v15/${slug}.json`);
     if (!existing) return null;
     const res = await fetch(existing.url, { cache: "no-store" });
     if (!res.ok) return null;
@@ -78,15 +78,15 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
         <div style={{ marginBottom: 40 }}>
           {fc.body.split("\n\n").filter(Boolean).map((para, i) => (
             <div key={i}>
-              {/* Header before paragraph 0 and paragraph 2 */}
-              {(i === 0 || i === 2) && fc.headers?.[i === 0 ? 0 : 1] && (
+              {/* Header before paragraph 0 and paragraph 3 */}
+              {(i === 0 || i === 3) && fc.headers?.[i === 0 ? 0 : 1] && (
                 <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 36, color, lineHeight: 1, marginBottom: 12, marginTop: i === 0 ? 0 : 36, fontWeight: 700 }}>
                   {fc.headers[i === 0 ? 0 : 1]}
                 </div>
               )}
               <p style={{ fontSize: 19, lineHeight: 1.9, color: P.inkMid, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 0, marginBottom: 24 }}>{para}</p>
-              {/* Mid-article: image2 if available, else pull-quote */}
-              {i === 1 && (
+              {/* Mid-article: image2 if available, else pull-quote — after paragraph 2 */}
+              {i === 2 && (
                 fc.imageUrl2 ? (
                   <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 32, marginTop: 8, aspectRatio: "16/9" }}>
                     <img src={fc.imageUrl2} alt={`${fc.universe} — ${fc.angleLabel}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />

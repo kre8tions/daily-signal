@@ -609,7 +609,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v14/${editionKey}.json`;
+  const blobKey = `feature-creature/v15/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -677,21 +677,23 @@ Return JSON only — no markdown fences:
     // ── Pass 2: scaffold — restructure the free-write into the para cadence ──
     const scaffoldMsg = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 600,
+      max_tokens: 700,
       messages: [{
         role: "user",
-        content: `Restructure this article body into exactly 3 paragraphs. Keep ALL the ideas and the original voice — only reorganise, do not rewrite or add new content.
+        content: `Restructure this article body into 4-5 paragraphs. Keep ALL the ideas and the original voice — only reorganise, do not rewrite or add new content.
 
-Rules:
-- para1: EXACTLY 1 sentence — pick the best hook sentence from the body
-- para2: 2-3 sentences — the supporting insights and evidence
-- para3: 2-3 sentences — the turn, payoff, or consequence
+Paragraph rules (hard limits on sentence count):
+- para1: EXACTLY 1 sentence — the hook, the bomb
+- para2: EXACTLY 1 sentence — deepen or reframe the hook
+- para3: 1-2 sentences — first supporting insight
+- para4: 2-3 sentences — second insight, the turn, or escalation
+- para5: 1-3 sentences — consequence, provocation, or landing (omit if content doesn't need it)
 
 Body to restructure:
 "${pass1.body}"
 
 Return JSON only:
-{"para1": "...", "para2": "...", "para3": "..."}`
+{"para1": "...", "para2": "...", "para3": "...", "para4": "...", "para5": "..."}`
       }],
     });
 
@@ -703,12 +705,13 @@ Return JSON only:
       const matches = s.match(/[^.!?]*[.!?]+["']?/g) ?? [s];
       return matches.slice(0, max).join(" ").trim();
     }
+    const limits: Record<string, number> = { para1: 1, para2: 1, para3: 2, para4: 3, para5: 3 };
+    const paraKeys = ["para1", "para2", "para3", "para4", "para5"];
     const body = scaffold.para1 && scaffold.para2 && scaffold.para3
-      ? [
-          trimSentences(scaffold.para1, 1),
-          trimSentences(scaffold.para2, 3),
-          trimSentences(scaffold.para3, 3),
-        ].join("\n\n")
+      ? paraKeys
+          .filter(k => scaffold[k])
+          .map(k => trimSentences(scaffold[k], limits[k]))
+          .join("\n\n")
       : (pass1.body ?? "");
 
     const parsed = pass1;
