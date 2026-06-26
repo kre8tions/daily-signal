@@ -39,14 +39,11 @@ export async function GET() {
   // Warm all article commentaries in parallel
   const related = stories.slice(1);
   const writerSlots = getWriterAssignments(editionKey);
-  const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
-    Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))]);
-
   await Promise.allSettled(
     stories.map(async (story, i) => {
       const key = `article-${i}-${story.link.slice(-30)}`;
       try {
-        const commentary = await withTimeout(getFullArticle(story, related, editionKey, writerSlots[i]), 40000);
+        const commentary = await getFullArticle(story, related, editionKey, writerSlots[i]);
         results[key] = commentary.body ? "cached" : "failed";
       } catch {
         results[key] = "failed";
