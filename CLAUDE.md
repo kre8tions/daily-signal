@@ -31,7 +31,7 @@ Vercel auto-deploys on every push to `main`. Always check Vercel dashboard for r
 |------|---------|
 | `app/page.tsx` | Homepage 12-col bento grid + Synthesis + EmailCapture + What To Do |
 | `app/article/[slug]/page.tsx` | Article detail — header + pull-quote + commentary |
-| `app/feature-creature/[slug]/page.tsx` | FC article page (blob v17) |
+| `app/feature-creature/[slug]/page.tsx` | FC article page (blob v18) |
 | `app/archive/page.tsx` | Archive list |
 | `app/archive/[key]/page.tsx` | Single archived edition view |
 | `app/api/revalidate/route.ts` | Clears file cache + revalidatePath |
@@ -52,8 +52,8 @@ Edition key format: `2026-06-26_morning`
 ## Blob Cache Keys
 | Key | Content |
 |-----|---------|
-| `articles/v6/{editionKey}/{md5slug}.json` | ArticleCommentary JSON |
-| `feature-creature/v17/{editionKey}.json` | FeatureCreature JSON |
+| `articles/v8/{editionKey}/{md5slug}.json` | ArticleCommentary JSON |
+| `feature-creature/v18/{editionKey}.json` | FeatureCreature JSON |
 | `archive/index.json` | ArchiveEntry[] list |
 | `archive/editions/{key}.json` | Full PageData for archived edition |
 | `archive/photos/{editionKey}.jpg` | Persisted hero image |
@@ -61,8 +61,18 @@ Edition key format: `2026-06-26_morning`
 
 **Bump version prefix** (v6, v17) when changing prompts to invalidate old cache.
 
-## Article Commentary (`getFullArticle`) — v6
-Returns `ArticleCommentary { header, pullQuote, body }` JSON, stored as `.json` blob.
+## Writer Personas (7 writers, randomly assigned per edition)
+`getWriterAssignments(editionKey)` — seeded Fisher-Yates shuffle → 11 slots (all 7 writers appear, 4 get 2 articles, 3 get 1). Passed as `writerIndex` to `getFullArticle`. Writer name stored in `ArticleCommentary.writer` and rendered as "by [Name]" byline on article page.
+- Rex (Hitchens style): prosecutorial, equal-opportunity contrarian, history as weapon
+- Eric (Orwell style): plain language, concrete detail, moral clarity without preaching
+- Margot (Didion style): cool, observational, fragments that accumulate
+- Finn (Michael Lewis style): narrative-driven, follows incentives, insider perspective
+- Cal (Gladwell style): counter-intuitive hooks, anecdote as argument
+- Jack (P.J. O'Rourke style): sardonic, funny, mocks sanctimony on all sides
+- Ward (Tom Wolfe style): status games, social anthropology, exclamation marks
+
+## Article Commentary (`getFullArticle`) — v8
+Returns `ArticleCommentary { header, pullQuote, body, writer }` JSON, stored as `.json` blob.
 - `header`: 3-5 word evocative sub-headline — rendered in `P.fontHeading` at section color
 - `pullQuote`: verbatim sentence from body — rendered as blockquote after para 3
 - `body`: paragraphs separated by `\n\n`
