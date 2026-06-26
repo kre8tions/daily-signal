@@ -195,30 +195,32 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
 
         {/* s1 text: row 1, cols 1-5 (narrower left) */}
         {s1 && (
-          <div style={{ ...card, gridColumn: "1 / 6", gridRow: "1", paddingTop: 28, paddingBottom: 32, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
-            <Pill section={s1.section} />
-            <h1 className="ds-card-h" style={hStyle}><ArticleLink story={s1}>{s1.title}</ArticleLink></h1>
-            {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{s1.summary}</p>}
-            {s1.bullets?.length ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {s1.bullets.map((b, i) => (
-                  <div key={i} className="ds-card-body" style={{ display: "flex", gap: 14, alignItems: "flex-start", ...bodyStyle }}>
-                    <span className="ds-bullet" style={{ color: P.accent, flexShrink: 0, fontSize: 34, lineHeight: 0.75, marginTop: 6, fontWeight: 900, fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive` }}>*</span>{b}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            <span className="ds-card-meta" style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 28 }}>{s1.source} · {timeAgo(s1.pubDate)}</span>
-            <MorePill story={s1} />
-          </div>
+          <a href={`/article/${urlToSlug(s1.link)}`} style={{ gridColumn: "1 / 6", gridRow: "1", textDecoration: "none", color: "inherit" }}>
+            <div style={{ ...card, height: "100%", paddingTop: 28, paddingBottom: 32, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
+              <Pill section={s1.section} />
+              <h1 className="ds-card-h" style={hStyle}>{s1.title}</h1>
+              {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{s1.summary}</p>}
+              {s1.bullets?.length ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {s1.bullets.map((b, i) => (
+                    <div key={i} className="ds-card-body" style={{ display: "flex", gap: 14, alignItems: "flex-start", ...bodyStyle }}>
+                      <span className="ds-bullet" style={{ color: P.accent, flexShrink: 0, fontSize: 34, lineHeight: 0.75, marginTop: 6, fontWeight: 900, fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive` }}>*</span>{b}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              <span className="ds-card-meta" style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 28 }}>{s1.source} · {timeAgo(s1.pubDate)}</span>
+              <MorePill story={s1} />
+            </div>
+          </a>
         )}
 
         {/* s1 image: row 1, cols 6-12 (wider right) */}
         {s1 && (
-          <div style={{ ...imgCard, gridColumn: "6 / 13", gridRow: "1" }}>
+          <a href={`/article/${urlToSlug(s1.link)}`} style={{ ...imgCard, gridColumn: "6 / 13", gridRow: "1", textDecoration: "none" }}>
             {s1.imageUrl ? <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.gradFrom}, ${P.gradTo})` }} />}
             <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to top, ${P.accent}44 0%, transparent 60%)` }} />
-          </div>
+          </a>
         )}
 
         {/* Feature Creature: cols 1-6 (wider left), spans rows 2-3 */}
@@ -231,7 +233,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
           const slug = fc.editionKey ?? "today";
           return (
             <div style={{ gridColumn: "1 / 7", gridRow: "2 / 4", position: "relative" }}>
-              {/* Clock tick border */}
               <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
                 <rect x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="20" ry="20" fill="none" stroke={color} strokeWidth="2.5" strokeDasharray="3 9" strokeLinecap="round" />
                 <rect x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="20" ry="20" fill="none" stroke={color} strokeWidth="7" strokeOpacity="0.3" strokeDasharray="1 44" strokeLinecap="round" />
@@ -239,21 +240,21 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
               <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none", color: "inherit", display: "flex", height: "100%" }}>
                 <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, display: "flex", flexDirection: "column", flex: 1 }}>
                   {fc.imageUrl && (
-                    <div style={{ position: "relative", height: 200, flexShrink: 0 }}>
+                    <div style={{ position: "relative", height: 280, flexShrink: 0 }}>
                       <img src={fc.imageUrl} alt={fc.universe} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 40%, ${P.cardBg}cc 100%)` }} />
+                      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 50%, ${P.cardBg}dd 100%)` }} />
                       <div style={{ position: "absolute", top: 12, left: 14, background: color + "ee", color: "#fff", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 4, paddingBottom: 4, paddingLeft: 10, paddingRight: 10, borderRadius: 20, display: "flex", alignItems: "center", gap: 6 }}><span>{emoji}</span> Feature Creature</div>
                       <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{fc.universe}</div>
                     </div>
                   )}
-                  <div style={{ paddingTop: 18, paddingLeft: 22, paddingRight: 22, paddingBottom: 44, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
+                  <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 50, display: "flex", flexDirection: "column", gap: 8, flex: 1, position: "relative" }}>
                     {!fc.imageUrl && <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ background: color + "22", color, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 4, paddingBottom: 4, paddingLeft: 10, paddingRight: 10, borderRadius: 20 }}>{emoji} Feature Creature</span><span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody }}>{fc.universe}</span></div>}
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color, fontFamily: P.fontBody }}>{fc.angleLabel}</div>
                     <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 26, color: P.ink, lineHeight: 1.15, fontWeight: 700 }}>{fc.title}</div>
                     {fc.synopsis && <div style={{ fontSize: 15, lineHeight: 1.65, color: P.inkMid, fontFamily: P.fontBody }}>{fc.synopsis}</div>}
-                    <span style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 22 }}>{fc.universe} · Feature Creature</span>
+                    {fc.voiceId && <span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 18, left: 22, opacity: 0.5 }}>{fc.voiceId}</span>}
                     <a href={`/feature-creature/${slug}`} style={{ position: "absolute", bottom: 14, right: 18, textDecoration: "none" }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color, background: color + "18", border: `1px solid ${color}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 8, paddingBottom: 8, paddingLeft: 20, paddingRight: 20, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
                     </a>
                   </div>
                 </div>
@@ -264,7 +265,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
 
         {/* s2 image card: cols 7-12, row 2 */}
         {s2 && (
-          <div className="ds-s2-img" style={{ ...imgCard, gridColumn: "7 / 13", gridRow: "2" }}>
+          <a href={`/article/${urlToSlug(s2.link)}`} className="ds-s2-img" style={{ ...imgCard, gridColumn: "7 / 13", gridRow: "2", textDecoration: "none" }}>
             {s2.imageUrl ? <img src={s2.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.tint}, ${P.accent}66)` }} />}
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.05) 55%, transparent 100%)" }} />
             <div style={{ position: "absolute", bottom: 20, left: 20, right: 100 }}>
@@ -275,19 +276,19 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
               {s2.summary && <div className="ds-card-body" style={{ fontSize: 15, lineHeight: 1.6, color: "rgba(255,255,255,0.80)", fontFamily: P.fontBody }}>{s2.summary}</div>}
             </div>
             <MorePill story={s2} />
-          </div>
+          </a>
         )}
 
         {/* s2 pullquote: cols 7-12, row 3 */}
         {s2 && (
-          <div style={{ ...card, gridColumn: "7 / 13", gridRow: "3", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 100, gap: 18 }}>
+          <a href={`/article/${urlToSlug(s2.link)}`} style={{ ...card, gridColumn: "7 / 13", gridRow: "3", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 100, gap: 18, textDecoration: "none", color: "inherit" }}>
             <div style={{ fontSize: 52, color: P.accent, fontFamily: P.fontHeading, flexShrink: 0, lineHeight: 0.8, opacity: 0.35, marginTop: 6 }}>"</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 17, fontStyle: "italic", color: P.ink, lineHeight: 1.5, fontFamily: P.fontBody, fontWeight: 500 }}>{s2.pullquote || s2.summary || s2.title}</div>
               <div style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody, marginTop: 6 }}>{s2.source} · {timeAgo(s2.pubDate)}</div>
             </div>
             <MorePill story={s2} />
-          </div>
+          </a>
         )}
       </div>
 
