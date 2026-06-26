@@ -328,7 +328,9 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
     else if (item.section === "Science") science.push(item);
     else if (CREATIVE.includes(item.section)) creative.push(item);
   }
-  const pool = [...science.slice(0, 3), ...creative.slice(0, 5), ...tech.slice(0, 3)].slice(0, 11);
+  // Interleave science and creative so s1/s2 are never the same section; tech fills the tail
+  const sci = science.slice(0, 3), cre = creative.slice(0, 5), tec = tech.slice(0, 3);
+  const pool = [sci[0], cre[0], sci[1], cre[1], cre[2], sci[2], cre[3], cre[4], tec[0], tec[1], tec[2]].filter(Boolean);
   // Deal articles must never be S1–S6; push them to the end (S7–S9)
   const deals = pool.filter(s => DEAL_RE.test(s.title) || DEAL_RE.test(s.content));
   const nonDeals = pool.filter(s => !DEAL_RE.test(s.title) && !DEAL_RE.test(s.content));

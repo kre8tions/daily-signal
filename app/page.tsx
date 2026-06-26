@@ -191,11 +191,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       </div>
 
       {/* ── Top bento ── */}
-      <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gridTemplateRows: "minmax(380px, auto) minmax(400px, auto) minmax(180px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
+      <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "6fr 6fr", gridTemplateRows: "minmax(340px, auto) minmax(380px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
 
         {/* s1: text only, no image, row 1 left */}
         {s1 && (
-          <div style={{ ...card, gridColumn: "1", gridRow: "1", paddingTop: 28, paddingBottom: 62, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ ...card, gridColumn: "1", gridRow: "1", paddingTop: 28, paddingBottom: 32, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
             <Pill section={s1.section} />
             <h1 className="ds-card-h" style={hStyle}><ArticleLink story={s1}>{s1.title}</ArticleLink></h1>
             {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{s1.summary}</p>}
@@ -246,7 +246,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                       <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{fc.universe}</div>
                     </div>
                   )}
-                  <div style={{ paddingTop: 18, paddingLeft: 22, paddingRight: 22, paddingBottom: 62, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
+                  <div style={{ paddingTop: 18, paddingLeft: 22, paddingRight: 22, paddingBottom: 44, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
                     {!fc.imageUrl && <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ background: color + "22", color, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 4, paddingBottom: 4, paddingLeft: 10, paddingRight: 10, borderRadius: 20 }}>{emoji} Feature Creature</span><span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody }}>{fc.universe}</span></div>}
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color, fontFamily: P.fontBody }}>{fc.angleLabel}</div>
                     <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 26, color: P.ink, lineHeight: 1.15, fontWeight: 700 }}>{fc.title}</div>
