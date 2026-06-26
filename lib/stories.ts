@@ -115,7 +115,6 @@ export const FEEDS = [
   // Culture — ideas, society, creative thinking
   { url: "https://www.theguardian.com/culture/rss",                         source: "Guardian",            section: "Culture"       },
   { url: "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",    source: "BBC",                 section: "Culture"       },
-  { url: "https://www.theatlantic.com/feed/all/",                           source: "The Atlantic",        section: "Culture"       },
   // Film — cinema, storytelling, directors
   { url: "https://www.indiewire.com/feed/",                                 source: "IndieWire",           section: "Film"          },
   { url: "https://www.theguardian.com/film/rss",                            source: "Guardian Film",       section: "Film"          },
