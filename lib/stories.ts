@@ -178,14 +178,12 @@ export async function fetchUnsplash(headline: string, section?: string): Promise
 
   // Section-based safe fallback queries that always produce relevant images
   const sectionFallback: Record<string, string> = {
-    Technology: "technology innovation",
-    Science: "science research",
-    Entertainment: "entertainment media stage",
-    Sports: "sports athlete competition",
-    Business: "business finance office",
-    Health: "health wellness",
-    Politics: "politics government",
-    Culture: "culture art creative",
+    Technology: "futuristic technology innovation",
+    Science: "science discovery universe",
+    Culture: "culture creative ideas",
+    Film: "cinema film director",
+    Entertainment: "music concert stage performance",
+    Arts: "art design studio gallery",
   };
   const fallback = isObit
     ? "portrait tribute memorial flowers"

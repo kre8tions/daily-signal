@@ -38,8 +38,8 @@ export const PALETTES: Palette[] = [
 ];
 
 export const SECTION_COLORS: Record<string, string> = {
-  Technology: "#5B8DEF", Entertainment: "#D4517A", Culture: "#9B6DDE",
-  Science: "#27AE8F", Arts: "#E07B3C", World: "#E05252", Music: "#C87AC0",
+  Technology: "#5B8DEF", Science: "#27AE8F", Culture: "#9B6DDE",
+  Film: "#E07B3C", Entertainment: "#D4517A", Arts: "#C87AC0",
 };
 
 export const P = PALETTES[Math.floor(Date.now() / 86_400_000) % PALETTES.length];

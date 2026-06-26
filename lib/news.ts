@@ -21,45 +21,40 @@ function extractImage(item: Record<string, unknown>): string | undefined {
 }
 
 const RSS_FEEDS: { url: string; source: string; section: string }[] = [
-  // World
-  { url: "https://feeds.bbci.co.uk/news/world/rss.xml", source: "BBC", section: "World" },
-  { url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml", source: "NY Times", section: "World" },
-  { url: "https://www.theguardian.com/world/rss", source: "Guardian", section: "World" },
-  { url: "https://feeds.npr.org/1001/rss.xml", source: "NPR", section: "World" },
-  // Politics
-  { url: "https://feeds.bbci.co.uk/news/politics/rss.xml", source: "BBC", section: "Politics" },
-  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml", source: "NY Times", section: "Politics" },
-  { url: "https://www.theguardian.com/us-news/rss", source: "Guardian", section: "Politics" },
-  { url: "https://feeds.npr.org/1014/rss.xml", source: "NPR", section: "Politics" },
-  // Technology
-  { url: "https://feeds.bbci.co.uk/news/technology/rss.xml", source: "BBC", section: "Technology" },
-  { url: "https://www.theverge.com/rss/index.xml", source: "The Verge", section: "Technology" },
-  { url: "https://feeds.arstechnica.com/arstechnica/index", source: "Ars Technica", section: "Technology" },
-  { url: "https://www.wired.com/feed/rss", source: "Wired", section: "Technology" },
-  // Markets
-  { url: "https://feeds.bbci.co.uk/news/business/rss.xml", source: "BBC", section: "Markets" },
-  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml", source: "NY Times", section: "Markets" },
-  { url: "https://www.theguardian.com/business/rss", source: "Guardian", section: "Markets" },
-  // Science
-  { url: "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml", source: "BBC", section: "Science" },
-  { url: "https://feeds.npr.org/1019/rss.xml", source: "NPR", section: "Science" },
-  { url: "https://www.theguardian.com/science/rss", source: "Guardian", section: "Science" },
-  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml", source: "NY Times", section: "Science" },
-  // Climate
-  { url: "https://www.theguardian.com/environment/rss", source: "Guardian", section: "Climate" },
-  // Culture
-  { url: "https://www.theguardian.com/culture/rss", source: "Guardian", section: "Culture" },
-  { url: "https://www.theguardian.com/film/rss", source: "Guardian", section: "Culture" },
-  { url: "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml", source: "BBC", section: "Culture" },
-  { url: "https://variety.com/feed/", source: "Variety", section: "Entertainment" },
-  { url: "https://deadline.com/feed/", source: "Deadline", section: "Entertainment" },
-  // Sports
-  { url: "https://feeds.bbci.co.uk/sport/rss.xml", source: "BBC Sport", section: "Sports" },
-  { url: "https://www.theguardian.com/sport/rss", source: "Guardian", section: "Sports" },
-  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Sports.xml", source: "NY Times", section: "Sports" },
-  // Arts
-  { url: "https://www.theguardian.com/artanddesign/rss", source: "Guardian", section: "Arts" },
-  { url: "https://hyperallergic.com/feed/", source: "Hyperallergic", section: "Arts" },
+  // Technology — emerging tech, innovation, futurism
+  { url: "https://www.theverge.com/rss/index.xml",                          source: "The Verge",          section: "Technology" },
+  { url: "https://feeds.arstechnica.com/arstechnica/index",                 source: "Ars Technica",       section: "Technology" },
+  { url: "https://www.wired.com/feed/rss",                                  source: "Wired",              section: "Technology" },
+  { url: "https://techcrunch.com/feed/",                                    source: "TechCrunch",         section: "Technology" },
+  { url: "https://www.technologyreview.com/feed/",                          source: "MIT Tech Review",    section: "Technology" },
+  { url: "https://singularityhub.com/feed/",                                source: "Singularity Hub",    section: "Technology" },
+  { url: "https://www.fastcompany.com/technology/rss",                      source: "Fast Company",       section: "Technology" },
+  // Science — pop science, discovery, wonder
+  { url: "https://nautil.us/feed/",                                         source: "Nautilus",           section: "Science" },
+  { url: "https://www.quantamagazine.org/feed/",                            source: "Quanta Magazine",    section: "Science" },
+  { url: "https://www.popsci.com/feed/",                                    source: "Popular Science",    section: "Science" },
+  { url: "https://www.wired.com/feed/category/science/latest/rss",          source: "Wired Science",      section: "Science" },
+  { url: "https://feeds.npr.org/1019/rss.xml",                              source: "NPR Science",        section: "Science" },
+  { url: "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml",        source: "NY Times Science",   section: "Science" },
+  // Culture — ideas, society, creative thinking
+  { url: "https://www.theguardian.com/culture/rss",                         source: "Guardian",           section: "Culture" },
+  { url: "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",    source: "BBC",                section: "Culture" },
+  { url: "https://www.fastcompany.com/co-design/rss",                       source: "Fast Company Design",section: "Culture" },
+  // Film — cinema, storytelling, directors
+  { url: "https://www.indiewire.com/feed/",                                 source: "IndieWire",          section: "Film" },
+  { url: "https://www.theguardian.com/film/rss",                            source: "Guardian Film",      section: "Film" },
+  { url: "https://www.rogerebert.com/feed",                                 source: "RogerEbert.com",     section: "Film" },
+  // Entertainment — music, TV, pop culture
+  { url: "https://variety.com/feed/",                                       source: "Variety",            section: "Entertainment" },
+  { url: "https://deadline.com/feed/",                                      source: "Deadline",           section: "Entertainment" },
+  { url: "https://www.avclub.com/rss",                                      source: "A.V. Club",          section: "Entertainment" },
+  { url: "https://pitchfork.com/rss/news/",                                 source: "Pitchfork",          section: "Entertainment" },
+  // Arts — visual art, design, creativity
+  { url: "https://www.theguardian.com/artanddesign/rss",                    source: "Guardian",           section: "Arts" },
+  { url: "https://hyperallergic.com/feed/",                                 source: "Hyperallergic",      section: "Arts" },
+  { url: "https://www.dezeen.com/feed/",                                    source: "Dezeen",             section: "Arts" },
+  { url: "https://www.thisiscolossal.com/feed/",                            source: "Colossal",           section: "Arts" },
+  { url: "https://news.artnet.com/feed/",                                   source: "Artnet News",        section: "Arts" },
 ];
 
 async function fetchFeed(feed: typeof RSS_FEEDS[0]): Promise<RawArticle[]> {
