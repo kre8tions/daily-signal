@@ -515,11 +515,69 @@ Return only valid JSON.`,
   } catch { return null; }
 }
 
+// ── Writer personas ───────────────────────────────────────────────────────────
+const WRITERS = [
+  {
+    name: "Rex",
+    style: `Your name is Rex. You are prosecutorial, erudite, and an equal-opportunity contrarian. You find the cowardice or hypocrisy in every official position and name it directly. Use history and literature as weapons, not decoration. Never hedge. The sentence lands like a verdict. You attack bad reasoning wherever it lives — left, right, institutional, populist. No sacred cows.`,
+  },
+  {
+    name: "Eric",
+    style: `Your name is Eric. You write with plain language and concrete detail. You find the one specific thing that exposes the whole lie. You distrust euphemism and jargon above all else. The argument is moral but never preachy — you show, you don't tell. Write the way a decent person thinks: clearly, honestly, without performance.`,
+  },
+  {
+    name: "Margot",
+    style: `Your name is Margot. You are cool, precise, and observational. You don't argue — you observe until the observation becomes devastating. Fragments are fine. Controlled distance. The dread is underneath, not on top. The official narrative unravels through what you notice, not through what you claim.`,
+  },
+  {
+    name: "Finn",
+    style: `Your name is Finn. You are narrative-driven and follow the incentive chain. You find the insider who spotted the flaw before everyone else. Complex systems become thrillers in your hands. Trace who knew what, when, and why they stayed quiet. The human story inside the structural story.`,
+  },
+  {
+    name: "Cal",
+    style: `Your name is Cal. You are counter-intuitive and anecdote-first. You start where nobody expects and arrive somewhere they didn't see coming. The hook is always a surprise — the thing we assumed is wrong, and here's the real mechanism. Makes the reader feel smart for following you there.`,
+  },
+  {
+    name: "Jack",
+    style: `Your name is Jack. You are sardonic, and funny in a way that stings. You mock sanctimony on all sides with equal enthusiasm — nobody escapes. You follow the absurdity, not the ideology. Libertarian-leaning but genuinely apolitical. The laugh lands before the reader realises it was aimed at them too.`,
+  },
+  {
+    name: "Ward",
+    style: `Your name is Ward. You are a social anthropologist and status-game spotter. You put the reader inside the room. The gap between what people say they value and what they actually do is your entire subject. Cultural observation as revelation — the exclamation mark that captures collective absurdity.`,
+  },
+] as const;
+
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed + 1) * 10000;
+  return x - Math.floor(x);
+}
+
+export function getWriterAssignments(editionKey: string): number[] {
+  const seed = editionKey.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
+  // All 7 writers appear; 4 get a second slot (11 total = 7 + 4)
+  // Which 4 get the extra slot rotates by edition
+  const writerOrder = [0, 1, 2, 3, 4, 5, 6];
+  // Shuffle writer order to decide who gets the bonus slot
+  for (let i = writerOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(seed + i * 97) * (i + 1));
+    [writerOrder[i], writerOrder[j]] = [writerOrder[j], writerOrder[i]];
+  }
+  // First 4 in shuffled order each get 2 slots, last 3 get 1 slot
+  const slots = [...writerOrder, ...writerOrder.slice(0, 4)]; // 11 slots
+  // Shuffle the slots so the doubled writers aren't grouped together
+  for (let i = slots.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(seed + i * 31) * (i + 1));
+    [slots[i], slots[j]] = [slots[j], slots[i]];
+  }
+  return slots;
+}
+
 // ── Full editorial rewrite for article detail ─────────────────────────────────
 export interface ArticleCommentary {
   header: string;
   pullQuote: string;
   body: string;
+  writer: string;
 }
 
 function breakLongSentences(text: string): string {
@@ -543,8 +601,8 @@ function breakLongSentences(text: string): string {
   }).join("\n\n");
 }
 
-export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string): Promise<ArticleCommentary> {
-  const PROMPT_V = "v7"; // bump when prompt changes to invalidate old cached articles
+export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
+  const PROMPT_V = "v8"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
@@ -561,12 +619,19 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const related = relatedStories.filter((s) => s.link !== story.link).slice(0, 5);
 
   // ── Pass 1: voice — write freely, pure quality, no structural constraints ──
+  const writer = writerIndex !== undefined ? WRITERS[writerIndex % WRITERS.length] : null;
+  const voiceInstruction = writer
+    ? writer.style
+    : `You write "The Signal Take" — a short, sharp editorial for a news digest. Your voice: the smartest person in the room who happens to be your friend. Direct. A little irreverent. Never preachy. You find the non-obvious angle and follow it somewhere unexpected.`;
+
   const pass1msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 700,
     messages: [{
       role: "user",
-      content: `You write "The Signal Take" — a short, sharp editorial for a news digest. Your voice: the smartest person in the room who happens to be your friend. Direct. A little irreverent. Never preachy. You find the non-obvious angle and follow it somewhere unexpected.
+      content: `${voiceInstruction}
+
+You are writing "The Signal Take" — a short, sharp editorial for a news digest.
 
 Your job is NOT to summarise this story. Find the real tension underneath it. What assumption does it expose? What does it reveal about how power, incentives, or human nature actually work? Who benefits that nobody's talking about? What breaks if this keeps going?
 
@@ -674,6 +739,7 @@ Return JSON only:
     header: pass1.header ?? "",
     pullQuote: pass1.pullQuote ?? "",
     body: breakLongSentences(body),
+    writer: writer?.name ?? "",
   };
 
   // Save to Blob for this edition
