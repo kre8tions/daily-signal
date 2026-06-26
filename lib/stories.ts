@@ -518,8 +518,29 @@ export interface ArticleCommentary {
   body: string;
 }
 
+function breakLongSentences(text: string): string {
+  const BREAK_AT = [" — ", "; ", ", and ", ", but ", ", because ", ", which ", ", so ", ", yet "];
+  return text.split("\n\n").map(para => {
+    const sentences = para.match(/[^.!?]+[.!?]+["'”]?\s*/g) ?? [para];
+    return sentences.map(s => {
+      const trimmed = s.trim();
+      if (trimmed.split(/\s+/).length <= 20) return trimmed;
+      for (const bp of BREAK_AT) {
+        const idx = trimmed.indexOf(bp);
+        if (idx > 15 && idx < trimmed.length - 15) {
+          const left = trimmed.slice(0, idx).trim().replace(/[,;]$/, "");
+          const right = trimmed.slice(idx + bp.length).trim();
+          const rightCapped = right.charAt(0).toUpperCase() + right.slice(1);
+          return `${left}. ${rightCapped}`;
+        }
+      }
+      return trimmed;
+    }).join(" ");
+  }).join("\n\n");
+}
+
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string): Promise<ArticleCommentary> {
-  const PROMPT_V = "v5"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v6"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
@@ -599,11 +620,15 @@ Return valid JSON only, no markdown:
   const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   let commentary: ArticleCommentary;
   try {
-    commentary = JSON.parse(text) as ArticleCommentary;
-    if (!commentary.body) throw new Error("missing body");
+    const parsed = JSON.parse(text) as ArticleCommentary;
+    if (!parsed.body || typeof parsed.body !== "string") throw new Error("missing body");
+    commentary = { header: parsed.header ?? "", pullQuote: parsed.pullQuote ?? "", body: parsed.body };
   } catch {
-    commentary = { header: "", pullQuote: "", body: text };
+    // Model returned prose instead of JSON — use as plain body
+    const isJson = text.startsWith("{") || text.startsWith("[");
+    commentary = { header: "", pullQuote: "", body: isJson ? "" : text };
   }
+  commentary.body = breakLongSentences(commentary.body);
 
   // Save to Blob for this edition
   try {
