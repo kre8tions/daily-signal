@@ -45,7 +45,8 @@ export async function GET() {
       try {
         const commentary = await getFullArticle(story, related, editionKey, writerSlots[i]);
         results[key] = commentary.body ? "cached" : "failed";
-      } catch {
+      } catch (e) {
+        console.error(`[warm] failed: ${key}`, e);
         results[key] = "failed";
       }
     })
