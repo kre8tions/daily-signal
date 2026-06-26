@@ -356,12 +356,18 @@ export async function analyzeAll(items: RawItem[], editionKey: string): Promise<
     `[${i}] ${a.section.toUpperCase()} — ${a.source}: ${a.title}\n${a.content.slice(0, 400)}`
   ).join("\n\n");
 
+  // Seeded writer voice for synthesis
+  const synthSeed = editionKey.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 13), 0);
+  const synthWriter = WRITERS[synthSeed % WRITERS.length];
+
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 5000,
     messages: [{
       role: "user",
       content: `You are a sharp, opinionated editor covering tech, arts, music, and culture. Your perspective is centrist and intellectually honest — you challenge assumptions from all sides, give credit where it's due regardless of political tribe, and never moralize or signal virtue. You are equally skeptical of corporate power, government overreach, activist excess, and reactionary nostalgia.
+
+For the synthesis section specifically, write through this editorial lens: ${synthWriter.style}
 
 RULES:
 - Never restate the headline. Be specific, find non-obvious angles.
