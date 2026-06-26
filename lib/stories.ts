@@ -609,7 +609,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v15/${editionKey}.json`;
+  const blobKey = `feature-creature/v16/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -680,9 +680,13 @@ Return JSON only — no markdown fences:
       max_tokens: 700,
       messages: [{
         role: "user",
-        content: `Restructure this article body into 4-5 paragraphs. Keep ALL the ideas and the original voice — only reorganise, do not rewrite or add new content.
+        content: `Restructure this article body into 4-5 paragraphs. Keep ALL the ideas and the original voice.
 
-Paragraph rules (hard limits on sentence count):
+Two jobs:
+1. Reorganise into the paragraph structure below
+2. Break any sentence over 20 words into two shorter sentences. Split at a natural clause boundary — em-dash, semicolon, "and", "but", "because", "which". Keep both halves punchy.
+
+Paragraph rules:
 - para1: EXACTLY 1 sentence — the hook, the bomb
 - para2: EXACTLY 1 sentence — deepen or reframe the hook
 - para3: 1-2 sentences — first supporting insight
