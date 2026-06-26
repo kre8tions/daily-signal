@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 async function loadFC(slug: string): Promise<FeatureCreature | null> {
   try {
-    const existing = await head(`feature-creature/v2/${slug}.json`);
+    const existing = await head(`feature-creature/v3/${slug}.json`);
     if (!existing) return null;
     const res = await fetch(existing.url, { cache: "no-store" });
     if (!res.ok) return null;
@@ -74,10 +74,18 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
           </div>
         )}
 
-        {/* Body */}
+        {/* Body with mid-article cursive headers */}
         <div style={{ marginBottom: 40 }}>
           {fc.body.split("\n\n").filter(Boolean).map((para, i) => (
-            <p key={i} style={{ fontSize: 19, lineHeight: 1.9, color: P.inkMid, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 0, marginBottom: 24 }}>{para}</p>
+            <div key={i}>
+              {/* Header before paragraph 0 and paragraph 2 */}
+              {(i === 0 || i === 2) && fc.headers?.[i === 0 ? 0 : 1] && (
+                <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 36, color, lineHeight: 1, marginBottom: 12, marginTop: i === 0 ? 0 : 36, fontWeight: 700 }}>
+                  {fc.headers[i === 0 ? 0 : 1]}
+                </div>
+              )}
+              <p style={{ fontSize: 19, lineHeight: 1.9, color: P.inkMid, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 0, marginBottom: 24 }}>{para}</p>
+            </div>
           ))}
         </div>
 

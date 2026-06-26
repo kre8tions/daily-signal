@@ -221,9 +221,50 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
           </div>
         )}
 
-        {/* s2 image card: moved UP to row 2 left */}
+        {/* Feature Creature: col 1, spans rows 2-3 */}
+        {featureCreature && !activeSection && (() => {
+          const fc = featureCreature;
+          const angleColors: Record<string, string> = { science: "#27AE8F", build: "#5B8DEF", culture: "#D4517A" };
+          const angleEmoji: Record<string, string> = { science: "🔬", build: "🛠️", culture: "🌍" };
+          const color = angleColors[fc.angleKey] ?? P.accent;
+          const emoji = angleEmoji[fc.angleKey] ?? "🪄";
+          const slug = fc.editionKey ?? "today";
+          return (
+            <div style={{ gridColumn: "1", gridRow: "2 / 4", position: "relative" }}>
+              {/* Clock tick border */}
+              <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="20" ry="20" fill="none" stroke={color} strokeWidth="2.5" strokeDasharray="3 9" strokeLinecap="round" />
+                <rect x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="20" ry="20" fill="none" stroke={color} strokeWidth="7" strokeOpacity="0.3" strokeDasharray="1 44" strokeLinecap="round" />
+              </svg>
+              <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none", color: "inherit", display: "flex", height: "100%" }}>
+                <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, display: "flex", flexDirection: "column", flex: 1 }}>
+                  {fc.imageUrl && (
+                    <div style={{ position: "relative", height: 200, flexShrink: 0 }}>
+                      <img src={fc.imageUrl} alt={fc.universe} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 40%, ${P.cardBg}cc 100%)` }} />
+                      <div style={{ position: "absolute", top: 12, left: 14, background: color + "ee", color: "#fff", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 4, paddingBottom: 4, paddingLeft: 10, paddingRight: 10, borderRadius: 20, display: "flex", alignItems: "center", gap: 6 }}><span>{emoji}</span> Feature Creature</div>
+                      <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{fc.universe}</div>
+                    </div>
+                  )}
+                  <div style={{ paddingTop: 18, paddingLeft: 22, paddingRight: 22, paddingBottom: 62, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
+                    {!fc.imageUrl && <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ background: color + "22", color, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 4, paddingBottom: 4, paddingLeft: 10, paddingRight: 10, borderRadius: 20 }}>{emoji} Feature Creature</span><span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody }}>{fc.universe}</span></div>}
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color, fontFamily: P.fontBody }}>{fc.angleLabel}</div>
+                    <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 26, color: P.ink, lineHeight: 1.15, fontWeight: 700 }}>{fc.title}</div>
+                    {fc.synopsis && <div style={{ fontSize: 15, lineHeight: 1.65, color: P.inkMid, fontFamily: P.fontBody }}>{fc.synopsis}</div>}
+                    <span style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 22 }}>{fc.universe} · Feature Creature</span>
+                    <a href={`/feature-creature/${slug}`} style={{ position: "absolute", bottom: 14, right: 18, textDecoration: "none" }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color, background: color + "18", border: `1px solid ${color}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
+                    </a>
+                  </div>
+                </div>
+              </a>
+            </div>
+          );
+        })()}
+
+        {/* s2 image card: col 2, row 2 (moved right) */}
         {s2 && (
-          <div className="ds-s2-img" style={{ ...imgCard, gridColumn: "1", gridRow: "2" }}>
+          <div className="ds-s2-img" style={{ ...imgCard, gridColumn: "2", gridRow: "2" }}>
             {s2.imageUrl ? <img src={s2.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.tint}, ${P.accent}66)` }} />}
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.05) 55%, transparent 100%)" }} />
             <div style={{ position: "absolute", bottom: 20, left: 20, right: 100 }}>
@@ -237,29 +278,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
           </div>
         )}
 
-        {/* s3: right col, spans rows 2–3, taller */}
-        {s3 && (
-          <div style={{ gridColumn: "2", gridRow: "2 / 4", ...card, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            {s3.imageUrl && (
-              <div style={{ position: "relative", flex: "0 0 55%", minHeight: 200 }}>
-                <img src={s3.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to top, ${P.cardBg} 0%, transparent 50%)` }} />
-              </div>
-            )}
-            <div style={{ paddingTop: 18, paddingBottom: 62, paddingLeft: 22, paddingRight: 22, display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-              <Pill section={s3.section} />
-              <div className="ds-card-h" style={hStyle}><ArticleLink story={s3}>{s3.title}</ArticleLink></div>
-              {s3.summary && <div className="ds-card-body" style={bodyStyle}>{s3.summary}</div>}
-              {s3.insight && <div className="ds-card-insight" style={insightStyle}>{s3.insight}</div>}
-              <span className="ds-card-meta" style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 22 }}>{s3.source} · {timeAgo(s3.pubDate)}</span>
-            </div>
-            <MorePill story={s3} />
-          </div>
-        )}
-
-        {/* s2 pullquote: moved DOWN to row 3 left */}
+        {/* s2 pullquote: col 2, row 3 (moved right) */}
         {s2 && (
-          <div style={{ ...card, gridColumn: "1", gridRow: "3", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 100, gap: 18 }}>
+          <div style={{ ...card, gridColumn: "2", gridRow: "3", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 100, gap: 18 }}>
             <div style={{ fontSize: 52, color: P.accent, fontFamily: P.fontHeading, flexShrink: 0, lineHeight: 0.8, opacity: 0.35, marginTop: 6 }}>"</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 17, fontStyle: "italic", color: P.ink, lineHeight: 1.5, fontFamily: P.fontBody, fontWeight: 500 }}>{s2.pullquote || s2.summary || s2.title}</div>
@@ -273,10 +294,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       {/* ── Synthesis ── */}
       {!activeSection && synthesis?.theme && <Synthesis synthesis={synthesis} stories={stories} />}
 
-      {/* ── Row 2: s4–s9 ── */}
-      {[s4, s5, s6, s7, s8, s9].filter(Boolean).length > 0 && (
+      {/* ── Row 2: s3–s9 ── */}
+      {[s3, s4, s5, s6, s7, s8, s9].filter(Boolean).length > 0 && (
         <div className="ds-row2" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 0, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
-          {[s4, s5, s6, s7, s8, s9].filter(Boolean).map((s, i) => s && (
+          {[s3, s4, s5, s6, s7, s8, s9].filter(Boolean).map((s, i) => s && (
             <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
               <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
                 {s.imageUrl && (
@@ -307,8 +328,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
         </div>
       )}
 
-      {/* ── Feature Creature ── */}
-      {!activeSection && featureCreature && <FeatureCreatureCard fc={featureCreature} />}
 
     </div>
   );

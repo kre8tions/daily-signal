@@ -590,15 +590,16 @@ export interface FeatureCreature {
   angleKey: string;
   title: string;
   synopsis: string; // 1-2 sentence hook for homepage card
-  body: string;
+  body: string;     // 3 paragraphs separated by \n\n
+  headers: [string, string]; // two cursive mid-article headers
   digDeeper: string;
   imageUrl?: string;
-  editionKey?: string; // for linking to full article page
+  editionKey?: string;
 }
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v2/${editionKey}.json`;
+  const blobKey = `feature-creature/v3/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -625,15 +626,21 @@ Task: ${FC_ANGLE.prompt}
 Write a punchy, fascinating Feature Creature editorial. Rules:
 - Synopsis: 1-2 electrifying sentences that make someone HAVE to click — the essential hook
 - Title: 6-10 words, electrifying, no clickbait clichés
-- Body: exactly 3 paragraphs, ~60 words each, total ~180 words
+- Header 1: 1-2 evocative words, placed before paragraph 1 (sets the scene/theme)
+- Header 2: 1-2 evocative words, placed before paragraph 3 (marks a turn or escalation)
+- Body paragraph structure (STRICT):
+  - Paragraph 1: exactly 1 sentence — the hook, the bomb, the irreversible opening
+  - Paragraph 2: 1-2 sentences — expand, complicate, reframe
+  - Paragraph 3: 1-3 sentences — the surprising turn or revelation
 - Voice: brilliant friend who just read 12 books and wants to tell you about it — smart but never dry
-- End with a 1-sentence "Dig Deeper" hook — a specific book, film, essay, or rabbit hole
+- Dig Deeper: 1 sentence — a specific book, film, essay, or rabbit hole
 
 Return JSON only:
 {
   "title": "...",
   "synopsis": "...",
-  "body": "paragraph1\\n\\nparagraph2\\n\\nparagraph3",
+  "headers": ["word or two", "word or two"],
+  "body": "one sentence.\\n\\none or two sentences.\\n\\none to three sentences.",
   "digDeeper": "..."
 }`
         }],
@@ -650,6 +657,7 @@ Return JSON only:
       angleKey: FC_ANGLE.key,
       title: parsed.title ?? `${FC_UNIVERSE}: ${FC_ANGLE.label}`,
       synopsis: parsed.synopsis ?? "",
+      headers: [parsed.headers?.[0] ?? "", parsed.headers?.[1] ?? ""],
       body: parsed.body ?? "",
       digDeeper: parsed.digDeeper ?? "",
       imageUrl,
