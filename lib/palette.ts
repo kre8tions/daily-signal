@@ -114,6 +114,40 @@ const CURSIVE_FONTS: [string, string][] = [
 export const CURSIVE_FONT_FAMILY = CURSIVE_FONTS[_edition % CURSIVE_FONTS.length][0];
 export const CURSIVE_FONT_URL = `https://fonts.googleapis.com/css2?family=${CURSIVE_FONTS[_edition % CURSIVE_FONTS.length][1]}&display=swap`;
 
+// ── Feature Creature — fictional universe pool ────────────────────────────────
+export const FC_UNIVERSES = [
+  // Anime
+  "Ghost in the Shell", "Akira", "Neon Genesis Evangelion", "Cowboy Bebop",
+  "Attack on Titan", "Fullmetal Alchemist", "Steins;Gate", "Serial Experiments Lain",
+  "Psycho-Pass", "Planetes", "Vinland Saga", "Paprika",
+  // Sci-fi film & TV
+  "Blade Runner 2049", "Arrival", "Interstellar", "Ex Machina", "Her",
+  "Annihilation", "The Matrix", "Minority Report", "Contact", "Gattaca",
+  "Children of Men", "Moon", "Severance", "Black Mirror", "Westworld",
+  "Battlestar Galactica", "Altered Carbon", "Dark", "Devs",
+  // Novels & written sci-fi
+  "Dune", "Neuromancer", "Snow Crash", "The Left Hand of Darkness",
+  "Solaris", "Foundation", "A Canticle for Leibowitz", "The Dispossessed",
+  "Blindsight", "Permutation City", "Flowers for Algernon", "The Diamond Age",
+  "A Fire Upon the Deep", "Ender's Game", "Hyperion",
+  // Games & other worlds
+  "Disco Elysium", "Cyberpunk 2077", "Nier: Automata", "Control",
+  "Death Stranding", "Hollow Knight", "Hades", "Outer Wilds",
+  // Fantasy & adjacent
+  "Ursula K. Le Guin's Earthsea", "His Dark Materials", "Solarpunk movement",
+  "Studio Ghibli's Nausicaä", "Princess Mononoke", "Spirited Away",
+];
+
+export const FC_ANGLES = [
+  { key: "science",  label: "The Real Science",  prompt: "Explore the real-world science behind the central technology or phenomenon in this fictional universe. What do scientists actually know? How close are we? What would need to be true for it to exist?" },
+  { key: "build",    label: "How To Build It",    prompt: "If we wanted to build the most iconic technology or system from this fictional universe today, what would the architecture look like? What startups or labs are working on pieces of it? What's the hardest unsolved problem?" },
+  { key: "culture",  label: "The World It Makes", prompt: "Focus on the culture, fashion, lifestyle, social dynamics, or aesthetic of this fictional universe. What does it say about our desires and fears? What elements are already bleeding into the real world?" },
+];
+
+const _fc = Math.floor(Date.now() / 14_400_000);
+export const FC_UNIVERSE = FC_UNIVERSES[_fc % FC_UNIVERSES.length];
+export const FC_ANGLE = FC_ANGLES[Math.floor(_fc / FC_UNIVERSES.length) % FC_ANGLES.length];
+
 // Returns #000 or #fff — whichever contrasts better against the given hex color
 export function contrastColor(hex: string): string {
   const c = hex.replace("#", "");

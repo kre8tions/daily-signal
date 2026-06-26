@@ -1,4 +1,4 @@
-import { getPageData, urlToSlug, actionSlug, type Story, type Synthesis } from "@/lib/stories";
+import { getPageData, urlToSlug, actionSlug, type Story, type Synthesis, type FeatureCreature } from "@/lib/stories";
 import { P, QUOTE_FONT, SECTION_COLORS, TAGLINE, TAGLINE_FONT, ACTION_LABEL, ACTION_EMOJI, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL } from "@/lib/palette";
 import type { Metadata } from "next";
 import { EmailCapture } from "./EmailCapture";
@@ -135,7 +135,7 @@ function MorePill({ story }: { story: Story }) {
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
   const { section: activeSection } = await searchParams;
-  const { stories: allStories, synthesis, editionLabel } = await getPageData();
+  const { stories: allStories, synthesis, editionLabel, featureCreature } = await getPageData();
 
   const sections = Array.from(new Set(allStories.map((s) => s.section)));
   const stories = activeSection
@@ -307,6 +307,75 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
         </div>
       )}
 
+      {/* ── Feature Creature ── */}
+      {!activeSection && featureCreature && <FeatureCreatureCard fc={featureCreature} />}
+
+    </div>
+  );
+}
+
+// ── Feature Creature card ─────────────────────────────────────────────────────
+function FeatureCreatureCard({ fc }: { fc: FeatureCreature }) {
+  const angleColors: Record<string, string> = { science: "#27AE8F", build: "#5B8DEF", culture: "#D4517A" };
+  const angleEmoji: Record<string, string> = { science: "🔬", build: "🛠️", culture: "🌍" };
+  const color = angleColors[fc.angleKey] ?? P.accent;
+  const emoji = angleEmoji[fc.angleKey] ?? "🪄";
+  return (
+    <div style={{ maxWidth: 1200, marginTop: 16, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 32, paddingBottom: 36, paddingLeft: 36, paddingRight: 36 }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
+          <span style={{ fontSize: 32 }}>{emoji}</span>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color, fontFamily: P.fontBody }}>Feature Creature</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: P.inkLight, fontFamily: P.fontBody, marginTop: 2 }}>
+              <span style={{ color, marginRight: 6 }}>{fc.angleLabel}</span>·<span style={{ marginLeft: 6 }}>{fc.universe}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Sketchy divider */}
+        <div style={{ marginBottom: 20, marginTop: 8 }}>
+          <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="fc-line" x="-5%" y="-100%" width="110%" height="300%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="17" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" />
+              </filter>
+            </defs>
+            <line x1="0" y1="6" x2="100%" y2="6" stroke={color} strokeWidth="2.5" filter="url(#fc-line)" />
+          </svg>
+        </div>
+
+        {/* Title in cursive */}
+        <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 38, color, lineHeight: 1.1, marginBottom: 24, fontWeight: 700 }}>{fc.title}</div>
+
+        {/* Body paragraphs */}
+        <div style={{ maxWidth: 820 }}>
+          {fc.body.split("\n\n").filter(Boolean).map((para, i) => (
+            <p key={i} style={{ fontSize: 17, lineHeight: 1.8, color: P.inkMid, fontFamily: P.fontBody, marginTop: 0, marginBottom: 16 }}>{para}</p>
+          ))}
+        </div>
+
+        {/* Dig Deeper */}
+        {fc.digDeeper && (
+          <div style={{ marginTop: 8, borderLeft: `3px solid ${color}`, paddingLeft: 16 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color, fontFamily: P.fontBody }}>Dig Deeper </span>
+            <span style={{ fontSize: 15, color: P.inkMid, fontStyle: "italic", fontFamily: "Georgia, 'Times New Roman', serif" }}>{fc.digDeeper.replace(/^dig deeper:?\s*/i, "")}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Sketchy border */}
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="fc-border" x="-8%" y="-8%" width="116%" height="116%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="23" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={color} strokeWidth="4" filter="url(#fc-border)" />
+      </svg>
     </div>
   );
 }

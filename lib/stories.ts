@@ -28,6 +28,7 @@ export interface Synthesis {
 
 export interface PageData {
   stories: Story[]; synthesis: Synthesis; editionLabel: string;
+  featureCreature?: FeatureCreature;
 }
 
 // ── Slug helpers ──────────────────────────────────────────────────────────────
@@ -410,9 +411,10 @@ Return only valid JSON, no markdown.`,
 // ── Assemble page data (cached per edition via Next.js data cache) ────────────
 async function buildPageData(editionKey: string, editionLabel: string): Promise<PageData> {
   const raw = await fetchTopStories(editionKey);
-  const [result, images] = await Promise.all([
+  const [result, images, featureCreature] = await Promise.all([
     analyzeAll(raw, editionKey),
     getUniqueImages(raw),
+    getFeatureCreature(editionKey),
   ]);
   const { stories: analyses, synthesis } = result;
   const stories: Story[] = raw.map((r, i) => ({
@@ -421,7 +423,7 @@ async function buildPageData(editionKey: string, editionLabel: string): Promise<
     summary: analyses[i]?.summary, bullets: analyses[i]?.bullets,
     pullquote: analyses[i]?.pullquote, insight: analyses[i]?.insight,
   }));
-  const pageData: PageData = { stories, synthesis, editionLabel };
+  const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
   // Save edition data to Blob for persistent archive
   put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
@@ -579,6 +581,72 @@ Return only the commentary. No title, no byline, no headers. Short paragraphs se
   } catch { /* non-fatal */ }
 
   return text;
+}
+
+// ── Feature Creature ─────────────────────────────────────────────────────────
+export interface FeatureCreature {
+  universe: string;
+  angleLabel: string;
+  angleKey: string;
+  title: string;
+  body: string;
+  digDeeper: string; // a one-sentence "if you want to go further..." prompt
+}
+
+export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
+  const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
+  const blobKey = `feature-creature/${editionKey}.json`;
+
+  try {
+    const existing = await head(blobKey);
+    if (existing) {
+      const res = await fetch(existing.url, { cache: "no-store" });
+      if (res.ok) return await res.json() as FeatureCreature;
+    }
+  } catch { /* generate fresh */ }
+
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  try {
+    const msg = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 600,
+      messages: [{
+        role: "user",
+        content: `You are the "Feature Creature" — a wildly curious editorial voice for a publication aimed at energetic, intelligent, culturally-aware readers (creators, entrepreneurs, curious minds).
+
+Universe: ${FC_UNIVERSE}
+Angle: ${FC_ANGLE.label}
+Task: ${FC_ANGLE.prompt}
+
+Write a punchy, fascinating Feature Creature editorial. Rules:
+- Title: 6-10 words, electrifying, no clickbait clichés
+- Body: exactly 3 paragraphs, ~60 words each, total ~180 words
+- Voice: brilliant friend who just read 12 books and wants to tell you about it — smart but never dry
+- End with a 1-sentence "Dig Deeper" hook (start with "Dig deeper:") — a specific book, film, essay, or rabbit hole
+
+Return JSON only:
+{
+  "title": "...",
+  "body": "paragraph1\\n\\nparagraph2\\n\\nparagraph3",
+  "digDeeper": "..."
+}`
+      }],
+    });
+
+    const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
+    const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const parsed = JSON.parse(text);
+    const result: FeatureCreature = {
+      universe: FC_UNIVERSE,
+      angleLabel: FC_ANGLE.label,
+      angleKey: FC_ANGLE.key,
+      title: parsed.title ?? `${FC_UNIVERSE}: ${FC_ANGLE.label}`,
+      body: parsed.body ?? "",
+      digDeeper: parsed.digDeeper ?? "",
+    };
+    await put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false });
+    return result;
+  } catch { return null; }
 }
 
 // ── Archive ───────────────────────────────────────────────────────────────────
