@@ -609,7 +609,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v9/${editionKey}.json`;
+  const blobKey = `feature-creature/v10/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -649,6 +649,7 @@ Rules:
 - Call to action: 1 imperative sentence. What to DO/MAKE/WATCH/BUILD today. Specific, not generic.
 - Dig Deeper: 1 sentence — a specific book, film, essay, or rabbit hole
 - Pull quote: the single most electrifying sentence from the body — standalone, no context needed, makes a reader stop scrolling
+- Image query: 4-6 words optimised for Unsplash stock photo search. Use concrete visual nouns + atmosphere words that will find a REAL photo. Think: "neon rain cyberpunk street night" not "aesthetic collapse permission". Must be visually distinct from the hero (which already covers the universe directly).
 
 CORRECT body example (1 period / 2 periods / 3 periods):
 "Akira didn't predict the future — it designed it.\\n\\nOtomo understood that collapsed societies don't look grey and broken; they look neon and kinetic. The film is less a warning than a mood board.\\n\\nEvery streetwear brand, every dystopian ad campaign, every TikTok filter owes a debt to Neo-Tokyo. We've internalized the idea that apocalypse looks good. The question is whether we're fans of the aesthetic or participants in the collapse."
@@ -661,6 +662,7 @@ Return JSON only — no markdown fences:
   "ctaHeader": "2-4 word phrase",
   "body": "one sentence.\\n\\none or two sentences.\\n\\none to three sentences.",
   "pullQuote": "the best sentence from the body verbatim",
+  "imageQuery": "4-6 concrete visual words for Unsplash",
   "callToAction": "...",
   "digDeeper": "..."
 }`
@@ -671,14 +673,31 @@ Return JSON only — no markdown fences:
     const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
     const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const parsed = JSON.parse(text);
-    // Mid-article image: extract content keywords from body for a semantically linked search
-    const STOP = new Set(["that","this","with","from","have","been","they","their","which","what","when","were","will","into","about","also","more","than","then","some","only","other","just","like","very","such","even","most","over","after","before","could","would","should","there","these","those","every","each"]);
-    const bodyKeywords = (parsed.synopsis + " " + parsed.body)
-      .replace(/[^a-zA-Z ]/g, " ").split(/\s+/)
-      .filter((w: string) => w.length > 4 && !STOP.has(w.toLowerCase()))
-      .slice(0, 4).join(" ");
-    const imageUrl2Raw = bodyKeywords ? await fetchUnsplash(bodyKeywords, "Arts", 2) : undefined;
-    const imageUrl2 = imageUrl2Raw !== imageUrl ? imageUrl2Raw : undefined;
+
+    // Mid-article image: use Claude-generated imageQuery, then vision-review the result
+    const imageQuery = parsed.imageQuery as string | undefined;
+    let imageUrl2: string | undefined;
+    if (imageQuery) {
+      const candidate = await fetchUnsplash(imageQuery, "Arts", 2);
+      if (candidate && candidate !== imageUrl) {
+        // Vision review: score relevance 1-10; accept if >= 6
+        try {
+          const review = await client.messages.create({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 10,
+            messages: [{
+              role: "user",
+              content: [
+                { type: "image", source: { type: "url", url: candidate } },
+                { type: "text", text: `Article title: "${parsed.title}". Synopsis: "${parsed.synopsis}". Does this photo fit as a mid-article illustration? Reply with a single integer 1-10 (10 = perfect fit, 1 = totally unrelated).` },
+              ],
+            }],
+          });
+          const score = parseInt((review.content[0] as { type: string; text: string }).text.trim(), 10);
+          if (!isNaN(score) && score >= 6) imageUrl2 = candidate;
+        } catch { /* vision review failed — skip image2, use pull-quote */ }
+      }
+    }
     const result: FeatureCreature = {
       universe: FC_UNIVERSE,
       angleLabel: FC_ANGLE.label,
