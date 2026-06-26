@@ -53,7 +53,7 @@ Edition key format: `2026-06-26_morning`
 | Key | Content |
 |-----|---------|
 | `articles/v8/{editionKey}/{md5slug}.json` | ArticleCommentary JSON |
-| `feature-creature/v18/{editionKey}.json` | FeatureCreature JSON |
+| `feature-creature/v19/{editionKey}.json` | FeatureCreature JSON |
 | `archive/index.json` | ArchiveEntry[] list |
 | `archive/editions/{key}.json` | Full PageData for archived edition |
 | `archive/photos/{editionKey}.jpg` | Persisted hero image |
@@ -127,6 +127,13 @@ Two-pass generation:
 - `/archive` page: pill nav, 3-col card grid
 - `/archive/[key]`: pill "Archive" nav button
 
+## Deployment Notes
+- Vercel Hobby plan = max 1 cron/day. Current cron: 6am (revalidate + warm). Other 4 editions cold-load on first visit.
+- **Fix:** set up cron-job.org (free) to hit `/api/revalidate` + `/api/warm` every 4h — bypasses Vercel limit, fully automates all 5 editions.
+- If GitHub webhook breaks again: use `vercel --prod` from PowerShell at C:\dev\daily-signal
+- Empty-body cache protection in `getFullArticle` — bad blobs are skipped and regenerated automatically
+
 ## Next Steps
+- **Set up cron-job.org** for full 5-edition automation (highest priority)
 - Mobile layout tweaks (bento grid needs rethinking for small screens)
 - Custom domain (thedailysignal.com likely taken by Heritage Foundation — consider dailysignalai.com, signaldaily.co, thedailysignal.news)
