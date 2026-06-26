@@ -60,6 +60,7 @@ function keywords(title: string): string[] {
 }
 
 const DEAL_RE = /\b(prime\s*day|amazon\s*deal|amazon\s*prime|best\s*deal|prime\s*sale|deals?\s+you\s+can|deals?\s+we\s+found|guide\s+to\s+(amazon|prime)|prime\s+day\s+(deal|sale|pick|find|gear|offer))\b/i;
+const NEGATIVE_RE = /\b(dead|dies|died|has died|passed away|obituary|killed|murder|shooting|stabbing|suicide|overdose|crash|disaster|flood|hurricane|wildfire|war|invasion|bombing|terror|massacre|genocide|hostage|famine|pandemic|outbreak|epidemic|recession|collapse|bankruptcy|scandal|indicted|arrested|convicted|sentenced)\b/i;
 const POLITICS_RE = /\b(trump|biden|congress|senate|democrat|republican|gop|election|ballot|white\s*house|oval\s*office|legislation|filibuster|partisan|maga|progressive\s+primary|political\s+party|campaign\s+trail|tariff|fcc\s+(chair|commission)|federal\s+reserve\s+chair)\b/i;
 
 function isSundayEarlyMorning(): boolean {
@@ -331,10 +332,11 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   // Interleave science and creative so s1/s2 are never the same section; tech fills the tail
   const sci = science.slice(0, 3), cre = creative.slice(0, 5), tec = tech.slice(0, 3);
   const pool = [sci[0], cre[0], sci[1], cre[1], cre[2], sci[2], cre[3], cre[4], tec[0], tec[1], tec[2]].filter(Boolean);
-  // Deal articles must never be S1–S6; push them to the end (S7–S9)
-  const deals = pool.filter(s => DEAL_RE.test(s.title) || DEAL_RE.test(s.content));
-  const nonDeals = pool.filter(s => !DEAL_RE.test(s.title) && !DEAL_RE.test(s.content));
-  const selected = [...nonDeals, ...deals];
+  // Deals and negative/dark stories must never appear in S1–S3; push them toward the end
+  const isNeg = (s: RawItem) => NEGATIVE_RE.test(s.title) || DEAL_RE.test(s.title) || DEAL_RE.test(s.content);
+  const negative = pool.filter(isNeg);
+  const positive = pool.filter(s => !isNeg(s));
+  const selected = [...positive, ...negative];
   cacheSet(key, selected, 8 * ONE_HOUR);
   return selected;
 }
