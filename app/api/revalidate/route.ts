@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { cacheClearAll } from "@/lib/cache";
+import { getEdition } from "@/lib/stories";
 
 export async function GET() {
   const count = cacheClearAll();
-  revalidatePath("/", "layout"); // bust ISR cache for all pages
-  return NextResponse.json({ cleared: true, filesRemoved: count, at: new Date().toISOString() });
+  const { key: editionKey } = getEdition();
+  revalidateTag(`edition-${editionKey}`);
+  revalidatePath("/", "layout");
+  return NextResponse.json({ cleared: true, filesRemoved: count, editionKey, at: new Date().toISOString() });
 }
