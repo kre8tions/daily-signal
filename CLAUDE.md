@@ -15,11 +15,11 @@ Vercel auto-deploys on every push to `main`. Always check Vercel dashboard for r
 
 ## Stack
 - Next.js 15 App Router (server components only, no client except EmailCapture)
-- Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) — batch story analysis + article commentary
-- Vercel Blob (`@vercel/blob`) — persistent storage for articles, archive, subscribers, photos
+- Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) — story analysis, article commentary, FC generation
+- Vercel Blob (`@vercel/blob`) — persistent cache for articles, FC, archive, subscribers, photos
 - Unsplash API — image fallback when OG scrape fails
 - rss-parser — RSS feed ingestion
-- File-based TTL cache in `/tmp` — homepage analysis only (unreliable across Lambda instances)
+- File-based TTL cache in `/tmp` — homepage analysis (unreliable across Lambda instances)
 
 ## Env Vars (set in Vercel dashboard)
 - `ANTHROPIC_API_KEY`
@@ -29,34 +29,65 @@ Vercel auto-deploys on every push to `main`. Always check Vercel dashboard for r
 ## Key Files
 | File | Purpose |
 |------|---------|
-| `app/page.tsx` | Homepage bento grid + Synthesis + EmailCapture |
-| `app/EmailCapture.tsx` | Client component — email input → /api/subscribe |
-| `app/api/subscribe/route.ts` | Saves emails to Vercel Blob at subscribers.json |
-| `app/article/[slug]/page.tsx` | Article detail (force-dynamic), OG meta tags |
+| `app/page.tsx` | Homepage 12-col bento grid + Synthesis + EmailCapture + What To Do |
+| `app/article/[slug]/page.tsx` | Article detail — header + pull-quote + commentary |
+| `app/feature-creature/[slug]/page.tsx` | FC article page (blob v17) |
 | `app/archive/page.tsx` | Archive list |
 | `app/archive/[key]/page.tsx` | Single archived edition view |
 | `app/api/revalidate/route.ts` | Clears file cache + revalidatePath |
-| `lib/stories.ts` | All data logic: RSS, dedup, Claude, Blob cache, images |
-| `lib/palette.ts` | Design tokens, ACTION_LABELS, ACTION_EMOJIS, TAGLINE, contrastColor() |
+| `app/api/warm/route.ts` | Pre-generates FC + all articles + writes archive entry |
+| `lib/stories.ts` | All data logic: RSS, dedup, Claude, Blob cache, images, FC, archive |
+| `lib/palette.ts` | Design tokens, cursive font pool, FC_UNIVERSES/FC_ANGLES, ACTION_LABELS |
 | `lib/cache.ts` | File-based TTL cache (homepage analysis only) |
+
+## Cron Jobs (vercel.json)
+- `/api/revalidate` — every 4h at :00 (clears cache, forces fresh homepage)
+- `/api/warm` — every 4h at :05 (pre-generates FC + all 11 articles + archive entry)
+- No manual triggers needed after deploy. Hit `/api/warm` once manually to backfill current edition.
 
 ## Editions
 5 per day (~4 hours each): early, morning, afternoon, evening, night.
-Edition key format: `2026-06-25_evening`
+Edition key format: `2026-06-26_morning`
 
-## Caching Architecture
-- **Homepage analysis**: file-based /tmp cache (per Lambda instance)
-- **Article commentary**: Vercel Blob at `articles/v3/{editionKey}/{md5hash}.txt`
-  - `PROMPT_V = "v3"` in `getFullArticle` — bump to bust cache when prompt changes
-  - Generated once per edition per article, served from Blob after that
-- **Images**: file-based cache key prefix `artimg_v2_` — bump version to bust
-- **Archive editions**: Vercel Blob at `archive/editions/{key}.json`
-- **Subscribers**: Vercel Blob at `subscribers.json`
-- **Archive photos**: Vercel Blob at `archive/photos/{editionKey}.jpg`
+## Blob Cache Keys
+| Key | Content |
+|-----|---------|
+| `articles/v6/{editionKey}/{md5slug}.json` | ArticleCommentary JSON |
+| `feature-creature/v17/{editionKey}.json` | FeatureCreature JSON |
+| `archive/index.json` | ArchiveEntry[] list |
+| `archive/editions/{key}.json` | Full PageData for archived edition |
+| `archive/photos/{editionKey}.jpg` | Persisted hero image |
+| `subscribers.json` | Email list |
 
-## Article Slug
-MD5 hash of URL: `createHash("md5").update(story.link).digest("hex").slice(0, 16)`
-Do NOT use truncated base64 — causes collisions for same-domain URLs.
+**Bump version prefix** (v6, v17) when changing prompts to invalidate old cache.
+
+## Article Commentary (`getFullArticle`) — v6
+Returns `ArticleCommentary { header, pullQuote, body }` JSON, stored as `.json` blob.
+- `header`: 3-5 word evocative sub-headline — rendered in `P.fontHeading` at section color
+- `pullQuote`: verbatim sentence from body — rendered as blockquote after para 3
+- `body`: paragraphs separated by `\n\n`
+- Post-processed by `breakLongSentences()` — breaks sentences >20 words at natural clause boundaries (em-dash, semicolon, conjunctions)
+- Paragraph cadence: 1 sentence / 1 sentence / 1-2 sentences / 1-3 sentences
+- One reference max from the 2000+ source pool (BANNED list in prompt)
+- 200-280 words total
+
+## Feature Creature (`getFeatureCreature`) — v17
+Two-pass generation:
+- **Pass1**: free creative write — 180-220 words, voice = "smart friend texting at 11pm", no sentence cap
+- **Pass2**: scaffold into para1(1)/para2(1)/para3(1-2)/para4(2-3)/para5(1-3) + break sentences >20 words
+- `trimSentences(str, max)` safety net per paragraph
+- `imageQuery`: Claude-generated 4-6 concrete visual words → Unsplash search
+- Vision review: Haiku scores image 1-10, accept ≥6; pull-quote fallback if rejected
+- `ctaHeader`: 2-4 word active phrase before CTA (rendered in cursive font)
+- `headers[0]` before para1, `headers[1]` before para4
+- Mid-article: imageUrl2 after para3, or pullQuote blockquote if no image
+
+## Homepage Layout (12-column grid)
+- Row 1: s1 text `col 1/6`, s1 image `col 6/13`
+- Rows 2-3: FC `col 1/7`, s2 image `col 7/13` (row 2), s2 pullquote `col 7/13` (row 3)
+- 11 stories total (fills 3-col bottom grid evenly)
+- Story pool interleaved: sci[0], cre[0], sci[1], cre[1], cre[2], sci[2], cre[3], cre[4], tec[0-2]
+- `NEGATIVE_RE` filter: deaths/disasters/crimes pushed past position 3
 
 ## Image Fetching Pipeline
 1. RSS image URL (if clean)
@@ -64,59 +95,28 @@ Do NOT use truncated base64 — causes collisions for same-domain URLs.
 3. Unsplash fallback — filters 80+ common names (NAME_RE), section-aware queries
 4. `getUniqueImages()` deduplicates across all cards
 
-## Deduplication
-- Single shared keyword between two article titles = duplicate, filtered out
-- Max 1 Amazon/deal article per edition
-
-## Claude Prompts
-
-### Article Commentary (`getFullArticle`)
-- 150-260 words
-- Format: 1-sentence hook paragraph → 1-2 sentence middle paragraphs → up to 3-sentence closer
-- One reference max from the 2000+ source pool
-- BANNED: Goodhart's Law, Dunning-Kruger Effect, Streisand Effect, Overton Window, Occam's Razor, Hanlon's Razor, Butterfly Effect, Maslow's Hierarchy, Trolley Problem, Black Swan
-- Bump `PROMPT_V` constant when changing prompt to invalidate Blob cache
-
-### Synthesis (`analyzeAll`)
-- Observation: first sentence alone as hook, then `\n\n`, then 1-2 follow-up sentences
-- Key insights: 1 sentence each, 2 max
-- Action steps: beginner-friendly, specific, doable with no experience, max 20 words each
-
-### Tone
-Centrist, intellectually honest, skeptical of all sides. Non-ideological. No moralizing.
-
 ## Design System (`lib/palette.ts`)
-- Dark theme with accent color (yellow `#FAED26` in current palette)
+- 5 rotating palettes (daily). `P` = today's palette.
 - `P.pageBg`, `P.cardBg`, `P.ink`, `P.inkMid`, `P.inkLight`, `P.accent`, `P.tint`, `P.shadow`
-- `contrastColor(hex)` — returns #000 or #fff for contrast against any hex
+- `P.fontHeading`, `P.fontBody`, `P.dark` (boolean)
+- `contrastColor(hex)` — returns #000 or #fff for contrast
 - `SECTION_COLORS` — per-section accent colors
-- `ACTION_LABELS` — 20 rotating card titles (daily rotation)
-- `ACTION_EMOJIS` — 20 rotating emojis (per-edition rotation)
-- `TAGLINE` / `TAGLINE_FONT` — rotating tagline next to nav pills
-
-## Bento Grid Layout
-- Top grid: `5fr 7fr` columns, 3 rows
-  - s1 text-only: col 1, row 1
-  - s1 image: col 2, row 1
-  - s2 image: col 1, row 2
-  - s3: col 2, rows 2-3 (spans)
-  - s2 pullquote: col 1, row 3
-- Row 2: s4-s9 in 3-col grid, image 200px tall
-- The Signal card: sketchy SVG border (feTurbulence seed=7), animated space invader
-- What To Do card: separate card, sketchy border (seed=12), dashed accent action bubbles
-- Email capture: in nav row, right-aligned
+- `CURSIVE_FONT_FAMILY` / `CURSIVE_FONT_URL` — rotating per edition (used in FC pages only)
+- `ACTION_LABELS` / `ACTION_EMOJI` — rotating titles/emojis for What To Do card
 
 ## Article Pages
 - `force-dynamic` (no ISR)
-- Georgia serif body text, 19px, 1.9 line-height
-- Home pill buttons (no arrows), Read Full Article pill (no arrow)
-- Dynamic OG meta tags: story image + title + summary
+- Georgia serif body text, 19px, 1.9 line-height, maxWidth 720px
+- Section color header above "The Signal Take" label
+- Pull-quote blockquote (section color) injected after paragraph 3
+- Home pill button (no arrows), Read Full Article pill
 
-## Mobile
-- CSS media query via `<style>` tag (server component — no client state)
-- `action-grid` class: single column on mobile (max-width: 700px)
-- Next session: mobile layout tweaks planned
+## Archive
+- `saveToArchive()` called from `/api/warm` — reliably writes index entry each edition
+- Archive index at `archive/index.json`, max 90 entries
+- `/archive` page: pill nav, 3-col card grid
+- `/archive/[key]`: pill "Archive" nav button
 
 ## Next Steps
-- Custom domain (thedailysignal.com may be taken by Heritage Foundation — check dailysignalai.com, signaldaily.co, thedailysignal.news)
-- Mobile layout improvements
+- Mobile layout tweaks (bento grid needs rethinking for small screens)
+- Custom domain (thedailysignal.com likely taken by Heritage Foundation — consider dailysignalai.com, signaldaily.co, thedailysignal.news)
