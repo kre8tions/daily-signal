@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 async function loadFC(slug: string): Promise<FeatureCreature | null> {
   try {
-    const existing = await head(`feature-creature/v8/${slug}.json`);
+    const existing = await head(`feature-creature/v9/${slug}.json`);
     if (!existing) return null;
     const res = await fetch(existing.url, { cache: "no-store" });
     if (!res.ok) return null;
@@ -85,11 +85,17 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
                 </div>
               )}
               <p style={{ fontSize: 19, lineHeight: 1.9, color: P.inkMid, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 0, marginBottom: 24 }}>{para}</p>
-              {/* Mid-article image after paragraph 1 */}
-              {i === 1 && fc.imageUrl2 && (
-                <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 32, marginTop: 8, aspectRatio: "16/9" }}>
-                  <img src={fc.imageUrl2} alt={`${fc.universe} — ${fc.angleLabel}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                </div>
+              {/* Mid-article: image2 if available, else pull-quote */}
+              {i === 1 && (
+                fc.imageUrl2 ? (
+                  <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 32, marginTop: 8, aspectRatio: "16/9" }}>
+                    <img src={fc.imageUrl2} alt={`${fc.universe} — ${fc.angleLabel}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  </div>
+                ) : fc.pullQuote ? (
+                  <div style={{ borderLeft: `4px solid ${color}`, paddingLeft: 28, paddingTop: 8, paddingBottom: 8, marginBottom: 32, marginTop: 16 }}>
+                    <p style={{ fontSize: 26, lineHeight: 1.4, color, fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic", fontWeight: 700, margin: 0 }}>{fc.pullQuote}</p>
+                  </div>
+                ) : null
               )}
             </div>
           ))}

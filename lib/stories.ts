@@ -601,6 +601,7 @@ export interface FeatureCreature {
   headers: [string, string];
   digDeeper: string;
   callToAction: string;  // strong closing CTA — 1 imperative sentence
+  pullQuote?: string;    // mid-article pull-quote fallback (shown when imageUrl2 absent)
   imageUrl?: string;     // hero image
   imageUrl2?: string;    // mid-article image (different query)
   editionKey?: string;
@@ -608,7 +609,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v8/${editionKey}.json`;
+  const blobKey = `feature-creature/v9/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -647,6 +648,7 @@ Rules:
   - Total body: 160-200 words. Do NOT write more than 3 paragraphs.
 - Call to action: 1 imperative sentence. What to DO/MAKE/WATCH/BUILD today. Specific, not generic.
 - Dig Deeper: 1 sentence — a specific book, film, essay, or rabbit hole
+- Pull quote: the single most electrifying sentence from the body — standalone, no context needed, makes a reader stop scrolling
 
 CORRECT body example (1 period / 2 periods / 3 periods):
 "Akira didn't predict the future — it designed it.\\n\\nOtomo understood that collapsed societies don't look grey and broken; they look neon and kinetic. The film is less a warning than a mood board.\\n\\nEvery streetwear brand, every dystopian ad campaign, every TikTok filter owes a debt to Neo-Tokyo. We've internalized the idea that apocalypse looks good. The question is whether we're fans of the aesthetic or participants in the collapse."
@@ -658,6 +660,7 @@ Return JSON only — no markdown fences:
   "headers": ["word or two", "word or two"],
   "ctaHeader": "2-4 word phrase",
   "body": "one sentence.\\n\\none or two sentences.\\n\\none to three sentences.",
+  "pullQuote": "the best sentence from the body verbatim",
   "callToAction": "...",
   "digDeeper": "..."
 }`
@@ -668,13 +671,13 @@ Return JSON only — no markdown fences:
     const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
     const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const parsed = JSON.parse(text);
-    // Mid-article image: broad angle-only query (no universe name) for a wider Unsplash result pool
-    const angleVisual: Record<string, string> = {
-      science: "neon futuristic technology laboratory",
-      build:   "architecture engineering blueprint design",
-      culture: "urban fashion aesthetic streetwear lifestyle",
-    };
-    const imageUrl2Raw = await fetchUnsplash(angleVisual[FC_ANGLE.key] ?? "futuristic creative", "Arts", 3);
+    // Mid-article image: extract content keywords from body for a semantically linked search
+    const STOP = new Set(["that","this","with","from","have","been","they","their","which","what","when","were","will","into","about","also","more","than","then","some","only","other","just","like","very","such","even","most","over","after","before","could","would","should","there","these","those","every","each"]);
+    const bodyKeywords = (parsed.synopsis + " " + parsed.body)
+      .replace(/[^a-zA-Z ]/g, " ").split(/\s+/)
+      .filter((w: string) => w.length > 4 && !STOP.has(w.toLowerCase()))
+      .slice(0, 4).join(" ");
+    const imageUrl2Raw = bodyKeywords ? await fetchUnsplash(bodyKeywords, "Arts", 2) : undefined;
     const imageUrl2 = imageUrl2Raw !== imageUrl ? imageUrl2Raw : undefined;
     const result: FeatureCreature = {
       universe: FC_UNIVERSE,
@@ -685,6 +688,7 @@ Return JSON only — no markdown fences:
       headers: [parsed.headers?.[0] ?? "", parsed.headers?.[1] ?? ""],
       ctaHeader: parsed.ctaHeader ?? undefined,
       body: parsed.body ?? "",
+      pullQuote: parsed.pullQuote ?? undefined,
       callToAction: parsed.callToAction ?? "",
       digDeeper: parsed.digDeeper ?? "",
       imageUrl,
