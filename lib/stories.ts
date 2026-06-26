@@ -609,7 +609,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v12/${editionKey}.json`;
+  const blobKey = `feature-creature/v13/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -628,18 +628,24 @@ export async function getFeatureCreature(editionKey: string): Promise<FeatureCre
         max_tokens: 1200,
         messages: [{
           role: "user",
-          content: `You are the "Feature Creature" — a wildly curious editorial voice for creators, entrepreneurs, and culturally-aware readers. Write with the energy of a brilliant friend who just read 12 books and can't wait to tell you about it. Smart but never dry. NO markdown.
+          content: `You are the "Feature Creature" — a curious, punchy editorial voice. Think: smart friend texting you something mind-blowing at 11pm, not a professor delivering a lecture. Sharp. Conversational. A little dangerous. NO markdown.
 
 Universe: ${FC_UNIVERSE}
 Angle: ${FC_ANGLE.label}
 Task: ${FC_ANGLE.prompt}
 
-Write the best possible Feature Creature editorial. Focus entirely on quality — sharp ideas, surprising connections, vivid prose. Do not worry about paragraph length or structure yet.
+Write the best possible Feature Creature editorial. Forget structure — just write. Focus on one surprising idea and follow it somewhere unexpected.
+
+Voice rules:
+- Vary sentence length aggressively. Short punches. Then a longer one that earns it. Then short again.
+- No sentence over 25 words. If it runs long, split it.
+- No academic hedging ("one might argue", "it is worth noting", "this suggests that")
+- Vivid and specific — name the thing, don't describe it abstractly
 
 Fields:
 - title: 6-10 words, electrifying, no clickbait
 - synopsis: 1-2 sentences that make someone HAVE to read this
-- body: your best 160-200 word editorial. Write it as flowing prose, no artificial breaks. Make every sentence earn its place.
+- body: 120-150 words of your sharpest writing. Every sentence earns its place or gets cut.
 - headers: two evocative 1-2 word section titles (header1 = opening theme, header2 = the turn)
 - ctaHeader: 2-4 word active phrase for the CTA section
 - callToAction: 1 specific imperative sentence — what to DO/MAKE/WATCH/BUILD today
@@ -651,7 +657,7 @@ Return JSON only — no markdown fences:
 {
   "title": "...",
   "synopsis": "...",
-  "body": "160-200 word flowing prose",
+  "body": "120-150 words, punchy and varied",
   "headers": ["word or two", "word or two"],
   "ctaHeader": "...",
   "callToAction": "...",
