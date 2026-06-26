@@ -512,17 +512,23 @@ Return only valid JSON.`,
 }
 
 // ── Full editorial rewrite for article detail ─────────────────────────────────
-export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string): Promise<string> {
-  const PROMPT_V = "v4"; // bump when prompt changes to invalidate old cached articles
+export interface ArticleCommentary {
+  header: string;
+  pullQuote: string;
+  body: string;
+}
+
+export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string): Promise<ArticleCommentary> {
+  const PROMPT_V = "v5"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
-  const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.txt`;
+  const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
   // Check Blob cache first
   try {
     const existing = await head(blobKey);
     if (existing) {
-      const res = await fetch(existing.url);
-      if (res.ok) return await res.text();
+      const res = await fetch(existing.url, { cache: "no-store" });
+      if (res.ok) return await res.json() as ArticleCommentary;
     }
   } catch { /* not found — generate fresh */ }
 
@@ -530,10 +536,10 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const related = relatedStories.filter((s) => s.link !== story.link).slice(0, 5);
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 450,
+    max_tokens: 600,
     messages: [{
       role: "user",
-      content: `You are a deeply curious editor-at-large with a centrist, intellectually honest perspective. A story lands on your desk. Your job: write 200-350 words of sharp, conversational commentary — not a summary, not a rewrite. Think out loud about what it actually means. Challenge assumptions from all sides. Avoid ideological framing, virtue signaling, or moralizing. Be equally skeptical of institutional power, activist narratives, and reactionary takes. Focus on what's real, what's at stake, and who actually benefits or loses.
+      content: `You are a deeply curious editor-at-large with a centrist, intellectually honest perspective. A story lands on your desk. Your job: write 200-280 words of sharp, conversational commentary — not a summary, not a rewrite. Think out loud about what it actually means. Challenge assumptions from all sides. Avoid ideological framing, virtue signaling, or moralizing. Be equally skeptical of institutional power, activist narratives, and reactionary takes. Focus on what's real, what's at stake, and who actually benefits or loses.
 
 Use EXACTLY ONE reference that creates a genuine, surprising insight. Name it specifically. One sentence of connection, then move on. If nothing fits naturally, skip it entirely.
 
@@ -558,12 +564,17 @@ POP CULTURE & SPECIFIC MOMENTS: HAL 9000's "I'm sorry Dave" as machine alignment
 
 SPECIFIC STUDIES & EXPERIMENTS: the Terman longitudinal study on giftedness, the Grant Study (Harvard longitudinal on adult development), the Framingham Heart Study on social contagion of obesity and happiness, the Nurses' Health Study, Harlow's cloth vs wire mother monkeys, Bowlby's attachment observations, Ainsworth's strange situation, Spitz on hospitalism, the Perry Preschool Project, the Abecedarian Project, the Moving to Opportunity experiment, the Oregon Medicaid lottery, the RAND Health Insurance Experiment, the Negative Income Tax experiments (Mincome), the Tennessee STAR class size study, Project STAR vs HeadStart divergence, the Robbers Cave experiment, Muzafer Sherif's realistic conflict theory, the Jigsaw classroom, the Pygmalion study's replication issues, the blue-eyes/brown-eyes experiment, Zimbardo's Stanford Prison Experiment's theatrical staging (Le Texier's exposé), Milgram's obedience study's ecological validity, the Bystander Effect studies' replication (and the 2019 revision), Latané and Darley's diffusion of responsibility, the Good Samaritan experiment (Darley and Batson), Festinger's cognitive dissonance original study, Festinger's "When Prophecy Fails", Leon Festinger on social comparison, the Iowa Gambling Task, the Ultimatum Game's cross-cultural variations, the Dictator Game's experimenter effects, the Prisoner's Dilemma in repeated play, Axelrod's tit-for-tat tournament, the Public Goods Game's punishment dynamics, the Trust Game's oxytocin controversy, Paul Zak's oxytocin-trust claims (and failures), the marshmallow test's socioeconomic confounds, ego depletion's failed replication, the Power Pose controversy (Cuddy vs Simmons), priming studies' collapse, the money priming effect, the Florida effect, the facial feedback hypothesis (pen in mouth), the pen-in-mouth replication, embodied cognition's checkered replication record, growth mindset's implementation failures, grit's limited predictive validity beyond IQ, stereotype threat's boundary conditions, implicit bias training's null effects, the contact hypothesis's conditions (Pettigrew), the Robbers Cave follow-up (failed reconciliation attempts), the Realistic Conflict Theory's limits, social identity theory's minimal group paradigm, Tajfel's original studies, Terror Management Theory's mortality salience (and Covid-era tests), the Kitty Genovese story's factual errors, the broken windows policing evidence (mixed), the Scared Straight program's backfire, the D.A.R.E. program's null effects, the Cambridge-Somerville Youth Study's harm, Scared Straight's criminogenic effects, sex offender registries' counterproductive effects
 
+SENTENCE RHYTHM — non-negotiable:
+- No sentence over 20 words. If it runs long, break it at a natural clause boundary (em-dash, semicolon, "and", "but", "because", "which").
+- Vary sentence length aggressively. Short punches. Then a longer one that earns it. Then short again.
+- No academic hedging ("one might argue", "it is worth noting", "this suggests that").
+
 FORMAT — NON-NEGOTIABLE. Separate every paragraph with a blank line:
 - Paragraph 1: EXACTLY 1 sentence. The hook. No exceptions.
 - Paragraph 2: EXACTLY 1 sentence. Deepen or reframe.
 - Middle paragraphs: 1-2 sentences each. Vary rhythm.
 - Final paragraph: 1-3 sentences. Sharp landing — question, provocation, or implication.
-- Total: 150-260 words. Every sentence must earn its place.
+- Total: 200-280 words. Every sentence must earn its place.
 
 STORY: ${story.title}
 SOURCE: ${story.source}
@@ -575,18 +586,31 @@ INSIGHT: ${story.insight ?? ""}
 TODAY'S OTHER STORIES (mention one only if the parallel is genuinely striking):
 ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
 
-Return only the commentary. No title, no byline, no headers. Short paragraphs separated by blank lines.`,
+Return valid JSON only, no markdown:
+{
+  "header": "3-5 word section header — evocative, not generic. Like a magazine sub-headline. No colons.",
+  "pullQuote": "One striking sentence lifted directly from the body. Must appear verbatim in the body text.",
+  "body": "Full commentary, paragraphs separated by \\n\\n. No title, no byline."
+}`,
     }],
   });
 
-  const text = msg.content[0].type === "text" ? msg.content[0].text.trim() : "";
+  const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
+  const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  let commentary: ArticleCommentary;
+  try {
+    commentary = JSON.parse(text) as ArticleCommentary;
+    if (!commentary.body) throw new Error("missing body");
+  } catch {
+    commentary = { header: "", pullQuote: "", body: text };
+  }
 
   // Save to Blob for this edition
   try {
-    await put(blobKey, text, { access: "public", contentType: "text/plain", addRandomSuffix: false });
+    await put(blobKey, JSON.stringify(commentary), { access: "public", contentType: "application/json", addRandomSuffix: false });
   } catch { /* non-fatal */ }
 
-  return text;
+  return commentary;
 }
 
 // ── Feature Creature ─────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { getPageData, getStoryBySlug, getFullArticle, getEdition, urlToSlug, type Story } from "@/lib/stories";
+import { getPageData, getStoryBySlug, getFullArticle, getEdition, urlToSlug, type Story, type ArticleCommentary } from "@/lib/stories";
 import { notFound } from "next/navigation";
 import { P, SECTION_COLORS, contrastColor } from "@/lib/palette";
 import type { Metadata } from "next";
@@ -89,14 +89,26 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         )}
 
         {/* Editorial commentary */}
-        {fullArticle && (
+        {fullArticle?.body && (
           <div style={{ marginBottom: 36 }}>
             <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 20, fontFamily: P.fontBody }}>The Signal Take</div>
-            {fullArticle.split("\n\n").filter(Boolean).map((para, i) => (
-              <p key={i} style={{ fontSize: 19, lineHeight: 1.9, color: P.ink, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720 }}
-                dangerouslySetInnerHTML={{ __html: para.trim()
-                  .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-                  .replace(/\*(.+?)\*/g, "<em>$1</em>") }} />
+            {fullArticle.header && (
+              <div style={{ fontFamily: P.fontHeading, fontSize: "clamp(22px, 4vw, 34px)", fontWeight: P.dark ? 400 : 900, letterSpacing: P.dark ? 2 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, color: sectionColor, lineHeight: 1.1, marginBottom: 20 }}>
+                {fullArticle.header}
+              </div>
+            )}
+            {fullArticle.body.split("\n\n").filter(Boolean).map((para, i) => (
+              <div key={i}>
+                <p style={{ fontSize: 19, lineHeight: 1.9, color: P.ink, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720 }}
+                  dangerouslySetInnerHTML={{ __html: para.trim()
+                    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                    .replace(/\*(.+?)\*/g, "<em>$1</em>") }} />
+                {i === 2 && fullArticle.pullQuote && (
+                  <blockquote style={{ borderLeft: `4px solid ${sectionColor}`, paddingLeft: 24, marginLeft: 0, marginRight: 0, marginBottom: 28, marginTop: 4 }}>
+                    <p style={{ fontSize: 22, fontStyle: "italic", color: sectionColor, lineHeight: 1.5, fontFamily: "Georgia, 'Times New Roman', serif", margin: 0 }}>{fullArticle.pullQuote}</p>
+                  </blockquote>
+                )}
+              </div>
             ))}
             <div style={{ height: 1, background: `${P.tint}66`, marginTop: 8, marginBottom: 36 }} />
           </div>
@@ -116,12 +128,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         ) : null}
 
-        {/* Pullquote */}
-        {story.pullquote && (
-          <blockquote style={{ borderLeft: `4px solid ${P.accent}`, paddingLeft: 24, marginLeft: 0, marginRight: 0, marginBottom: 28 }}>
-            <p style={{ fontSize: 20, fontStyle: "italic", color: P.inkMid, lineHeight: 1.55, fontFamily: P.fontBody }}>{story.pullquote}</p>
-          </blockquote>
-        )}
 
         {/* Signal Insight */}
         {story.insight && (
