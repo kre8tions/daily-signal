@@ -314,68 +314,66 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
   );
 }
 
-// ── Feature Creature card ─────────────────────────────────────────────────────
+// ── Feature Creature card (compact homepage version) ──────────────────────────
 function FeatureCreatureCard({ fc }: { fc: FeatureCreature }) {
   const angleColors: Record<string, string> = { science: "#27AE8F", build: "#5B8DEF", culture: "#D4517A" };
   const angleEmoji: Record<string, string> = { science: "🔬", build: "🛠️", culture: "🌍" };
   const color = angleColors[fc.angleKey] ?? P.accent;
   const emoji = angleEmoji[fc.angleKey] ?? "🪄";
+  const slug = fc.editionKey ?? "today";
+
   return (
     <div style={{ maxWidth: 1200, marginTop: 16, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 32, paddingBottom: 36, paddingLeft: 36, paddingRight: 36 }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
-          <span style={{ fontSize: 32 }}>{emoji}</span>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color, fontFamily: P.fontBody }}>Feature Creature</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: P.inkLight, fontFamily: P.fontBody, marginTop: 2 }}>
-              <span style={{ color, marginRight: 6 }}>{fc.angleLabel}</span>·<span style={{ marginLeft: 6 }}>{fc.universe}</span>
+      {/* Clock tick border SVG — short dashes evenly spaced like minute markers */}
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="22" ry="22" fill="none"
+          stroke={color} strokeWidth="3"
+          strokeDasharray="3 9"
+          strokeLinecap="round"
+        />
+        {/* Outer tick ring — longer marks every ~36px */}
+        <rect x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="22" ry="22" fill="none"
+          stroke={color} strokeWidth="7" strokeOpacity="0.35"
+          strokeDasharray="1 44"
+          strokeLinecap="round"
+        />
+      </svg>
+
+      <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+        <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow }}>
+          {/* Image */}
+          {fc.imageUrl && (
+            <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
+              <img src={fc.imageUrl} alt={fc.universe} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 40%, ${P.cardBg}cc 100%)` }} />
+              {/* Badge */}
+              <div style={{ position: "absolute", top: 12, left: 14, background: color + "ee", color: "#fff", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 4, paddingBottom: 4, paddingLeft: 10, paddingRight: 10, borderRadius: 20, display: "flex", alignItems: "center", gap: 6 }}>
+                <span>{emoji}</span> Feature Creature
+              </div>
+              <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{fc.universe}</div>
+            </div>
+          )}
+
+          <div style={{ paddingTop: 16, paddingLeft: 22, paddingRight: 22, paddingBottom: 22 }}>
+            {!fc.imageUrl && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <span style={{ background: color + "22", color, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 4, paddingBottom: 4, paddingLeft: 10, paddingRight: 10, borderRadius: 20 }}>{emoji} Feature Creature</span>
+                <span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody }}>{fc.universe}</span>
+              </div>
+            )}
+            {/* Angle label */}
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color, fontFamily: P.fontBody, marginBottom: 8 }}>{fc.angleLabel}</div>
+            {/* Title in cursive */}
+            <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 26, color: P.ink, lineHeight: 1.15, marginBottom: 10, fontWeight: 700 }}>{fc.title}</div>
+            {/* Synopsis */}
+            {fc.synopsis && <div style={{ fontSize: 15, lineHeight: 1.65, color: P.inkMid, fontFamily: P.fontBody, marginBottom: 16 }}>{fc.synopsis}</div>}
+            {/* More pill */}
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color, background: color + "18", border: `1px solid ${color}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3 }}>More</span>
             </div>
           </div>
         </div>
-
-        {/* Sketchy divider */}
-        <div style={{ marginBottom: 20, marginTop: 8 }}>
-          <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <filter id="fc-line" x="-5%" y="-100%" width="110%" height="300%">
-                <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="17" result="noise" />
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" />
-              </filter>
-            </defs>
-            <line x1="0" y1="6" x2="100%" y2="6" stroke={color} strokeWidth="2.5" filter="url(#fc-line)" />
-          </svg>
-        </div>
-
-        {/* Title in cursive */}
-        <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 38, color, lineHeight: 1.1, marginBottom: 24, fontWeight: 700 }}>{fc.title}</div>
-
-        {/* Body paragraphs */}
-        <div style={{ maxWidth: 820 }}>
-          {fc.body.split("\n\n").filter(Boolean).map((para, i) => (
-            <p key={i} style={{ fontSize: 17, lineHeight: 1.8, color: P.inkMid, fontFamily: P.fontBody, marginTop: 0, marginBottom: 16 }}>{para}</p>
-          ))}
-        </div>
-
-        {/* Dig Deeper */}
-        {fc.digDeeper && (
-          <div style={{ marginTop: 8, borderLeft: `3px solid ${color}`, paddingLeft: 16 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color, fontFamily: P.fontBody }}>Dig Deeper </span>
-            <span style={{ fontSize: 15, color: P.inkMid, fontStyle: "italic", fontFamily: "Georgia, 'Times New Roman', serif" }}>{fc.digDeeper.replace(/^dig deeper:?\s*/i, "")}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Sketchy border */}
-      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <filter id="fc-border" x="-8%" y="-8%" width="116%" height="116%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="23" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </defs>
-        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={color} strokeWidth="4" filter="url(#fc-border)" />
-      </svg>
+      </a>
     </div>
   );
 }

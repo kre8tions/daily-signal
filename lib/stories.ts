@@ -589,13 +589,16 @@ export interface FeatureCreature {
   angleLabel: string;
   angleKey: string;
   title: string;
+  synopsis: string; // 1-2 sentence hook for homepage card
   body: string;
-  digDeeper: string; // a one-sentence "if you want to go further..." prompt
+  digDeeper: string;
+  imageUrl?: string;
+  editionKey?: string; // for linking to full article page
 }
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/${editionKey}.json`;
+  const blobKey = `feature-creature/v2/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -607,31 +610,36 @@ export async function getFeatureCreature(editionKey: string): Promise<FeatureCre
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   try {
-    const msg = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 600,
-      messages: [{
-        role: "user",
-        content: `You are the "Feature Creature" — a wildly curious editorial voice for a publication aimed at energetic, intelligent, culturally-aware readers (creators, entrepreneurs, curious minds).
+    const [msg, imageUrl] = await Promise.all([
+      client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 700,
+        messages: [{
+          role: "user",
+          content: `You are the "Feature Creature" — a wildly curious editorial voice for a publication aimed at energetic, intelligent, culturally-aware readers (creators, entrepreneurs, curious minds).
 
 Universe: ${FC_UNIVERSE}
 Angle: ${FC_ANGLE.label}
 Task: ${FC_ANGLE.prompt}
 
 Write a punchy, fascinating Feature Creature editorial. Rules:
+- Synopsis: 1-2 electrifying sentences that make someone HAVE to click — the essential hook
 - Title: 6-10 words, electrifying, no clickbait clichés
 - Body: exactly 3 paragraphs, ~60 words each, total ~180 words
 - Voice: brilliant friend who just read 12 books and wants to tell you about it — smart but never dry
-- End with a 1-sentence "Dig Deeper" hook (start with "Dig deeper:") — a specific book, film, essay, or rabbit hole
+- End with a 1-sentence "Dig Deeper" hook — a specific book, film, essay, or rabbit hole
 
 Return JSON only:
 {
   "title": "...",
+  "synopsis": "...",
   "body": "paragraph1\\n\\nparagraph2\\n\\nparagraph3",
   "digDeeper": "..."
 }`
-      }],
-    });
+        }],
+      }),
+      fetchUnsplash(FC_UNIVERSE, "Culture"),
+    ]);
 
     const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
     const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
@@ -641,8 +649,11 @@ Return JSON only:
       angleLabel: FC_ANGLE.label,
       angleKey: FC_ANGLE.key,
       title: parsed.title ?? `${FC_UNIVERSE}: ${FC_ANGLE.label}`,
+      synopsis: parsed.synopsis ?? "",
       body: parsed.body ?? "",
       digDeeper: parsed.digDeeper ?? "",
+      imageUrl,
+      editionKey,
     };
     await put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false });
     return result;
