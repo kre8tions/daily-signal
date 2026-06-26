@@ -611,7 +611,10 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
     const existing = await head(blobKey);
     if (existing) {
       const res = await fetch(existing.url, { cache: "no-store" });
-      if (res.ok) return await res.json() as ArticleCommentary;
+      if (res.ok) {
+        const cached = await res.json() as ArticleCommentary;
+        if (cached.body) return cached; // only use cache if body is non-empty
+      }
     }
   } catch { /* not found — generate fresh */ }
 
