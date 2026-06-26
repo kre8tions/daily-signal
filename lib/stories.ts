@@ -609,7 +609,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v16/${editionKey}.json`;
+  const blobKey = `feature-creature/v17/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -638,7 +638,6 @@ Write the best possible Feature Creature editorial. Forget structure — just wr
 
 Voice rules:
 - Vary sentence length aggressively. Short punches. Then a longer one that earns it. Then short again.
-- No sentence over 25 words. If it runs long, split it.
 - No academic hedging ("one might argue", "it is worth noting", "this suggests that")
 - Vivid and specific — name the thing, don't describe it abstractly
 
