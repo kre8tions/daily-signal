@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 async function loadFC(slug: string): Promise<FeatureCreature | null> {
   try {
-    const existing = await head(`feature-creature/v5/${slug}.json`);
+    const existing = await head(`feature-creature/v6/${slug}.json`);
     if (!existing) return null;
     const res = await fetch(existing.url, { cache: "no-store" });
     if (!res.ok) return null;
@@ -95,9 +95,16 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
           ))}
         </div>
 
-        {/* Call To Action — concluding paragraph */}
+        {/* Call To Action — cursive header + concluding paragraph */}
         {fc.callToAction && (
-          <p style={{ fontSize: 19, lineHeight: 1.9, color: P.inkMid, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 0, marginBottom: 40 }}>{fc.callToAction}</p>
+          <>
+            {fc.ctaHeader && (
+              <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 36, color, lineHeight: 1, marginBottom: 12, marginTop: 36, fontWeight: 700 }}>
+                {fc.ctaHeader}
+              </div>
+            )}
+            <p style={{ fontSize: 19, lineHeight: 1.9, color: P.inkMid, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 0, marginBottom: 40 }}>{fc.callToAction}</p>
+          </>
         )}
 
         {/* Dig Deeper */}

@@ -199,7 +199,7 @@ const MORBID_RE = /^(dead|dies|died|death|killed|kill|murder|murdered|shooting|s
 // Detect obituary headlines
 const OBIT_RE = /\b(dead|dies|died|has died|passed away|obituary|obit|in memoriam)\b/i;
 
-export async function fetchUnsplash(headline: string, section?: string): Promise<string | undefined> {
+export async function fetchUnsplash(headline: string, section?: string, page = 1): Promise<string | undefined> {
   const key = process.env.UNSPLASH_ACCESS_KEY;
   if (!key) return undefined;
 
@@ -241,12 +241,13 @@ export async function fetchUnsplash(headline: string, section?: string): Promise
   for (const q of queries) {
     try {
       const res = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&orientation=landscape&per_page=1&client_id=${key}`,
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&orientation=landscape&per_page=${page}&page=1&client_id=${key}`,
         { cache: "no-store" }
       );
       if (!res.ok) continue;
       const data = await res.json();
-      const url = data?.results?.[0]?.urls?.regular;
+      const results = data?.results ?? [];
+      const url = (results[results.length - 1] ?? results[0])?.urls?.regular;
       if (url) return url as string;
     } catch { continue; }
   }
@@ -589,6 +590,7 @@ export interface FeatureCreature {
   universe: string;
   angleLabel: string;
   angleKey: string;
+  ctaHeader?: string;
   title: string;
   synopsis: string;
   body: string;          // 3 paragraphs separated by \n\n
@@ -602,7 +604,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v5/${editionKey}.json`;
+  const blobKey = `feature-creature/v6/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -614,7 +616,7 @@ export async function getFeatureCreature(editionKey: string): Promise<FeatureCre
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   try {
-    const [msg, imageUrl, imageUrl2] = await Promise.all([
+    const [msg, imageUrl] = await Promise.all([
       client.messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 800,
@@ -631,6 +633,7 @@ Write a punchy, fascinating Feature Creature editorial. Rules:
 - Title: 6-10 words, electrifying, no clickbait clichés
 - Header 1: 1-2 evocative words, placed before paragraph 1 (sets the scene/theme)
 - Header 2: 1-2 evocative words, placed before paragraph 3 (marks a turn or escalation)
+- CTA header: 2-4 words — a sharp, active phrase that frames what the reader is about to be asked to do (e.g. "Make Your Move", "Start Tonight", "Build This Now"). Reflects the universe and angle.
 - Body paragraph structure — COUNT YOUR SENTENCES, each paragraph separated by \\n\\n:
   - Paragraph 1: EXACTLY 1 sentence. The opening bomb. One period. Done.
   - Paragraph 2: EXACTLY 1-2 sentences. Expand or complicate. Maximum 2 periods.
@@ -648,6 +651,7 @@ Return JSON only:
   "title": "...",
   "synopsis": "...",
   "headers": ["word or two", "word or two"],
+  "ctaHeader": "2-4 word active phrase",
   "body": "exactly one sentence.\\n\\none or two sentences max.\\n\\none to three sentences max.",
   "callToAction": "...",
   "digDeeper": "..."
@@ -655,8 +659,10 @@ Return JSON only:
         }],
       }),
       fetchUnsplash(FC_UNIVERSE, "Culture"),
-      fetchUnsplash(`${FC_UNIVERSE} ${FC_ANGLE.key}`, "Arts"),
     ]);
+    // Fetch second image sequentially with page offset to guarantee a different result
+    const imageUrl2Raw = await fetchUnsplash(`${FC_UNIVERSE} ${FC_ANGLE.key}`, "Arts", 3);
+    const imageUrl2 = imageUrl2Raw !== imageUrl ? imageUrl2Raw : undefined;
 
     const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
     const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
@@ -668,11 +674,12 @@ Return JSON only:
       title: parsed.title ?? `${FC_UNIVERSE}: ${FC_ANGLE.label}`,
       synopsis: parsed.synopsis ?? "",
       headers: [parsed.headers?.[0] ?? "", parsed.headers?.[1] ?? ""],
+      ctaHeader: parsed.ctaHeader ?? undefined,
       body: parsed.body ?? "",
       callToAction: parsed.callToAction ?? "",
       digDeeper: parsed.digDeeper ?? "",
       imageUrl,
-      imageUrl2: imageUrl2 !== imageUrl ? imageUrl2 : undefined,
+      imageUrl2,
       editionKey,
     };
     await put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false });
