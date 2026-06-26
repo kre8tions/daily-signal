@@ -577,7 +577,7 @@ export interface ArticleCommentary {
   header: string;
   pullQuote: string;
   body: string;
-  writer: string;
+  writer?: string;
 }
 
 function breakLongSentences(text: string): string {
