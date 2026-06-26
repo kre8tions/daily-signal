@@ -608,7 +608,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v7/${editionKey}.json`;
+  const blobKey = `feature-creature/v8/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -623,7 +623,7 @@ export async function getFeatureCreature(editionKey: string): Promise<FeatureCre
     const [msg, imageUrl] = await Promise.all([
       client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 800,
+        max_tokens: 1200,
         messages: [{
           role: "user",
           content: `You are the "Feature Creature" — a wildly curious editorial voice for a publication aimed at energetic, intelligent, culturally-aware readers (creators, entrepreneurs, curious minds).
@@ -632,31 +632,32 @@ Universe: ${FC_UNIVERSE}
 Angle: ${FC_ANGLE.label}
 Task: ${FC_ANGLE.prompt}
 
-Write a punchy, fascinating Feature Creature editorial. Rules:
+Write a punchy, fascinating Feature Creature editorial. NO markdown — no asterisks, no bold, no italics syntax. Plain prose only.
+
+Rules:
 - Synopsis: 1-2 electrifying sentences that make someone HAVE to click — the essential hook
 - Title: 6-10 words, electrifying, no clickbait clichés
 - Header 1: 1-2 evocative words, placed before paragraph 1 (sets the scene/theme)
 - Header 2: 1-2 evocative words, placed before paragraph 3 (marks a turn or escalation)
-- CTA header: 2-4 words — a sharp, active phrase that frames what the reader is about to be asked to do (e.g. "Make Your Move", "Start Tonight", "Build This Now"). Reflects the universe and angle.
-- Body paragraph structure — COUNT YOUR SENTENCES, each paragraph separated by \\n\\n:
-  - Paragraph 1: EXACTLY 1 sentence. The opening bomb. One period. Done.
-  - Paragraph 2: EXACTLY 1-2 sentences. Expand or complicate. Maximum 2 periods.
-  - Paragraph 3: EXACTLY 1-3 sentences. The turn, the payoff. Maximum 3 periods.
-  - Total body: 160-200 words across all 3 paragraphs.
-- Call to action: 1 strong imperative sentence — tell the reader exactly what to DO or MAKE or WATCH or BUILD today, directly connected to the universe and angle. Energetic, specific, not generic.
-- Voice: brilliant friend who just read 12 books and wants to tell you about it — smart but never dry
+- CTA header: 2-4 words — a sharp, active phrase (e.g. "Make Your Move", "Start Tonight", "Build This Now")
+- Body — THREE paragraphs, each separated by a blank line (\\n\\n). COUNT PERIODS TO VERIFY:
+  - Paragraph 1: EXACTLY 1 sentence = 1 period. Stop. New paragraph.
+  - Paragraph 2: 1-2 sentences = maximum 2 periods. Stop. New paragraph.
+  - Paragraph 3: 1-3 sentences = maximum 3 periods. Stop.
+  - Total body: 160-200 words. Do NOT write more than 3 paragraphs.
+- Call to action: 1 imperative sentence. What to DO/MAKE/WATCH/BUILD today. Specific, not generic.
 - Dig Deeper: 1 sentence — a specific book, film, essay, or rabbit hole
 
-EXAMPLE of correct body format (count: 1 sentence / 2 sentences / 3 sentences):
+CORRECT body example (1 period / 2 periods / 3 periods):
 "Akira didn't predict the future — it designed it.\\n\\nOtomo understood that collapsed societies don't look grey and broken; they look neon and kinetic. The film is less a warning than a mood board.\\n\\nEvery streetwear brand, every dystopian ad campaign, every TikTok filter owes a debt to Neo-Tokyo. We've internalized the idea that apocalypse looks good. The question is whether we're fans of the aesthetic or participants in the collapse."
 
-Return JSON only:
+Return JSON only — no markdown fences:
 {
   "title": "...",
   "synopsis": "...",
   "headers": ["word or two", "word or two"],
-  "ctaHeader": "2-4 word active phrase",
-  "body": "exactly one sentence.\\n\\none or two sentences max.\\n\\none to three sentences max.",
+  "ctaHeader": "2-4 word phrase",
+  "body": "one sentence.\\n\\none or two sentences.\\n\\none to three sentences.",
   "callToAction": "...",
   "digDeeper": "..."
 }`
@@ -667,13 +668,13 @@ Return JSON only:
     const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
     const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const parsed = JSON.parse(text);
-    // Mid-article image: angle-specific visual keywords so it's thematically different from the hero
+    // Mid-article image: broad angle-only query (no universe name) for a wider Unsplash result pool
     const angleVisual: Record<string, string> = {
-      science: `${FC_UNIVERSE} laboratory technology experiment`,
-      build:   `${FC_UNIVERSE} architecture engineering blueprint`,
-      culture: `${FC_UNIVERSE} fashion lifestyle aesthetic`,
+      science: "neon futuristic technology laboratory",
+      build:   "architecture engineering blueprint design",
+      culture: "urban fashion aesthetic streetwear lifestyle",
     };
-    const imageUrl2Raw = await fetchUnsplash(angleVisual[FC_ANGLE.key] ?? `${FC_UNIVERSE} ${FC_ANGLE.label}`, "Arts", 2);
+    const imageUrl2Raw = await fetchUnsplash(angleVisual[FC_ANGLE.key] ?? "futuristic creative", "Arts", 3);
     const imageUrl2 = imageUrl2Raw !== imageUrl ? imageUrl2Raw : undefined;
     const result: FeatureCreature = {
       universe: FC_UNIVERSE,
