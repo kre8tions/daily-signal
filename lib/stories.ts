@@ -434,6 +434,11 @@ async function buildPageData(editionKey: string, editionLabel: string): Promise<
   put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
     access: "public", contentType: "application/json", addRandomSuffix: false,
   }).catch(() => {});
+  // Always update archive index when a new edition is first built
+  saveToArchive({
+    key: editionKey, label: editionLabel,
+    date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl,
+  }).catch(() => {});
   return pageData;
 }
 
@@ -885,12 +890,41 @@ export async function saveToArchive(entry: ArchiveEntry) {
 }
 
 export async function getArchiveList(): Promise<ArchiveEntry[]> {
+  // Primary: fast index file
   try {
     const existing = await head("archive/index.json");
-    if (!existing) return [];
-    const res = await fetch(existing.url + "?t=" + Date.now()); // bypass CDN cache
-    if (!res.ok) return [];
-    return await res.json();
+    if (existing) {
+      const res = await fetch(existing.url + "?t=" + Date.now(), { cache: "no-store" });
+      if (res.ok) {
+        const list: ArchiveEntry[] = await res.json();
+        if (list.length > 0) return list;
+      }
+    }
+  } catch { /* fall through to rebuild */ }
+
+  // Fallback: rebuild index from edition blobs (runs once to recover, then index takes over)
+  try {
+    const { blobs } = await list({ prefix: "archive/editions/", limit: 100 });
+    if (!blobs.length) return [];
+    const entries = await Promise.all(
+      blobs.map(async (blob) => {
+        const key = blob.pathname.replace("archive/editions/", "").replace(".json", "");
+        const parts = key.split("_");
+        const date = parts[0] ?? key;
+        try {
+          const res = await fetch(blob.url + "?t=" + Date.now(), { cache: "no-store" });
+          if (!res.ok) return null;
+          const data = await res.json() as PageData;
+          let imageUrl = data.stories?.[0]?.imageUrl;
+          try { const p = await head(`archive/photos/${key}.jpg`); if (p) imageUrl = p.url; } catch { /* ok */ }
+          return { key, label: data.editionLabel ?? key, date, theme: data.synthesis?.theme ?? "", imageUrl } as ArchiveEntry;
+        } catch { return null; }
+      })
+    );
+    const sorted = entries.filter((e): e is ArchiveEntry => e !== null).sort((a, b) => b.key.localeCompare(a.key));
+    // Persist the rebuilt index for next time
+    put("archive/index.json", JSON.stringify(sorted), { access: "public", contentType: "application/json", addRandomSuffix: false }).catch(() => {});
+    return sorted;
   } catch { return []; }
 }
 
