@@ -766,6 +766,7 @@ export interface FeatureCreature {
   imageUrl?: string;     // hero image
   imageUrl2?: string;    // mid-article image (different query)
   editionKey?: string;
+  voiceId?: number;      // 1-7, internal use only
 }
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
@@ -781,6 +782,13 @@ export async function getFeatureCreature(editionKey: string): Promise<FeatureCre
   } catch { /* generate fresh */ }
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  // Pick a writer voice seeded by edition key
+  const fcSeed = editionKey.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 7), 0);
+  const fcWriterIndex = fcSeed % WRITERS.length;
+  const fcWriter = WRITERS[fcWriterIndex];
+  const voiceId = fcWriterIndex + 1;
+
   try {
     // ── Pass 1: free-write — Claude focuses purely on quality, voice, insight ──
     const [pass1msg, imageUrl] = await Promise.all([
@@ -789,7 +797,11 @@ export async function getFeatureCreature(editionKey: string): Promise<FeatureCre
         max_tokens: 1200,
         messages: [{
           role: "user",
-          content: `You are the "Feature Creature" — a sharp, curious editorial voice that finds the real-world science, culture, or design hiding inside fictional universes. Think: the smartest friend you have, texting you something mind-blowing at 11pm. Not a professor. Not a recap. A genuine "holy shit, I never thought of it that way" take.
+          content: `You are the "Feature Creature" — a sharp editorial voice that finds the real-world science, culture, or design hiding inside fictional universes. You write like the smartest friend texting you something mind-blowing at 11pm. Not a professor. Not a recap. A genuine "holy shit, I never thought of it that way" take.
+
+Your instinct for this piece: ${fcWriter.style}
+
+But keep the late-night energy — casual, direct, genuinely excited about the idea.
 
 Universe: ${FC_UNIVERSE}
 Angle: ${FC_ANGLE.label}
@@ -909,6 +921,7 @@ Return JSON only:
       imageUrl,
       imageUrl2,
       editionKey,
+      voiceId,
     };
     await put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false });
     return result;
