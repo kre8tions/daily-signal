@@ -609,7 +609,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v13/${editionKey}.json`;
+  const blobKey = `feature-creature/v14/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -645,7 +645,7 @@ Voice rules:
 Fields:
 - title: 6-10 words, electrifying, no clickbait
 - synopsis: 1-2 sentences that make someone HAVE to read this
-- body: 120-150 words of your sharpest writing. Every sentence earns its place or gets cut.
+- body: 180-220 words. Open with a sharp thesis. Then give 2-3 short supporting insights — specific examples, surprising real-world connections, or observations that prove the thesis. End with a consequence or provocation. Every sentence earns its place.
 - headers: two evocative 1-2 word section titles (header1 = opening theme, header2 = the turn)
 - ctaHeader: 2-4 word active phrase for the CTA section
 - callToAction: 1 specific imperative sentence — what to DO/MAKE/WATCH/BUILD today
@@ -657,7 +657,7 @@ Return JSON only — no markdown fences:
 {
   "title": "...",
   "synopsis": "...",
-  "body": "120-150 words, punchy and varied",
+  "body": "180-220 words: thesis + 2-3 supporting insights + provocation",
   "headers": ["word or two", "word or two"],
   "ctaHeader": "...",
   "callToAction": "...",
@@ -684,8 +684,8 @@ Return JSON only — no markdown fences:
 
 Rules:
 - para1: EXACTLY 1 sentence — pick the best hook sentence from the body
-- para2: 1-2 sentences — the expansion or complication
-- para3: 1-3 sentences — the turn, payoff, or consequence
+- para2: 2-3 sentences — the supporting insights and evidence
+- para3: 2-3 sentences — the turn, payoff, or consequence
 
 Body to restructure:
 "${pass1.body}"
@@ -706,7 +706,7 @@ Return JSON only:
     const body = scaffold.para1 && scaffold.para2 && scaffold.para3
       ? [
           trimSentences(scaffold.para1, 1),
-          trimSentences(scaffold.para2, 2),
+          trimSentences(scaffold.para2, 3),
           trimSentences(scaffold.para3, 3),
         ].join("\n\n")
       : (pass1.body ?? "");
