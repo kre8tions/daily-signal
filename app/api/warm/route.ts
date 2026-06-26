@@ -46,7 +46,7 @@ export async function GET() {
     stories.map(async (story, i) => {
       const key = `article-${i}-${story.link.slice(-30)}`;
       try {
-        const commentary = await withTimeout(getFullArticle(story, related, editionKey, writerSlots[i]), 25000);
+        const commentary = await withTimeout(getFullArticle(story, related, editionKey, writerSlots[i]), 40000);
         results[key] = commentary.body ? "cached" : "failed";
       } catch {
         results[key] = "failed";
