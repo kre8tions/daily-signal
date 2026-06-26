@@ -774,7 +774,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v18/${editionKey}.json`;
+  const blobKey = `feature-creature/v19/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
