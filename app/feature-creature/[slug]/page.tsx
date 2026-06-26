@@ -95,15 +95,9 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
           ))}
         </div>
 
-        {/* Call To Action */}
+        {/* Call To Action — concluding paragraph */}
         {fc.callToAction && (
-          <div style={{ background: `linear-gradient(135deg, ${color}22, ${color}08)`, border: `2px solid ${color}`, borderRadius: 20, paddingTop: 28, paddingBottom: 28, paddingLeft: 30, paddingRight: 30, marginBottom: 28, display: "flex", alignItems: "flex-start", gap: 16 }}>
-            <span style={{ fontSize: 28, flexShrink: 0 }}>⚡</span>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color, marginBottom: 10, fontFamily: P.fontBody }}>Your Move</div>
-              <p style={{ fontSize: 18, lineHeight: 1.7, color: P.ink, fontFamily: P.fontBody, fontWeight: 600, margin: 0 }}>{fc.callToAction}</p>
-            </div>
-          </div>
+          <p style={{ fontSize: 19, lineHeight: 1.9, color: P.inkMid, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 0, marginBottom: 40 }}>{fc.callToAction}</p>
         )}
 
         {/* Dig Deeper */}
