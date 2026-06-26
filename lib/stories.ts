@@ -430,11 +430,10 @@ async function buildPageData(editionKey: string, editionLabel: string): Promise<
   }));
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
-  // Save edition data to Blob for persistent archive
+  // Save full edition data to Blob for archive page rendering
   put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
     access: "public", contentType: "application/json", addRandomSuffix: false,
   }).catch(() => {});
-  saveToArchive({ key: editionKey, label: editionLabel, date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl }).catch(() => {});
   return pageData;
 }
 
