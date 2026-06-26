@@ -609,7 +609,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v10/${editionKey}.json`;
+  const blobKey = `feature-creature/v11/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -641,18 +641,20 @@ Rules:
 - Header 1: 1-2 evocative words, placed before paragraph 1 (sets the scene/theme)
 - Header 2: 1-2 evocative words, placed before paragraph 3 (marks a turn or escalation)
 - CTA header: 2-4 words — a sharp, active phrase (e.g. "Make Your Move", "Start Tonight", "Build This Now")
-- Body — THREE paragraphs, each separated by a blank line (\\n\\n). COUNT PERIODS TO VERIFY:
-  - Paragraph 1: EXACTLY 1 sentence = 1 period. Stop. New paragraph.
-  - Paragraph 2: 1-2 sentences = maximum 2 periods. Stop. New paragraph.
-  - Paragraph 3: 1-3 sentences = maximum 3 periods. Stop.
-  - Total body: 160-200 words. Do NOT write more than 3 paragraphs.
+- Body: THREE separate JSON fields (para1, para2, para3). Each is its own string. Hard limits:
+  - para1: EXACTLY 1 sentence. One period. Full stop. Nothing else.
+  - para2: 1-2 sentences maximum. Two periods maximum.
+  - para3: 1-3 sentences maximum. Three periods maximum.
+  - Combined word count: 160-200 words across all three.
 - Call to action: 1 imperative sentence. What to DO/MAKE/WATCH/BUILD today. Specific, not generic.
 - Dig Deeper: 1 sentence — a specific book, film, essay, or rabbit hole
 - Pull quote: the single most electrifying sentence from the body — standalone, no context needed, makes a reader stop scrolling
 - Image query: 4-6 words optimised for Unsplash stock photo search. Use concrete visual nouns + atmosphere words that will find a REAL photo. Think: "neon rain cyberpunk street night" not "aesthetic collapse permission". Must be visually distinct from the hero (which already covers the universe directly).
 
-CORRECT body example (1 period / 2 periods / 3 periods):
-"Akira didn't predict the future — it designed it.\\n\\nOtomo understood that collapsed societies don't look grey and broken; they look neon and kinetic. The film is less a warning than a mood board.\\n\\nEvery streetwear brand, every dystopian ad campaign, every TikTok filter owes a debt to Neo-Tokyo. We've internalized the idea that apocalypse looks good. The question is whether we're fans of the aesthetic or participants in the collapse."
+CORRECT example:
+para1: "Akira didn't predict the future — it designed it."
+para2: "Otomo understood that collapsed societies don't look grey and broken; they look neon and kinetic. The film is less a warning than a mood board."
+para3: "Every streetwear brand, every dystopian ad campaign, every TikTok filter owes a debt to Neo-Tokyo. We've internalized the idea that apocalypse looks good. The question is whether we're fans of the aesthetic or participants in the collapse."
 
 Return JSON only — no markdown fences:
 {
@@ -660,8 +662,10 @@ Return JSON only — no markdown fences:
   "synopsis": "...",
   "headers": ["word or two", "word or two"],
   "ctaHeader": "2-4 word phrase",
-  "body": "one sentence.\\n\\none or two sentences.\\n\\none to three sentences.",
-  "pullQuote": "the best sentence from the body verbatim",
+  "para1": "exactly one sentence",
+  "para2": "one or two sentences max",
+  "para3": "one to three sentences max",
+  "pullQuote": "the best sentence from para1/2/3 verbatim",
   "imageQuery": "4-6 concrete visual words for Unsplash",
   "callToAction": "...",
   "digDeeper": "..."
@@ -673,6 +677,19 @@ Return JSON only — no markdown fences:
     const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
     const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const parsed = JSON.parse(text);
+
+    // Assemble body from separate paragraph fields; fall back to legacy "body" string
+    function trimSentences(s: string, max: number): string {
+      const matches = s.match(/[^.!?]*[.!?]+["']?/g) ?? [s];
+      return matches.slice(0, max).join(" ").trim();
+    }
+    const body = parsed.para1 && parsed.para2 && parsed.para3
+      ? [
+          trimSentences(parsed.para1, 1),
+          trimSentences(parsed.para2, 2),
+          trimSentences(parsed.para3, 3),
+        ].join("\n\n")
+      : (parsed.body ?? "");
 
     // Mid-article image: use Claude-generated imageQuery, then vision-review the result
     const imageQuery = parsed.imageQuery as string | undefined;
@@ -706,7 +723,7 @@ Return JSON only — no markdown fences:
       synopsis: parsed.synopsis ?? "",
       headers: [parsed.headers?.[0] ?? "", parsed.headers?.[1] ?? ""],
       ctaHeader: parsed.ctaHeader ?? undefined,
-      body: parsed.body ?? "",
+      body,
       pullQuote: parsed.pullQuote ?? undefined,
       callToAction: parsed.callToAction ?? "",
       digDeeper: parsed.digDeeper ?? "",
