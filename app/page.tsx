@@ -142,7 +142,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
     ? allStories.filter((s) => s.section === activeSection)
     : allStories;
 
-  const [s1, s2, s3, s4, s5, s6, s7, s8, s9] = stories;
+  const [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11] = stories;
 
   const card: React.CSSProperties = { background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, position: "relative" };
   const imgCard: React.CSSProperties = { ...card, position: "relative", background: P.tint + "44" };
@@ -191,7 +191,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       </div>
 
       {/* ── Top bento ── */}
-      <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gridTemplateRows: "minmax(380px, auto) minmax(400px, auto) minmax(100px, 140px)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
+      <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gridTemplateRows: "minmax(380px, auto) minmax(400px, auto) minmax(180px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
 
         {/* s1: text only, no image, row 1 left */}
         {s1 && (
@@ -294,10 +294,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       {/* ── Synthesis ── */}
       {!activeSection && synthesis?.theme && <Synthesis synthesis={synthesis} stories={stories} />}
 
-      {/* ── Row 2: s3–s9 ── */}
-      {[s3, s4, s5, s6, s7, s8, s9].filter(Boolean).length > 0 && (
+      {/* ── Row 2: s3–s11 ── */}
+      {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).length > 0 && (
         <div className="ds-row2" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 0, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
-          {[s3, s4, s5, s6, s7, s8, s9].filter(Boolean).map((s, i) => s && (
+          {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).map((s, i) => s && (
             <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
               <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
                 {s.imageUrl && (

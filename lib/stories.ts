@@ -328,7 +328,7 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
     else if (item.section === "Science") science.push(item);
     else if (CREATIVE.includes(item.section)) creative.push(item);
   }
-  const pool = [...tech.slice(0, 3), ...creative.slice(0, 4), ...science.slice(0, 2)].slice(0, 9);
+  const pool = [...science.slice(0, 3), ...creative.slice(0, 5), ...tech.slice(0, 3)].slice(0, 11);
   // Deal articles must never be S1–S6; push them to the end (S7–S9)
   const deals = pool.filter(s => DEAL_RE.test(s.title) || DEAL_RE.test(s.content));
   const nonDeals = pool.filter(s => !DEAL_RE.test(s.title) && !DEAL_RE.test(s.content));
@@ -347,7 +347,7 @@ export async function analyzeAll(items: RawItem[], editionKey: string): Promise<
   if (hit) return hit;
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const styles = ["full", "pullquote", "brief", "brief", "brief", "brief", "brief", "brief", "brief"];
+  const styles = ["full", "pullquote", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief"];
   const list = items.map((a, i) =>
     `[${i}] ${a.section.toUpperCase()} — ${a.source}: ${a.title}\n${a.content.slice(0, 400)}`
   ).join("\n\n");
@@ -658,15 +658,14 @@ Return JSON only:
 }`
         }],
       }),
-      fetchUnsplash(FC_UNIVERSE, "Culture"),
+      fetchUnsplash(`${FC_UNIVERSE} ${FC_ANGLE.key}`, "Culture"),
     ]);
-    // Fetch second image sequentially with page offset to guarantee a different result
-    const imageUrl2Raw = await fetchUnsplash(`${FC_UNIVERSE} ${FC_ANGLE.key}`, "Arts", 3);
-    const imageUrl2 = imageUrl2Raw !== imageUrl ? imageUrl2Raw : undefined;
-
     const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
     const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const parsed = JSON.parse(text);
+    // Use the generated title for a smarter mid-article image search, different from hero
+    const imageUrl2Raw = await fetchUnsplash(parsed.title ?? `${FC_UNIVERSE} ${FC_ANGLE.label}`, "Arts", 3);
+    const imageUrl2 = imageUrl2Raw !== imageUrl ? imageUrl2Raw : undefined;
     const result: FeatureCreature = {
       universe: FC_UNIVERSE,
       angleLabel: FC_ANGLE.label,
