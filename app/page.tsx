@@ -100,8 +100,8 @@ function SpaceInvaderSVG({ color }: { color: string }) {
 }
 
 // Ruler-tick border — evenly spaced ticks (tall/medium/short) around all 4 edges, no numbers
-function RulerBorder({ color, radius = 20 }: { color: string; radius?: number }) {
-  const UNIT = 10;        // px between ticks (at 1:1 — SVG units)
+function RulerBorder({ color, radius = 40 }: { color: string; radius?: number }) {
+  const UNIT = 20;        // px between ticks (at 1:1 — SVG units)
   const TALL = 9; const MID = 6; const SHORT = 4;
   const tickHeight = (i: number) => i % 4 === 0 ? TALL : i % 2 === 0 ? MID : SHORT;
   const ticks: React.ReactNode[] = [];
@@ -304,7 +304,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
           const slug = fc.editionKey ?? "today";
           return (
             <div style={{ gridColumn: "1 / 7", gridRow: "2 / 4", position: "relative" }}>
-              <RulerBorder color={color} radius={20} />
+              <RulerBorder color={color} />
               <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none", color: "inherit", display: "flex", height: "100%" }}>
                 <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, display: "flex", flexDirection: "column", flex: 1 }}>
                   {fc.imageUrl && (
@@ -416,7 +416,7 @@ function FeatureCreatureCard({ fc }: { fc: FeatureCreature }) {
 
   return (
     <div style={{ maxWidth: 1200, marginTop: 16, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-      <RulerBorder color={color} radius={22} />
+      <RulerBorder color={color} />
 
       <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
         <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow }}>
