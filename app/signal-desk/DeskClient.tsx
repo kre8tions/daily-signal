@@ -3,7 +3,7 @@ import { useState } from "react";
 
 type Edition = { key: string; label: string; theme: string; stories: Story[]; isCurrent: boolean };
 type Story = { title: string; ownedTitle?: string; source: string; section: string; link: string; pubDate: string; cardStyle: string; imageUrl?: string; summary?: string; bullets?: string[]; pullquote?: string; insight?: string };
-type Writer = { id: number; name: string; personality: string };
+type Writer = { id: number; name: string; personality: string; inspiration: string };
 type Palette = { pageBg: string; cardBg: string; ink: string; inkMid: string; inkLight: string; accent: string; tint: string; fontBody: string; fontHeading: string };
 
 const PASSWORD = "office";
@@ -78,7 +78,7 @@ export function DeskClient({
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: `1px solid ${P.tint}88` }}>
-                      {["#", "Our Headline", "Original Headline", "Source", "Section", "W#", "Pseudonym", "Personality"].map(h => (
+                      {["#", "Our Headline", "Original Headline", "Source", "Section", "W#", "Pseudonym", "Modeled After", "Personality"].map(h => (
                         <th key={h} style={{ textAlign: "left" as const, padding: "6px 10px", fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: h === "Our Headline" ? P.accent : P.inkLight, whiteSpace: "nowrap" as const }}>
                           {h}
                         </th>
@@ -111,6 +111,7 @@ export function DeskClient({
                             <span style={{ fontSize: 11, fontWeight: 700, color: P.accent, fontFamily: "monospace" }}>W{writer.id}</span>
                           </td>
                           <td style={{ padding: "10px 10px", verticalAlign: "top" as const, fontWeight: 600, whiteSpace: "nowrap" as const }}>{writer.name}</td>
+                          <td style={{ padding: "10px 10px", verticalAlign: "top" as const, color: P.inkMid, fontSize: 12, whiteSpace: "nowrap" as const, fontStyle: "italic" }}>{writer.inspiration}</td>
                           <td style={{ padding: "10px 10px", verticalAlign: "top" as const, color: P.inkLight, fontSize: 12, lineHeight: 1.4, minWidth: 220 }}>{writer.personality}</td>
                         </tr>
                       );

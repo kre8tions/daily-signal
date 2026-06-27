@@ -48,10 +48,20 @@ export default async function SignalDeskPage() {
     "Ward":  "Status-game anthropologist — reads the room",
   };
 
+  const writerInspiration: Record<string, string> = {
+    "Rex":   "Christopher Hitchens",
+    "Eric":  "George Orwell",
+    "Margot":"Joan Didion",
+    "Finn":  "Michael Lewis",
+    "Cal":   "Malcolm Gladwell",
+    "Jack":  "P.J. O'Rourke",
+    "Ward":  "Tom Wolfe",
+  };
+
   return (
     <DeskClient
       allEditions={allEditions}
-      writers={WRITERS.map((w, i) => ({ id: i, name: w.name, personality: writerShortStyle[w.name] ?? "" }))}
+      writers={WRITERS.map((w, i) => ({ id: i, name: w.name, personality: writerShortStyle[w.name] ?? "", inspiration: writerInspiration[w.name] ?? "" }))}
       getWriterAssignments={getWriterAssignments}
       urlToSlug={urlToSlug}
       palette={{ pageBg: P.articleBg, cardBg: P.cardBg, ink: P.ink, inkMid: P.inkMid, inkLight: P.inkLight, accent: P.accent, tint: P.tint, fontBody: P.fontBody, fontHeading: P.fontHeading }}
