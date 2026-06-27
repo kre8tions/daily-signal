@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
+import { revalidateTag } from "next/cache";
 import { getPageData, getFullArticle, getFeatureCreature, getEdition, saveToArchive, getWriterAssignments } from "@/lib/stories";
 import { put } from "@vercel/blob";
 
@@ -58,6 +59,10 @@ async function runWarm(editionKey: string, editionLabel: string) {
       }
     })
   );
+
+  // Bust the unstable_cache so the next homepage request picks up freshly
+  // generated FC and article blobs rather than serving stale pageData
+  revalidateTag(`edition-${editionKey}`);
 
   const failed = Object.entries(results).filter(([, v]) => v === "failed").map(([k]) => k);
   console.log(`[warm] ${editionKey} done — ${failed.length} failed`, results);
