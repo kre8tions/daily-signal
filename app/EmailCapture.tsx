@@ -48,7 +48,7 @@ export function EmailCapture({ accent, ink, cardBg, fontBody, pillHeight = 36 }:
         type="submit"
         disabled={status === "loading"}
         style={{
-          background: accent, color: "#000", border: "none", borderRadius: 50,
+          background: "transparent", color: accent, border: `1px solid ${accent}`, borderRadius: 50,
           height: pillHeight, paddingLeft: 22, paddingRight: 22,
           fontSize: 13, fontWeight: 700, fontFamily: fontBody, cursor: "pointer",
           opacity: status === "loading" ? 0.6 : 1, boxSizing: "border-box",

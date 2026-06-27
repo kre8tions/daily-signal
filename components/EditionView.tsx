@@ -270,12 +270,42 @@ export async function EditionView({
       {/* Nav bar */}
       <div className="ds-nav-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1200, marginTop: 0, marginBottom: 14, marginLeft: "auto", marginRight: "auto", gap: 12, flexWrap: "wrap" as const }}>
         <div className="ds-nav-left" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
-          <a href="/" style={{ textDecoration: "none" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${isArchive ? P.tint + "88" : P.accent}`, background: isArchive ? "transparent" : P.accent + "22", color: isArchive ? P.inkLight : P.accent }}>Today</span>
-          </a>
-          <a href="/archive" style={{ textDecoration: "none" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${isArchive ? P.accent : P.tint + "88"}`, background: isArchive ? P.accent + "22" : "transparent", color: isArchive ? P.accent : P.inkLight }}>Archive</span>
-          </a>
+          {isArchive ? (
+            // Archive edition nav: Home | ← Previous | Next → | Archive
+            <>
+              <a href="/" style={{ textDecoration: "none" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>Home</span>
+              </a>
+              {prevEdition && (
+                <a href={`/archive/${prevEdition.key}`} style={{ textDecoration: "none" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>← Previous</span>
+                </a>
+              )}
+              {nextEdition && (
+                <a href={`/archive/${nextEdition.key}`} style={{ textDecoration: "none" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.accent}`, background: P.accent + "22", color: P.accent }}>Next →</span>
+                </a>
+              )}
+              <a href="/archive" style={{ textDecoration: "none" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>Archive</span>
+              </a>
+            </>
+          ) : (
+            // Homepage nav: Today | Previous Edition | Archive
+            <>
+              <a href="/" style={{ textDecoration: "none" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.accent}`, background: P.accent + "22", color: P.accent }}>Today</span>
+              </a>
+              {prevEdition && (
+                <a href={`/archive/${prevEdition.key}`} style={{ textDecoration: "none" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>Previous Edition</span>
+                </a>
+              )}
+              <a href="/archive" style={{ textDecoration: "none" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>Archive</span>
+              </a>
+            </>
+          )}
           <span style={{ fontSize: 22, fontWeight: 700, fontStyle: "normal", fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, color: P.accent, marginLeft: 8 }}>{TAGLINE}</span>
         </div>
         {!isArchive && <EmailCapture accent={P.accent} ink={P.ink} cardBg={P.cardBg} fontBody={P.fontBody} pillHeight={36} />}
@@ -422,14 +452,6 @@ export async function EditionView({
         </div>
       )}
 
-      {/* Prev / Next nav (archive only) */}
-      {isArchive && (
-        <div style={{ maxWidth: 1200, marginLeft: "auto", marginRight: "auto", marginTop: 32, display: "flex", gap: 12, justifyContent: "space-between", alignItems: "stretch" }}>
-          {prevEdition ? <NavPill href={`/archive/${prevEdition.key}`} label={prevEdition.theme || prevEdition.label} sub="Previous edition" align="left" /> : <div style={{ flex: 1 }} />}
-          <a href="/archive" style={{ display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 12, color: P.inkLight, fontFamily: P.fontBody, padding: "0 16px", flexShrink: 0 }}>All editions</a>
-          {nextEdition ? <NavPill href={`/archive/${nextEdition.key}`} label={nextEdition.theme || nextEdition.label} sub="Next edition" align="right" /> : <div style={{ flex: 1 }} />}
-        </div>
-      )}
 
       {/* Internal desk link (homepage only) */}
       {!isArchive && (

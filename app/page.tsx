@@ -1,4 +1,4 @@
-import { getPageData, getEdition } from "@/lib/stories";
+import { getPageData, getEdition, getArchiveList } from "@/lib/stories";
 import type { Metadata } from "next";
 import { EditionView } from "@/components/EditionView";
 
@@ -18,9 +18,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const { stories, synthesis, editionLabel, featureCreature } = await getPageData();
   const { key: editionKey } = getEdition();
+  const [{ stories, synthesis, editionLabel, featureCreature }, archiveList] = await Promise.all([
+    getPageData(),
+    getArchiveList(),
+  ]);
   const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const prevEdition = archiveList.find(e => e.key !== editionKey) ?? null;
 
   return (
     <EditionView
@@ -30,6 +34,7 @@ export default async function Home() {
       editionKey={editionKey}
       editionLabel={editionLabel}
       dateStr={dateStr}
+      prevEdition={prevEdition}
     />
   );
 }
