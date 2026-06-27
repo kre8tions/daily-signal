@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
-import { revalidateTag } from "next/cache";
 import { getPageData, getFullArticle, getFeatureCreature, getEdition, saveToArchive, getWriterAssignments } from "@/lib/stories";
 import { put } from "@vercel/blob";
 
@@ -40,15 +39,10 @@ async function runWarm(editionKey: string, editionLabel: string) {
 
   try {
     const fc = await getFeatureCreature(editionKey);
-    console.log("[warm] FC result:", fc ? `ok (${fc.title})` : "null — check [FC] logs");
     results["feature-creature"] = fc ? "cached" : "failed";
-  } catch (e) {
-    console.error("[warm] FC threw:", e);
+  } catch {
     results["feature-creature"] = "failed";
   }
-
-  // Revalidate here — before article loop — so it fires even if articles are slow
-  revalidateTag(`edition-${editionKey}`);
 
   const related = stories.slice(1);
   const writerSlots = getWriterAssignments(editionKey);

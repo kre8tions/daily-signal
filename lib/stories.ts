@@ -234,10 +234,10 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
     : (section && sectionFallback[section]) ?? "news media editorial";
 
   const queries = [
-    ...(imageQuery ? [imageQuery] : []),
     ...(personQuery ? [personQuery, `${personQuery} portrait`] : []),
     words.slice(0, 3).join(" "),
     words.slice(0, 2).join(" "),
+    ...(imageQuery ? [imageQuery] : []),
     fallback,
   ].filter(Boolean);
 
@@ -436,7 +436,7 @@ async function buildPageData(editionKey: string, editionLabel: string): Promise<
   const raw = await fetchTopStories(editionKey);
   const [result, featureCreature] = await Promise.all([
     analyzeAll(raw, editionKey),
-    getFeatureCreature(editionKey).catch(() => null),
+    getFeatureCreature(editionKey),
   ]);
   const { stories: analyses, synthesis } = result;
   const rawWithQuery = raw.map((r, i) => ({ ...r, imageQuery: analyses[i]?.imageQuery }));
@@ -694,9 +694,7 @@ Voice — write like this:
 
 Also return:
 - header: 3-5 words. A magazine sub-headline — specific and surprising, not generic. Examples of BAD headers: "The Bigger Picture", "What This Means", "A New Era". Examples of GOOD headers: "The Quiet Monopoly", "When Safety Becomes Control", "Debt That Builds Nations".
-- header2: 3-5 words. A second editorial sub-headline for the mid-article section — same rules as header but covers the second half of the piece.
 - pullQuote: copy one sentence verbatim from your body — the most arresting one. Must be word-for-word identical.
-- imageQuery2: 4-6 concrete visual/atmospheric words for a second Unsplash image search (mid-article). No names, no text, no logos. Think: dramatic lighting, textures, environment, emotion.
 
 STORY: ${story.title}
 SOURCE: ${story.source}
@@ -712,9 +710,7 @@ Return JSON only, no markdown:
 {
   "ownedTitle": "6-10 words in your writer voice. Magnetic editorial headline — name specifics (numbers, names, places), put tension or contradiction inside the headline itself, create a curiosity gap the article genuinely pays off. Rex: confrontational verdict. Eric: plain moral charge. Margot: cool disturbing observation. Finn: insider thriller hook. Cal: counter-intuitive reversal. Jack: sardonic sting. Ward: status-game exposure. Never use: Why/How/The Truth About/Game-Changer/Revolutionary/What You Need to Know. Must differ from source headline.",
   "header": "...",
-  "header2": "...",
   "pullQuote": "...",
-  "imageQuery2": "...",
   "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."
 }`,
     }],
@@ -722,7 +718,7 @@ Return JSON only, no markdown:
 
   const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
   const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  let pass1: { ownedTitle?: string; header?: string; header2?: string; pullQuote?: string; imageQuery2?: string; body?: string } = {};
+  let pass1: { ownedTitle?: string; header?: string; pullQuote?: string; body?: string } = {};
   try {
     pass1 = JSON.parse(text1);
     if (!pass1.body) throw new Error();
@@ -733,11 +729,13 @@ Return JSON only, no markdown:
 
   // ── Pass 2: structure — scaffold the free-write into the paragraph cadence ──
   let body = pass1.body ?? "";
+  let pass1Header2 = "";
+  let pass1ImageQuery2 = "";
   if (body) {
     try {
       const pass2msg = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 600,
+        max_tokens: 700,
         messages: [{
           role: "user",
           content: `Restructure this article body into exactly 4-5 paragraphs. Preserve ALL ideas and the original voice word-for-word where possible. Do not add new ideas.
@@ -753,11 +751,15 @@ Structure:
 - para4: 2-3 sentences — the turn. Complication, contradiction, or escalation.
 - para5: 1-2 sentences — landing. A sharp question, provocation, or implication. Omit if the content doesn't need it.
 
+Also return:
+- header2: 3-5 words. A second editorial sub-headline for para4 onward — same rules as a magazine sub-head but covers the second half of the argument. Specific, not generic.
+- imageQuery2: 4-6 concrete atmospheric words for a second Unsplash search. No names, no text, no logos. Think: texture, environment, light, emotion.
+
 Body to restructure:
 "${body}"
 
 Return JSON only:
-{"para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`,
+{"header2":"...","imageQuery2":"...","para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`,
         }],
       });
       const raw2 = pass2msg.content[0].type === "text" ? pass2msg.content[0].text : "{}";
@@ -773,18 +775,20 @@ Return JSON only:
             return matches.slice(0, limits[k]).join(" ").trim();
           })
           .join("\n\n");
+        if (scaffold.header2) pass1Header2 = scaffold.header2 as string;
+        if (scaffold.imageQuery2) pass1ImageQuery2 = scaffold.imageQuery2 as string;
       }
     } catch { /* pass2 failed — use pass1 body as-is */ }
   }
 
-  const imageUrl2 = pass1.imageQuery2
-    ? await fetchUnsplash(pass1.imageQuery2, story.section, 2)
+  const imageUrl2 = pass1ImageQuery2
+    ? await fetchUnsplash(pass1ImageQuery2, story.section, 1)
     : await fetchUnsplash(story.title, story.section, 2);
 
   const commentary: ArticleCommentary = {
     ownedTitle: pass1.ownedTitle ?? "",
     header: pass1.header ?? "",
-    header2: pass1.header2 ?? "",
+    header2: pass1Header2,
     pullQuote: pass1.pullQuote ?? "",
     imageUrl2: imageUrl2 ?? undefined,
     body: breakLongSentences(body),
@@ -972,16 +976,9 @@ Return JSON only:
       editionKey,
       voiceId,
     };
-    try {
-      await put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false });
-    } catch (e) {
-      console.error("[FC] blob save failed:", e);
-    }
+    await put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false });
     return result;
-  } catch (e) {
-    console.error("[FC] generation failed:", e);
-    return null;
-  }
+  } catch { return null; }
 }
 
 // ── Archive ───────────────────────────────────────────────────────────────────
