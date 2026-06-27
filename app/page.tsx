@@ -104,8 +104,8 @@ function SpaceInvaderSVG({ color }: { color: string }) {
 // Stochastic noise dither — each pixel has independent random probability that grows toward bottom
 // Organic scatter, not the regular Bayer grid pattern
 function PixelEdge({ color, seed = 0, height = 56 }: { color: string; seed?: number; height?: number }) {
-  const COLS = 120; // ~400px wide ÷ ~3.3px per pixel
-  const ROWS = 18;  // ~56px tall ÷ ~3.1px per pixel → ~square pixels at 400×56 strip
+  const COLS = 240; // ~400px wide ÷ ~1.7px per pixel
+  const ROWS = 36;  // ~56px tall ÷ ~1.6px per pixel → square pixels
   // Per-pixel seeded noise — deterministic but looks random
   const noise = (r: number, c: number) => {
     const n = Math.sin(r * 127.1 + c * 311.7 + seed * 93.3) * 43758.5453;
@@ -113,8 +113,8 @@ function PixelEdge({ color, seed = 0, height = 56 }: { color: string; seed?: num
   };
   const rects: React.ReactNode[] = [];
   for (let r = 0; r < ROWS; r++) {
-    // Density curve: slow start, steeper middle, full coverage at bottom
-    const t = Math.pow((r + 1) / ROWS, 0.7);
+    // Sparse at top (lots of image showing), dense only near bottom
+    const t = Math.pow((r + 1) / ROWS, 2.2);
     for (let c = 0; c < COLS; c++) {
       if (noise(r, c) < t) {
         rects.push(<rect key={`${r}-${c}`} x={c} y={r} width={1.06} height={1.06} fill={color} />);
