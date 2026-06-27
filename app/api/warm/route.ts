@@ -1,20 +1,16 @@
 import { NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { getPageData, getFullArticle, getFeatureCreature, getEdition, saveToArchive, getWriterAssignments } from "@/lib/stories";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-export async function GET() {
-  const { key: editionKey, label: editionLabel } = getEdition();
+async function runWarm(editionKey: string, editionLabel: string) {
   const results: Record<string, "cached" | "generated" | "failed"> = {};
 
-  // Load page data (stories + synthesis)
   const { stories, synthesis } = await getPageData();
-
-  // Check synthesis health
   results["synthesis"] = synthesis.actions?.length > 0 && synthesis.theme ? "cached" : "failed";
 
-  // Ensure this edition is in the archive index
   try {
     await saveToArchive({
       key: editionKey,
@@ -28,7 +24,6 @@ export async function GET() {
     results["archive"] = "failed";
   }
 
-  // Warm Feature Creature
   try {
     const fc = await getFeatureCreature(editionKey);
     results["feature-creature"] = fc ? "cached" : "failed";
@@ -36,7 +31,6 @@ export async function GET() {
     results["feature-creature"] = "failed";
   }
 
-  // Warm all article commentaries in parallel
   const related = stories.slice(1);
   const writerSlots = getWriterAssignments(editionKey);
   await Promise.allSettled(
@@ -53,5 +47,12 @@ export async function GET() {
   );
 
   const failed = Object.entries(results).filter(([, v]) => v === "failed").map(([k]) => k);
-  return NextResponse.json({ editionKey, at: new Date().toISOString(), results, failed, ok: failed.length === 0 });
+  console.log(`[warm] ${editionKey} done — ${failed.length} failed`, results);
+}
+
+export async function GET() {
+  const { key: editionKey, label: editionLabel } = getEdition();
+  // Respond immediately so external crons (30s timeout) don't time out
+  waitUntil(runWarm(editionKey, editionLabel));
+  return NextResponse.json({ accepted: true, editionKey, at: new Date().toISOString() }, { status: 202 });
 }
