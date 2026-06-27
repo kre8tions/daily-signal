@@ -99,37 +99,32 @@ function SpaceInvaderSVG({ color }: { color: string }) {
   );
 }
 
-// Ruler-tick border — evenly spaced ticks (tall/medium/short) around all 4 edges, no numbers
-function RulerBorder({ color, radius = 40 }: { color: string; radius?: number }) {
-  const UNIT = 20;        // px between ticks (at 1:1 — SVG units)
-  const TALL = 9; const MID = 6; const SHORT = 4;
-  const tickHeight = (i: number) => i % 4 === 0 ? TALL : i % 2 === 0 ? MID : SHORT;
-  const ticks: React.ReactNode[] = [];
-  // We use viewBox="0 0 100 100" with preserveAspectRatio="none" so the SVG stretches
-  // to the card size. Ticks are drawn in % units (0–100).
-  // Rather than computing exact card px dimensions, draw ticks in a fixed 1000×600 coord space
+// Perforated ticket border — punched circles evenly spaced around all 4 edges
+// Like a movie ticket, film strip, or passport stamp booklet
+function RulerBorder({ color }: { color: string }) {
   const W = 1000; const H = 600;
-  const inset = 4; const strokeW = 1.8;
-  // Top & bottom edges
-  for (let x = inset + radius; x < W - radius; x += UNIT) {
-    const i = Math.round((x - inset - radius) / UNIT);
-    const h = tickHeight(i);
-    ticks.push(<line key={`t${i}`} x1={x} y1={inset} x2={x} y2={inset + h} stroke={color} strokeWidth={strokeW} strokeLinecap="round" />);
-    ticks.push(<line key={`b${i}`} x1={x} y1={H - inset} x2={x} y2={H - inset - h} stroke={color} strokeWidth={strokeW} strokeLinecap="round" />);
+  const R = 7;       // circle radius
+  const GAP = 28;    // center-to-center spacing
+  const OFFSET = 0;  // how far outside the card edge the circles sit
+  const CORNER = 36; // clear corner radius before circles start
+  const dots: React.ReactNode[] = [];
+  const cx = (x: number, y: number, k: string) =>
+    dots.push(<circle key={k} cx={x} cy={y} r={R} fill="none" stroke={color} strokeWidth={1.8} opacity={0.7} />);
+  // Top & bottom
+  for (let x = CORNER + GAP; x < W - CORNER; x += GAP) {
+    cx(x, OFFSET, `t${x}`);
+    cx(x, H - OFFSET, `b${x}`);
   }
-  // Left & right edges
-  for (let y = inset + radius; y < H - radius; y += UNIT) {
-    const i = Math.round((y - inset - radius) / UNIT);
-    const h = tickHeight(i);
-    ticks.push(<line key={`l${i}`} x1={inset} y1={y} x2={inset + h} y2={y} stroke={color} strokeWidth={strokeW} strokeLinecap="round" />);
-    ticks.push(<line key={`r${i}`} x1={W - inset} y1={y} x2={W - inset - h} y2={y} stroke={color} strokeWidth={strokeW} strokeLinecap="round" />);
+  // Left & right
+  for (let y = CORNER + GAP; y < H - CORNER; y += GAP) {
+    cx(OFFSET, y, `l${y}`);
+    cx(W - OFFSET, y, `r${y}`);
   }
   return (
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 }}
          xmlns="http://www.w3.org/2000/svg">
-      <rect x={inset} y={inset} width={W - inset * 2} height={H - inset * 2} rx={radius * (H / 600)} ry={radius * (H / 600)} fill="none" stroke={color} strokeWidth={strokeW * 0.6} strokeOpacity="0.35" />
-      {ticks}
+      {dots}
     </svg>
   );
 }
