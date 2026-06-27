@@ -57,7 +57,7 @@ export default async function ArchiveEditionPage({ params }: { params: Promise<{
               <a key={s.link} href={`/article/${slug}`} style={{ textDecoration: "none", display: "flex", flexDirection: "column", background: P.cardBg, borderRadius: 16, overflow: "hidden", boxShadow: P.shadow }}>
                 {s.imageUrl && (
                   <div style={{ height: 130, overflow: "hidden" }}>
-                    <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
                   </div>
                 )}
                 <div style={{ paddingTop: 18, paddingBottom: 18, paddingLeft: 20, paddingRight: 20, flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
