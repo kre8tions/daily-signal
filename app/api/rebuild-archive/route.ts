@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { list, put, head } from "@vercel/blob";
+import { list, put } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -12,27 +12,30 @@ export async function GET(req: Request) {
 
   const { blobs } = await list({ prefix: "archive/editions/", limit: 100 });
 
-  const entries = await Promise.all(
-    blobs.map(async (blob) => {
-      const key = blob.pathname.replace("archive/editions/", "").replace(".json", "");
-      const parts = key.split("_");
-      const date = parts[0] ?? key;
-      try {
-        const res = await fetch(blob.url + "?t=" + Date.now(), { cache: "no-store" });
-        if (!res.ok) return null;
-        const data = await res.json();
-        let imageUrl = data.stories?.[0]?.imageUrl;
-        try { const p = await head(`archive/photos/${key}.jpg`); if (p) imageUrl = p.url; } catch { /* ok */ }
-        return { key, label: data.editionLabel ?? key, date, theme: data.synthesis?.theme ?? "", imageUrl };
-      } catch { return null; }
-    })
-  );
+  const entries: { key: string; label: string; date: string; theme: string; imageUrl?: string }[] = [];
 
-  const sorted = entries.filter(Boolean).sort((a, b) => b!.key.localeCompare(a!.key));
+  for (const blob of blobs) {
+    const key = blob.pathname.replace("archive/editions/", "").replace(".json", "");
+    const date = key.split("_")[0] ?? key;
+    try {
+      const res = await fetch(blob.url + "?t=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) continue;
+      const data = await res.json();
+      entries.push({
+        key,
+        label: data.editionLabel ?? key,
+        date,
+        theme: data.synthesis?.theme ?? "",
+        imageUrl: data.stories?.[0]?.imageUrl,
+      });
+    } catch { /* skip */ }
+  }
 
-  await put("archive/index.json", JSON.stringify(sorted), {
+  entries.sort((a, b) => b.key.localeCompare(a.key));
+
+  await put("archive/index.json", JSON.stringify(entries), {
     access: "public", contentType: "application/json", addRandomSuffix: false,
   });
 
-  return NextResponse.json({ rebuilt: sorted.length, keys: sorted.map(e => e!.key) });
+  return NextResponse.json({ rebuilt: entries.length, keys: entries.map(e => e.key) });
 }
