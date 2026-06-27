@@ -986,7 +986,7 @@ export async function saveToArchive(entry: ArchiveEntry) {
     try {
       const existing = await head("archive/index.json");
       if (existing) {
-        const res = await fetch(existing.url);
+        const res = await fetch(existing.url + "?t=" + Date.now(), { cache: "no-store" });
         if (res.ok) list = await res.json();
       }
     } catch { /* fresh start */ }
