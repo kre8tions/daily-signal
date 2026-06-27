@@ -1,6 +1,6 @@
 import { getPageData, getStoryBySlug, getFullArticle, getEdition, getWriterAssignments, urlToSlug, type Story, type ArticleCommentary } from "@/lib/stories";
 import { notFound } from "next/navigation";
-import { P, SECTION_COLORS, contrastColor } from "@/lib/palette";
+import { P, SECTION_COLORS } from "@/lib/palette";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -56,9 +56,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
       {/* Masthead */}
       <div style={{ paddingTop: 20, paddingBottom: 20, paddingLeft: 24, paddingRight: 24, borderBottom: `1px solid ${P.tint}44` }}>
-        <div style={{ maxWidth: 860, marginLeft: "auto", marginRight: "auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ maxWidth: 860, marginLeft: "auto", marginRight: "auto" }}>
           <a href="/" style={{ textDecoration: "none", color: P.ink, fontSize: 22, fontWeight: P.dark ? 400 : 900, fontFamily: P.fontHeading, letterSpacing: P.dark ? 3 : -0.5, textTransform: P.dark ? "uppercase" : "none" as const }}>The Daily Signal</a>
-          <a href="/" style={{ display: "inline-flex", alignItems: "center", background: P.accent + "18", color: P.accent, textDecoration: "none", paddingTop: 10, paddingBottom: 10, paddingLeft: 22, paddingRight: 22, borderRadius: 50, fontSize: 13, fontWeight: 700, fontFamily: P.fontBody, border: `1px solid ${P.accent}55` }}>Home</a>
         </div>
       </div>
 
@@ -107,14 +106,25 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             )}
             {fullArticle.body.split("\n\n").filter(Boolean).map((para, i) => (
               <div key={i}>
+                {i === 3 && fullArticle.header2 && (
+                  <div style={{ fontFamily: P.fontHeading, fontSize: "clamp(20px, 3.5vw, 30px)", fontWeight: P.dark ? 400 : 900, letterSpacing: P.dark ? 2 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, color: sectionColor, lineHeight: 1.1, marginBottom: 16, marginTop: 16 }}>
+                    {fullArticle.header2}
+                  </div>
+                )}
                 <p style={{ fontSize: 19, lineHeight: 1.9, color: P.ink, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720 }}
                   dangerouslySetInnerHTML={{ __html: para.trim()
                     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
                     .replace(/\*(.+?)\*/g, "<em>$1</em>") }} />
-                {i === 2 && fullArticle.pullQuote && (
-                  <blockquote style={{ borderLeft: `4px solid ${sectionColor}`, paddingLeft: 24, marginLeft: 0, marginRight: 0, marginBottom: 28, marginTop: 4 }}>
-                    <p style={{ fontSize: 22, fontStyle: "italic", color: sectionColor, lineHeight: 1.5, fontFamily: "Georgia, 'Times New Roman', serif", margin: 0 }}>{fullArticle.pullQuote}</p>
-                  </blockquote>
+                {i === 2 && (
+                  fullArticle.imageUrl2 ? (
+                    <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 32, marginTop: 8, aspectRatio: "16/9", maxWidth: 720 }}>
+                      <img src={fullArticle.imageUrl2} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
+                    </div>
+                  ) : fullArticle.pullQuote ? (
+                    <blockquote style={{ borderLeft: `4px solid ${sectionColor}`, paddingLeft: 24, marginLeft: 0, marginRight: 0, marginBottom: 28, marginTop: 4 }}>
+                      <p style={{ fontSize: 22, fontStyle: "italic", color: sectionColor, lineHeight: 1.5, fontFamily: "Georgia, 'Times New Roman', serif", margin: 0 }}>{fullArticle.pullQuote}</p>
+                    </blockquote>
+                  ) : null
                 )}
               </div>
             ))}
@@ -145,17 +155,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         )}
 
-        {/* Read original */}
-        <div style={{ borderTop: `1px solid ${P.tint}55`, paddingTop: 28, marginBottom: 48, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-          <a href="/" style={{ display: "inline-flex", alignItems: "center", background: P.accent + "18", color: P.accent, textDecoration: "none", paddingTop: 12, paddingBottom: 12, paddingLeft: 24, paddingRight: 24, borderRadius: 50, fontSize: 13, fontWeight: 700, fontFamily: P.fontBody, border: `1px solid ${P.accent}55` }}>Home</a>
-          <div>
-            <div style={{ fontSize: 11, color: P.inkLight, marginBottom: 4, fontFamily: P.fontBody }}>Originally published by</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading }}>{story.source}</div>
-          </div>
-          <a href={story.link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: P.accent, color: contrastColor(P.accent), textDecoration: "none", paddingTop: 14, paddingBottom: 14, paddingLeft: 28, paddingRight: 28, borderRadius: 50, fontSize: 14, fontWeight: 700, fontFamily: P.fontBody }}>
-            Read Full Article
-          </a>
-        </div>
 
         {/* Related Stories */}
         {related.length > 0 && (

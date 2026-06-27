@@ -20,6 +20,7 @@ export interface Story {
   title: string; ownedTitle?: string; source: string; section: string; link: string; pubDate: string;
   imageUrl?: string; summary?: string; bullets?: string[];
   pullquote?: string; insight?: string; cardStyle: "full" | "pullquote" | "brief";
+  imageQuery?: string;
 }
 
 export interface Synthesis {
@@ -200,7 +201,7 @@ const MORBID_RE = /^(dead|dies|died|death|killed|kill|murder|murdered|shooting|s
 // Detect obituary headlines
 const OBIT_RE = /\b(dead|dies|died|has died|passed away|obituary|obit|in memoriam)\b/i;
 
-export async function fetchUnsplash(headline: string, section?: string, page = 1): Promise<string | undefined> {
+export async function fetchUnsplash(headline: string, section?: string, page = 1, imageQuery?: string): Promise<string | undefined> {
   const key = process.env.UNSPLASH_ACCESS_KEY;
   if (!key) return undefined;
 
@@ -233,6 +234,7 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
     : (section && sectionFallback[section]) ?? "news media editorial";
 
   const queries = [
+    ...(imageQuery ? [imageQuery] : []),
     ...(personQuery ? [personQuery, `${personQuery} portrait`] : []),
     words.slice(0, 3).join(" "),
     words.slice(0, 2).join(" "),
@@ -259,7 +261,7 @@ function imgCacheKey(link: string) {
   return `artimg_v3_${Buffer.from(link).toString("base64").slice(0, 24).replace(/[^a-z0-9]/gi, "_")}`;
 }
 
-async function getArticleImage(article: { link: string; title: string; section?: string; rssImageUrl?: string }): Promise<string | undefined> {
+async function getArticleImage(article: { link: string; title: string; section?: string; rssImageUrl?: string; imageQuery?: string }): Promise<string | undefined> {
   const cKey = imgCacheKey(article.link);
   const hit = cacheGet<string>(cKey);
   if (hit) return hit === "__none__" ? undefined : hit;
@@ -270,13 +272,13 @@ async function getArticleImage(article: { link: string; title: string; section?:
   }
   const og = await scrapeOgImage(article.link);
   if (og) { cacheSet(cKey, og, THREE_DAYS); return og; }
-  const unsplash = await fetchUnsplash(article.title, article.section);
+  const unsplash = await fetchUnsplash(article.title, article.section, 1, article.imageQuery);
   if (unsplash) { cacheSet(cKey, unsplash, THREE_DAYS); return unsplash; }
   cacheSet(cKey, "__none__", ONE_HOUR);
   return undefined;
 }
 
-export async function getUniqueImages(articles: RawItem[]): Promise<(string | undefined)[]> {
+export async function getUniqueImages(articles: (RawItem & { imageQuery?: string })[]): Promise<(string | undefined)[]> {
   const raw = await Promise.all(articles.map((a) => getArticleImage(a)));
   const seen = new Set<string>();
   const result: (string | undefined)[] = [];
@@ -288,7 +290,7 @@ export async function getUniqueImages(articles: RawItem[]): Promise<(string | un
     } else {
       const cKey = imgCacheKey(articles[i].link);
       cacheSet(cKey, "__none__", 1);
-      const fresh = await fetchUnsplash(articles[i].title + " " + articles[i].section);
+      const fresh = await fetchUnsplash(articles[i].title + " " + articles[i].section, undefined, 1, articles[i].imageQuery);
       if (fresh && !seen.has(fresh)) {
         seen.add(fresh);
         cacheSet(cKey, fresh, THREE_DAYS);
@@ -342,7 +344,7 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
 }
 
 // ── Claude analysis + synthesis ───────────────────────────────────────────────
-type RawAnalysis = { style?: string; ownedTitle?: string; summary?: string; bullets?: string[]; pullquote?: string; insight?: string };
+type RawAnalysis = { style?: string; ownedTitle?: string; summary?: string; bullets?: string[]; pullquote?: string; insight?: string; imageQuery?: string };
 type AnalyzeResult = { stories: RawAnalysis[]; synthesis: Synthesis };
 
 export async function analyzeAll(items: RawItem[], editionKey: string): Promise<AnalyzeResult> {
@@ -391,9 +393,9 @@ Every story object must include:
   • Must be completely different from the source headline. No quotes around it.
 
 Then per style:
-- "full"      → { "style":"full", "ownedTitle":"...", "summary":"2 punchy sentences", "bullets":["3 specific facts ≤15 words"] }
-- "pullquote" → { "style":"pullquote", "ownedTitle":"...", "summary":"2 direct sentences", "pullquote":"one striking sentence" }
-- "brief"     → { "style":"brief", "ownedTitle":"...", "summary":"2-3 sentences with real context and stakes", "insight":"why this matters — non-obvious, one sentence" }
+- "full"      → { "style":"full", "ownedTitle":"...", "summary":"2 punchy sentences", "bullets":["3 specific facts ≤15 words"], "imageQuery":"4-6 concrete visual words for Unsplash — atmospheric, no names, no text" }
+- "pullquote" → { "style":"pullquote", "ownedTitle":"...", "summary":"2 direct sentences", "pullquote":"one striking sentence", "imageQuery":"4-6 concrete visual words for Unsplash — atmospheric, no names, no text" }
+- "brief"     → { "style":"brief", "ownedTitle":"...", "summary":"2-3 sentences with real context and stakes", "insight":"why this matters — non-obvious, one sentence", "imageQuery":"4-6 concrete visual words for Unsplash — atmospheric, no names, no text" }
 
 "synthesis": {
   "theme": "One evocative noun phrase naming the underlying force or tension",
@@ -432,18 +434,20 @@ Return only valid JSON, no markdown.`,
 // ── Assemble page data (cached per edition via Next.js data cache) ────────────
 async function buildPageData(editionKey: string, editionLabel: string): Promise<PageData> {
   const raw = await fetchTopStories(editionKey);
-  const [result, images, featureCreature] = await Promise.all([
+  const [result, featureCreature] = await Promise.all([
     analyzeAll(raw, editionKey),
-    getUniqueImages(raw),
     getFeatureCreature(editionKey),
   ]);
   const { stories: analyses, synthesis } = result;
+  const rawWithQuery = raw.map((r, i) => ({ ...r, imageQuery: analyses[i]?.imageQuery }));
+  const images = await getUniqueImages(rawWithQuery);
   const stories: Story[] = raw.map((r, i) => ({
     ...r, imageUrl: images[i],
     cardStyle: ((analyses[i]?.style ?? "brief") as Story["cardStyle"]),
     ownedTitle: analyses[i]?.ownedTitle,
     summary: analyses[i]?.summary, bullets: analyses[i]?.bullets,
     pullquote: analyses[i]?.pullquote, insight: analyses[i]?.insight,
+    imageQuery: analyses[i]?.imageQuery,
   }));
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
@@ -602,10 +606,12 @@ export function getFCWriterIndex(editionKey: string): number {
 // ── Full editorial rewrite for article detail ─────────────────────────────────
 export interface ArticleCommentary {
   header: string;
+  header2?: string;
   pullQuote: string;
   body: string;
   writer?: string;
   ownedTitle?: string;
+  imageUrl2?: string;
 }
 
 function breakLongSentences(text: string): string {
@@ -630,7 +636,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v9"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v10"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
@@ -688,7 +694,9 @@ Voice — write like this:
 
 Also return:
 - header: 3-5 words. A magazine sub-headline — specific and surprising, not generic. Examples of BAD headers: "The Bigger Picture", "What This Means", "A New Era". Examples of GOOD headers: "The Quiet Monopoly", "When Safety Becomes Control", "Debt That Builds Nations".
+- header2: 3-5 words. A second editorial sub-headline for the mid-article section — same rules as header but covers the second half of the piece.
 - pullQuote: copy one sentence verbatim from your body — the most arresting one. Must be word-for-word identical.
+- imageQuery2: 4-6 concrete visual/atmospheric words for a second Unsplash image search (mid-article). No names, no text, no logos. Think: dramatic lighting, textures, environment, emotion.
 
 STORY: ${story.title}
 SOURCE: ${story.source}
@@ -704,7 +712,9 @@ Return JSON only, no markdown:
 {
   "ownedTitle": "6-10 words in your writer voice. Magnetic editorial headline — name specifics (numbers, names, places), put tension or contradiction inside the headline itself, create a curiosity gap the article genuinely pays off. Rex: confrontational verdict. Eric: plain moral charge. Margot: cool disturbing observation. Finn: insider thriller hook. Cal: counter-intuitive reversal. Jack: sardonic sting. Ward: status-game exposure. Never use: Why/How/The Truth About/Game-Changer/Revolutionary/What You Need to Know. Must differ from source headline.",
   "header": "...",
+  "header2": "...",
   "pullQuote": "...",
+  "imageQuery2": "...",
   "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."
 }`,
     }],
@@ -712,7 +722,7 @@ Return JSON only, no markdown:
 
   const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
   const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  let pass1: { ownedTitle?: string; header?: string; pullQuote?: string; body?: string } = {};
+  let pass1: { ownedTitle?: string; header?: string; header2?: string; pullQuote?: string; imageQuery2?: string; body?: string } = {};
   try {
     pass1 = JSON.parse(text1);
     if (!pass1.body) throw new Error();
@@ -767,10 +777,16 @@ Return JSON only:
     } catch { /* pass2 failed — use pass1 body as-is */ }
   }
 
+  const imageUrl2 = pass1.imageQuery2
+    ? await fetchUnsplash(pass1.imageQuery2, story.section, 2)
+    : await fetchUnsplash(story.title, story.section, 2);
+
   const commentary: ArticleCommentary = {
     ownedTitle: pass1.ownedTitle ?? "",
     header: pass1.header ?? "",
+    header2: pass1.header2 ?? "",
     pullQuote: pass1.pullQuote ?? "",
+    imageUrl2: imageUrl2 ?? undefined,
     body: breakLongSentences(body),
     writer: writer?.name ?? "",
   };

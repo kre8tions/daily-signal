@@ -108,6 +108,23 @@ function PixelEdge({ color, seed = 0, height = 56 }: { color: string; seed?: num
   );
 }
 
+function PixelEdgeTop({ color, seed = 0, height = 32 }: { color: string; seed?: number; height?: number }) {
+  const COLS = 240; const ROWS = 24;
+  const noise = (r: number, c: number) => { const n = Math.sin(r * 127.1 + c * 311.7 + seed * 93.3) * 43758.5453; return n - Math.floor(n); };
+  const rects: React.ReactNode[] = [];
+  for (let r = 0; r < ROWS; r++) {
+    const t = Math.pow(1 - r / ROWS, 2.5);
+    for (let c = 0; c < COLS; c++) {
+      if (noise(r, c) < t) rects.push(<rect key={`${r}-${c}`} x={c} y={r} width={1.06} height={1.06} fill={color} />);
+    }
+  }
+  return (
+    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height, pointerEvents: "none", zIndex: 2 }}>
+      <svg viewBox={`0 0 ${COLS} ${ROWS}`} width="100%" height="100%" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>{rects}</svg>
+    </div>
+  );
+}
+
 // ── Synthesis section ─────────────────────────────────────────────────────────
 
 function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synthesis; stories: Story[]; writerIndex: number }) {
@@ -421,7 +438,9 @@ export async function EditionView({
       {/* Row 2: s3–s11 */}
       {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).length > 0 && (
         <div className="ds-row2" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 0, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
-          {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).map((s, i) => s && (
+          {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).map((s, i) => {
+            const firstSentence = s?.summary ? (s.summary.match(/^[^.!?]+[.!?]/) ?? [s.summary])[0].trim() : undefined;
+            return s && (
             <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
               <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
                 {s.imageUrl && (
@@ -432,7 +451,8 @@ export async function EditionView({
                     <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{s.source} · {timeAgo(s.pubDate)}</div>
                   </div>
                 )}
-                <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+                <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
+                  {s.imageUrl && <PixelEdgeTop color={P.pageBg} seed={i + 2} height={28} />}
                   {!s.imageUrl && (
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <Pill section={s.section} />
@@ -440,7 +460,7 @@ export async function EditionView({
                     </div>
                   )}
                   <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
-                  {s.summary && <div className="ds-card-body" style={bodyStyle}>{s.summary}</div>}
+                  {firstSentence && <div className="ds-card-body" style={bodyStyle}>{firstSentence}</div>}
                   {s.insight && <div className="ds-card-insight" style={insightStyle}>{s.insight}</div>}
                   <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
@@ -448,7 +468,8 @@ export async function EditionView({
                 </div>
               </div>
             </a>
-          ))}
+            );
+          })}
         </div>
       )}
 
