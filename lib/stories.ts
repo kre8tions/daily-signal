@@ -383,7 +383,12 @@ Return JSON with two keys:
 "stories": ${items.length} objects. Styles: ${styles.map((s, i) => `[${i}]="${s}"`).join(", ")}
 
 Every story object must include:
-- "ownedTitle": 5-9 words. Rewrite the source headline in our voice — a real claim or provocation, not a wire-service description. Magazine cover energy. Different from the original. No quotes.
+- "ownedTitle": 6-10 words. Rewrite the source headline as a magnetic editorial headline. Rules:
+  • SPECIFICITY: name the number, the company, the person, the country — "The $4B Bet Nobody Noticed" beats "A Surprising Investment Story"
+  • TENSION: put a contradiction, stakes, or problem inside the headline itself — not just a topic
+  • CURIOSITY GAP: reader must feel they'll understand something important after clicking — but don't be clickbait, the payoff must be real
+  • FORBIDDEN WORDS: never use "Why", "How", "The Truth About", "What You Need to Know", "Everything You Need", "A New Era", "Game-Changer", "Revolutionary"
+  • Must be completely different from the source headline. No quotes around it.
 
 Then per style:
 - "full"      → { "style":"full", "ownedTitle":"...", "summary":"2 punchy sentences", "bullets":["3 specific facts ≤15 words"] }
@@ -692,7 +697,7 @@ ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
 
 Return JSON only, no markdown:
 {
-  "ownedTitle": "5-9 words. The headline rewritten in your voice — a real claim or provocation, not a description. Think magazine cover, not wire service. Must be different from the source headline. No quotes around it.",
+  "ownedTitle": "6-10 words in your writer voice. Magnetic editorial headline — name specifics (numbers, names, places), put tension or contradiction inside the headline itself, create a curiosity gap the article genuinely pays off. Rex: confrontational verdict. Eric: plain moral charge. Margot: cool disturbing observation. Finn: insider thriller hook. Cal: counter-intuitive reversal. Jack: sardonic sting. Ward: status-game exposure. Never use: Why/How/The Truth About/Game-Changer/Revolutionary/What You Need to Know. Must differ from source headline.",
   "header": "...",
   "pullQuote": "...",
   "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."

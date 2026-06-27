@@ -366,6 +366,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       )}
 
 
+      {/* ── Internal desk link — bottom right hollow circle ── */}
+      <div style={{ maxWidth: 1200, marginLeft: "auto", marginRight: "auto", marginTop: 24, display: "flex", justifyContent: "flex-end" }}>
+        <a href="/signal-desk" title="Signal Desk" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", border: `1.5px solid ${P.accent}55`, color: P.inkLight, textDecoration: "none", fontSize: 13, opacity: 0.5 }}>◎</a>
+      </div>
     </div>
   );
 }
