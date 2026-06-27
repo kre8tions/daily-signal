@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { list, head } from "@vercel/blob";
+import { list, head, put } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(req: Request) {
   const secret = new URL(req.url).searchParams.get("secret");
@@ -21,9 +22,31 @@ export async function GET(req: Request) {
     }
   } catch { /* ok */ }
 
+  // Rebuild index from blobs if rebuild=1 param is present
+  const rebuild = new URL(req.url).searchParams.get("rebuild") === "1";
+  let rebuiltCount = 0;
+  if (rebuild) {
+    const entries: { key: string; label: string; date: string; theme: string; imageUrl?: string }[] = [];
+    for (const blob of editionBlobs) {
+      const key = blob.pathname.replace("archive/editions/", "").replace(".json", "");
+      const date = key.split("_")[0] ?? key;
+      try {
+        const r = await fetch(blob.url + "?t=" + Date.now(), { cache: "no-store" });
+        if (r.ok) {
+          const d = await r.json();
+          entries.push({ key, label: d.editionLabel ?? key, date, theme: d.synthesis?.theme ?? "", imageUrl: d.stories?.[0]?.imageUrl });
+        }
+      } catch { /* skip */ }
+    }
+    entries.sort((a, b) => b.key.localeCompare(a.key));
+    await put("archive/index.json", JSON.stringify(entries), { access: "public", contentType: "application/json", addRandomSuffix: false });
+    rebuiltCount = entries.length;
+  }
+
   return NextResponse.json({
     editionBlobs: editionBlobs.map(b => ({ path: b.pathname, size: b.size, uploaded: b.uploadedAt })),
     photoCount: photoBlobs.length,
     indexEntries: Array.isArray(indexData) ? indexData.map((e: { key: string; label: string }) => ({ key: e.key, label: e.label })) : indexData,
+    ...(rebuild ? { rebuiltCount } : {}),
   });
 }
