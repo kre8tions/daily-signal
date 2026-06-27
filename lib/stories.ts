@@ -20,7 +20,7 @@ export interface Story {
   title: string; ownedTitle?: string; source: string; section: string; link: string; pubDate: string;
   imageUrl?: string; summary?: string; bullets?: string[];
   pullquote?: string; insight?: string; cardStyle: "full" | "pullquote" | "brief";
-  imageQuery?: string;
+  imageQuery?: string; content?: string;
 }
 
 export interface Synthesis {
@@ -146,6 +146,17 @@ const SEVEN_DAYS = 7 * 24 * ONE_HOUR;
 export function getEdition(): { label: string; key: string } {
   const h = new Date().getHours();
   const date = new Date().toISOString().slice(0, 10);
+  if (h >= 5  && h < 9)  return { label: "Early Morning Edition", key: `${date}_early`    };
+  if (h >= 9  && h < 13) return { label: "Morning Edition",       key: `${date}_morning`  };
+  if (h >= 13 && h < 17) return { label: "Afternoon Edition",     key: `${date}_afternoon`};
+  if (h >= 17 && h < 21) return { label: "Evening Edition",       key: `${date}_evening`  };
+  return                         { label: "Night Edition",         key: `${date}_night`    };
+}
+
+export function getNextEdition(): { label: string; key: string } {
+  const future = new Date(Date.now() + 16 * 60 * 1000);
+  const h = future.getHours();
+  const date = future.toISOString().slice(0, 10);
   if (h >= 5  && h < 9)  return { label: "Early Morning Edition", key: `${date}_early`    };
   if (h >= 9  && h < 13) return { label: "Morning Edition",       key: `${date}_morning`  };
   if (h >= 13 && h < 17) return { label: "Afternoon Edition",     key: `${date}_afternoon`};
@@ -343,63 +354,45 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   return selected;
 }
 
-// ── Claude analysis + synthesis ───────────────────────────────────────────────
-type RawAnalysis = { style?: string; ownedTitle?: string; summary?: string; bullets?: string[]; pullquote?: string; insight?: string; imageQuery?: string };
-type AnalyzeResult = { stories: RawAnalysis[]; synthesis: Synthesis };
+// ── Cross-story synthesis (blob-cached per edition) ───────────────────────────
+export async function getSynthesis(items: RawItem[], editionKey: string): Promise<Synthesis> {
+  const blobKey = `synthesis/v1/${editionKey}.json`;
+  try {
+    const existing = await head(blobKey);
+    if (existing) {
+      const res = await fetch(existing.url, { cache: "no-store" });
+      if (res.ok) return await res.json() as Synthesis;
+    }
+  } catch { /* generate fresh */ }
 
-export async function analyzeAll(items: RawItem[], editionKey: string): Promise<AnalyzeResult> {
-  const key = `analysis_${editionKey}`;
-  const hit = cacheGet<AnalyzeResult>(key);
-  if (hit) return hit;
-
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const styles = ["full", "pullquote", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief"];
-  const list = items.map((a, i) =>
-    `[${i}] ${a.section.toUpperCase()} — ${a.source}: ${a.title}\n${a.content.slice(0, 400)}`
-  ).join("\n\n");
-
-  // Seeded writer voice for synthesis
   const synthSeed = editionKey.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 13), 0);
   const synthWriter = WRITERS[synthSeed % WRITERS.length];
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const storyList = items.map((a, i) =>
+    `[${i}] ${a.section.toUpperCase()} — ${a.source}: ${a.title}\n${a.content.slice(0, 300)}`
+  ).join("\n\n");
 
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 5000,
+    max_tokens: 1500,
     messages: [{
       role: "user",
-      content: `You are a sharp, opinionated editor covering tech, arts, music, and culture. Your perspective is centrist and intellectually honest — you challenge assumptions from all sides, give credit where it's due regardless of political tribe, and never moralize or signal virtue. You are equally skeptical of corporate power, government overreach, activist excess, and reactionary nostalgia.
+      content: `${synthWriter.style}
 
-For the synthesis section specifically, write through this editorial lens: ${synthWriter.style}
+You are writing the cross-story synthesis for a news digest. Find the hidden connective tissue between these stories.
 
 RULES:
 - Never restate the headline. Be specific, find non-obvious angles.
 - NEVER open with "Today's", "This collection", "These stories". Jump straight into the insight.
 - Write in first-person editorial voice — opinions, interpretations, predictions.
-- Do not frame stories through an ideological lens. Avoid language that signals left or right allegiance.
-- When covering tech or culture, prioritize practical impact over social commentary.
+- Do not frame stories through an ideological lens.
 
-${list}
+${storyList}
 
-Return JSON with two keys:
-
-"stories": ${items.length} objects. Styles: ${styles.map((s, i) => `[${i}]="${s}"`).join(", ")}
-
-Every story object must include:
-- "ownedTitle": 6-10 words. Rewrite the source headline as a magnetic editorial headline. Rules:
-  • SPECIFICITY: name the number, the company, the person, the country — "The $4B Bet Nobody Noticed" beats "A Surprising Investment Story"
-  • TENSION: put a contradiction, stakes, or problem inside the headline itself — not just a topic
-  • CURIOSITY GAP: reader must feel they'll understand something important after clicking — but don't be clickbait, the payoff must be real
-  • FORBIDDEN WORDS: never use "Why", "How", "The Truth About", "What You Need to Know", "Everything You Need", "A New Era", "Game-Changer", "Revolutionary"
-  • Must be completely different from the source headline. No quotes around it.
-
-Then per style:
-- "full"      → { "style":"full", "ownedTitle":"...", "summary":"2 punchy sentences", "bullets":["3 specific facts ≤15 words"], "imageQuery":"4-6 concrete visual words for Unsplash — atmospheric, no names, no text" }
-- "pullquote" → { "style":"pullquote", "ownedTitle":"...", "summary":"2 direct sentences", "pullquote":"one striking sentence", "imageQuery":"4-6 concrete visual words for Unsplash — atmospheric, no names, no text" }
-- "brief"     → { "style":"brief", "ownedTitle":"...", "summary":"2-3 sentences with real context and stakes", "insight":"why this matters — non-obvious, one sentence", "imageQuery":"4-6 concrete visual words for Unsplash — atmospheric, no names, no text" }
-
-"synthesis": {
+Return JSON only, no markdown:
+{
   "theme": "One evocative noun phrase naming the underlying force or tension",
-  "observation": "STRUCTURE REQUIRED: Write the first sentence as a standalone hook. Then insert \\n\\n. Then write 1-2 follow-up sentences that deepen it. Example format: 'Capital is fleeing hardware.\\n\\nThe pattern is clear: wherever supply chains constrain growth, money moves to narrative and IP instead.' Never count or reference how many articles or stories are covered.",
+  "observation": "STRUCTURE REQUIRED: Write the first sentence as a standalone hook. Then insert \\n\\n. Then 1-2 follow-up sentences that deepen it. Never count or reference how many stories are covered.",
   "takeaways": [
     "Non-obvious connection between at least two stories — name the mechanism. 1 sentence, 2 max.",
     "The deeper structural tension or irony. 1 sentence, 2 max.",
@@ -411,51 +404,61 @@ Then per style:
     "One sharp sentence. A different angle — something small and low-risk a newcomer can try this week. Max 20 words.",
     "One sharp sentence. The simplest possible first step someone just starting out would actually take. Max 20 words."
   ]
-}
-
-Return only valid JSON, no markdown.`,
+}`,
     }],
   });
 
-  const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
-  const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  const rawText = msg.content[0].type === "text" ? msg.content[0].text : "{}";
+  const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   try {
-    const parsed: AnalyzeResult = JSON.parse(text);
-    cacheSet(key, parsed, 8 * ONE_HOUR);
+    const parsed = JSON.parse(cleaned) as Synthesis;
+    put(blobKey, JSON.stringify(parsed), { access: "public", contentType: "application/json", addRandomSuffix: false }).catch(() => {});
     return parsed;
   } catch {
-    return {
-      stories: items.map((_, i) => ({ style: styles[i] })),
-      synthesis: { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] },
-    };
+    return { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] };
   }
 }
 
 // ── Assemble page data (cached per edition via Next.js data cache) ────────────
-async function buildPageData(editionKey: string, editionLabel: string): Promise<PageData> {
+const CARD_STYLES: Story["cardStyle"][] = ["full", "pullquote", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief"];
+
+export async function buildPageData(editionKey: string, editionLabel: string): Promise<PageData> {
   const raw = await fetchTopStories(editionKey);
-  const [result, featureCreature] = await Promise.all([
-    analyzeAll(raw, editionKey),
+  const writerSlots = getWriterAssignments(editionKey);
+
+  const [articleResults, synthesis, featureCreature] = await Promise.all([
+    Promise.allSettled(
+      raw.map((item, i) => {
+        const storyShell: Story = { ...item, cardStyle: CARD_STYLES[i] ?? "brief" };
+        const relatedShells = raw.filter((_, j) => j !== i).slice(0, 5).map(r => ({ ...r, cardStyle: "brief" as const }));
+        return getFullArticle(storyShell, relatedShells, editionKey, writerSlots[i]);
+      })
+    ),
+    getSynthesis(raw, editionKey),
     getFeatureCreature(editionKey).catch(() => null),
   ]);
-  const { stories: analyses, synthesis } = result;
-  const rawWithQuery = raw.map((r, i) => ({ ...r, imageQuery: analyses[i]?.imageQuery }));
+
+  const arts = articleResults.map(r => r.status === "fulfilled" ? r.value : null);
+  const rawWithQuery = raw.map((r, i) => ({ ...r, imageQuery: arts[i]?.imageQuery }));
   const images = await getUniqueImages(rawWithQuery);
+
   const stories: Story[] = raw.map((r, i) => ({
-    ...r, imageUrl: images[i],
-    cardStyle: ((analyses[i]?.style ?? "brief") as Story["cardStyle"]),
-    ownedTitle: analyses[i]?.ownedTitle,
-    summary: analyses[i]?.summary, bullets: analyses[i]?.bullets,
-    pullquote: analyses[i]?.pullquote, insight: analyses[i]?.insight,
-    imageQuery: analyses[i]?.imageQuery,
+    ...r,
+    imageUrl: images[i],
+    cardStyle: CARD_STYLES[i] ?? "brief",
+    ownedTitle: arts[i]?.ownedTitle,
+    summary: arts[i]?.summary,
+    bullets: arts[i]?.bullets,
+    pullquote: arts[i]?.pullQuote,
+    insight: arts[i]?.insight,
+    imageQuery: arts[i]?.imageQuery,
   }));
+
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
-  // Save full edition data to Blob for archive page rendering
   put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
     access: "public", contentType: "application/json", addRandomSuffix: false,
   }).catch(() => {});
-  // Always update archive index when a new edition is first built
   saveToArchive({
     key: editionKey, label: editionLabel,
     date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl,
@@ -612,6 +615,10 @@ export interface ArticleCommentary {
   writer?: string;
   ownedTitle?: string;
   imageUrl2?: string;
+  summary?: string;
+  bullets?: string[];
+  insight?: string;
+  imageQuery?: string;
 }
 
 function breakLongSentences(text: string): string {
@@ -636,7 +643,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v10"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v11"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
@@ -663,7 +670,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
 
   const pass1msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 700,
+    max_tokens: 950,
     messages: [{
       role: "user",
       content: `${voiceInstruction}
@@ -699,9 +706,11 @@ Also return:
 STORY: ${story.title}
 SOURCE: ${story.source}
 SECTION: ${story.section}
-SUMMARY: ${story.summary ?? ""}
-KEY FACTS: ${story.bullets?.join(". ") ?? ""}
-INSIGHT: ${story.insight ?? ""}
+${story.content ? `RSS EXCERPT: ${story.content.slice(0, 400)}` : [
+  story.summary ? `SUMMARY: ${story.summary}` : "",
+  story.bullets?.length ? `KEY FACTS: ${story.bullets.join(". ")}` : "",
+  story.insight ? `INSIGHT: ${story.insight}` : "",
+].filter(Boolean).join("\n")}
 
 TODAY'S OTHER STORIES (weave one in only if the parallel is genuinely non-obvious):
 ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
@@ -709,6 +718,10 @@ ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
 Return JSON only, no markdown:
 {
   "ownedTitle": "6-10 words in your writer voice. Magnetic editorial headline — name specifics (numbers, names, places), put tension or contradiction inside the headline itself, create a curiosity gap the article genuinely pays off. Rex: confrontational verdict. Eric: plain moral charge. Margot: cool disturbing observation. Finn: insider thriller hook. Cal: counter-intuitive reversal. Jack: sardonic sting. Ward: status-game exposure. Never use: Why/How/The Truth About/Game-Changer/Revolutionary/What You Need to Know. Must differ from source headline.",
+  "summary": "2 punchy sentences — what happened and why it matters. Be specific.",
+  "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
+  "insight": "1 sentence — the non-obvious angle or implication",
+  "imageQuery": "4-6 concrete atmospheric words for Unsplash hero image. No names, no text, no logos.",
   "header": "...",
   "pullQuote": "...",
   "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."
@@ -718,7 +731,7 @@ Return JSON only, no markdown:
 
   const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
   const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  let pass1: { ownedTitle?: string; header?: string; pullQuote?: string; body?: string } = {};
+  let pass1: { ownedTitle?: string; summary?: string; bullets?: string[]; insight?: string; imageQuery?: string; header?: string; pullQuote?: string; body?: string } = {};
   try {
     pass1 = JSON.parse(text1);
     if (!pass1.body) throw new Error();
@@ -787,6 +800,10 @@ Return JSON only:
 
   const commentary: ArticleCommentary = {
     ownedTitle: pass1.ownedTitle ?? "",
+    summary: pass1.summary ?? undefined,
+    bullets: pass1.bullets?.length ? pass1.bullets : undefined,
+    insight: pass1.insight ?? undefined,
+    imageQuery: pass1.imageQuery ?? undefined,
     header: pass1.header ?? "",
     header2: pass1Header2,
     pullQuote: pass1.pullQuote ?? "",
