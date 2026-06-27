@@ -26,19 +26,18 @@ export async function GET(req: Request) {
   const rebuild = new URL(req.url).searchParams.get("rebuild") === "1";
   let rebuiltCount = 0;
   if (rebuild) {
-    const entries: { key: string; label: string; date: string; theme: string; imageUrl?: string }[] = [];
-    for (const blob of editionBlobs) {
+    const TIME_LABELS: Record<string, string> = {
+      early: "Early Edition", morning: "Morning Edition", afternoon: "Afternoon Edition",
+      evening: "Evening Edition", night: "Night Edition",
+    };
+    const entries = editionBlobs.map(blob => {
       const key = blob.pathname.replace("archive/editions/", "").replace(".json", "");
-      const date = key.split("_")[0] ?? key;
-      try {
-        const r = await fetch(blob.url + "?t=" + Date.now(), { cache: "no-store" });
-        if (r.ok) {
-          const d = await r.json();
-          entries.push({ key, label: d.editionLabel ?? key, date, theme: d.synthesis?.theme ?? "", imageUrl: d.stories?.[0]?.imageUrl });
-        }
-      } catch { /* skip */ }
-    }
-    entries.sort((a, b) => b.key.localeCompare(a.key));
+      const parts = key.split("_");
+      const date = parts[0] ?? key;
+      const slot = parts[1] ?? "";
+      const label = TIME_LABELS[slot] ?? key;
+      return { key, label, date, theme: "", imageUrl: undefined as string | undefined };
+    }).sort((a, b) => b.key.localeCompare(a.key));
     await put("archive/index.json", JSON.stringify(entries), { access: "public", contentType: "application/json", addRandomSuffix: false });
     rebuiltCount = entries.length;
   }
