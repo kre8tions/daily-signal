@@ -21,7 +21,8 @@ async function runWarm(editionKey: string, editionLabel: string) {
       access: "public", contentType: "application/json", addRandomSuffix: false,
     });
     results["edition-blob"] = "generated";
-  } catch {
+  } catch (e) {
+    console.error("[warm] edition-blob failed:", e);
     results["edition-blob"] = "failed";
   }
 
@@ -34,14 +35,17 @@ async function runWarm(editionKey: string, editionLabel: string) {
       imageUrl: stories[0]?.imageUrl,
     });
     results["archive"] = "generated";
-  } catch {
+  } catch (e) {
+    console.error("[warm] archive failed:", e);
     results["archive"] = "failed";
   }
 
   try {
     const fc = await getFeatureCreature(editionKey);
+    console.log("[warm] FC result:", fc ? `ok (${fc.title})` : "null");
     results["feature-creature"] = fc ? "cached" : "failed";
-  } catch {
+  } catch (e) {
+    console.error("[warm] feature-creature failed:", e);
     results["feature-creature"] = "failed";
   }
 
