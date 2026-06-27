@@ -99,32 +99,53 @@ function SpaceInvaderSVG({ color }: { color: string }) {
   );
 }
 
-// Perforated ticket border — punched circles evenly spaced around all 4 edges
-// Like a movie ticket, film strip, or passport stamp booklet
+// Seismic border — pen-drawn seismograph line tracing all 4 edges
+// Mostly small tremors, punctuated by occasional spikes, with micro-jitter for hand-drawn feel
 function RulerBorder({ color }: { color: string }) {
   const W = 1000; const H = 600;
-  const R = 7;       // circle radius
-  const GAP = 28;    // center-to-center spacing
-  const OFFSET = 0;  // how far outside the card edge the circles sit
-  const CORNER = 36; // clear corner radius before circles start
-  const dots: React.ReactNode[] = [];
-  const cx = (x: number, y: number, k: string) =>
-    dots.push(<circle key={k} cx={x} cy={y} r={R} fill="none" stroke={color} strokeWidth={1.8} opacity={0.7} />);
-  // Top & bottom
-  for (let x = CORNER + GAP; x < W - CORNER; x += GAP) {
-    cx(x, OFFSET, `t${x}`);
-    cx(x, H - OFFSET, `b${x}`);
-  }
-  // Left & right
-  for (let y = CORNER + GAP; y < H - CORNER; y += GAP) {
-    cx(OFFSET, y, `l${y}`);
-    cx(W - OFFSET, y, `r${y}`);
-  }
+  const STEP = 6;   // sample density along each edge
+  const BASE = 5;   // how far in from card edge the baseline sits
+
+  // Deterministic seismic noise — tremor + occasional spike
+  const noise = (i: number): number => {
+    const t = i * 0.18;
+    const tremor = Math.sin(t * 4.1 + 0.3) * 2.5 + Math.sin(t * 9.7 + 1.8) * 1.2 + Math.sin(t * 17.3 + 3.1) * 0.6;
+    const spikeSeed = Math.sin(t * 2.3 + 0.9) * Math.sin(t * 3.7 + 2.1);
+    const spike = spikeSeed > 0.6 ? spikeSeed * 22 : spikeSeed < -0.6 ? spikeSeed * 18 : 0;
+    return tremor + spike;
+  };
+
+  const pts: string[] = [];
+  let i = 0;
+
+  // Top: left → right, noise offsets Y inward (+)
+  for (let x = 0; x <= W; x += STEP, i++)
+    pts.push(`${i === 0 ? "M" : "L"}${x.toFixed(1)},${(BASE + noise(i)).toFixed(1)}`);
+  // Right: top → bottom, noise offsets X inward (-)
+  for (let y = STEP; y <= H; y += STEP, i++)
+    pts.push(`L${(W - BASE - noise(i)).toFixed(1)},${y.toFixed(1)}`);
+  // Bottom: right → left, noise offsets Y inward (-)
+  for (let x = W - STEP; x >= 0; x -= STEP, i++)
+    pts.push(`L${x.toFixed(1)},${(H - BASE - noise(i)).toFixed(1)}`);
+  // Left: bottom → top, noise offsets X inward (+)
+  for (let y = H - STEP; y >= 0; y -= STEP, i++)
+    pts.push(`L${(BASE + noise(i)).toFixed(1)},${y.toFixed(1)}`);
+
   return (
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 }}
          xmlns="http://www.w3.org/2000/svg">
-      {dots}
+      <defs>
+        {/* Micro-jitter filter — very low displacement for pen-ink feel */}
+        <filter id="seismic-ink" x="-2%" y="-2%" width="104%" height="104%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="5" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+      {/* Shadow trace — slightly thicker, lower opacity, tiny offset for depth */}
+      <path d={pts.join(" ") + " Z"} fill="none" stroke={color} strokeWidth={3.5} strokeOpacity={0.15} strokeLinejoin="round" strokeLinecap="round" transform="translate(1,1)" />
+      {/* Main seismic line */}
+      <path d={pts.join(" ") + " Z"} fill="none" stroke={color} strokeWidth={2} strokeOpacity={0.85} strokeLinejoin="round" strokeLinecap="round" filter="url(#seismic-ink)" />
     </svg>
   );
 }
