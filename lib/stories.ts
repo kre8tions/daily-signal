@@ -303,13 +303,50 @@ export async function getUniqueImages(articles: (RawItem & { imageQuery?: string
   return result;
 }
 
+// ── Cross-edition seen-links tracker ─────────────────────────────────────────
+const SEEN_BLOB = "seen-links/recent.json";
+const MAX_SEEN_EDITIONS = 5;
+
+type SeenEntry = { editionKey: string; links: string[] };
+
+async function getSeenLinks(): Promise<Set<string>> {
+  try {
+    const existing = await head(SEEN_BLOB);
+    if (!existing) return new Set();
+    const res = await fetch(existing.url + "?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) return new Set();
+    const entries: SeenEntry[] = await res.json();
+    return new Set(entries.flatMap(e => e.links));
+  } catch { return new Set(); }
+}
+
+async function recordSeenLinks(editionKey: string, links: string[]): Promise<void> {
+  try {
+    let entries: SeenEntry[] = [];
+    try {
+      const existing = await head(SEEN_BLOB);
+      if (existing) {
+        const res = await fetch(existing.url + "?t=" + Date.now(), { cache: "no-store" });
+        if (res.ok) entries = await res.json();
+      }
+    } catch { /* start fresh */ }
+    // Prepend this edition, drop duplicates by key, keep last MAX_SEEN_EDITIONS
+    entries = [{ editionKey, links }, ...entries.filter(e => e.editionKey !== editionKey)]
+      .slice(0, MAX_SEEN_EDITIONS);
+    await put(SEEN_BLOB, JSON.stringify(entries), { access: "public", contentType: "application/json", addRandomSuffix: false });
+  } catch { /* non-fatal */ }
+}
+
 // ── RSS fetch with section quotas ─────────────────────────────────────────────
 export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   const key = `raw2_${editionKey}`;
   const hit = cacheGet<RawItem[]>(key);
   if (hit) return hit;
 
-  const activeFeeds = FEEDS.filter(f => f.section !== "Faith" || isSundayEarlyMorning());
+  const [activeFeeds, seenLinks] = [
+    FEEDS.filter(f => f.section !== "Faith" || isSundayEarlyMorning()),
+    await getSeenLinks(),
+  ];
   const results = await Promise.allSettled(
     activeFeeds.map(async (feed) => {
       const timeout = new Promise<never>((_, r) => setTimeout(() => r(new Error("t")), 8000));
@@ -323,7 +360,10 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
     })
   );
 
-  const all = dedupeByTopic(results.flatMap((r) => r.status === "fulfilled" ? r.value : []));
+  const all = dedupeByTopic(
+    results.flatMap((r) => r.status === "fulfilled" ? r.value : [])
+      .filter(item => item.link && !seenLinks.has(item.link))
+  );
   const CREATIVE = ["Entertainment", "Arts", "Culture", "Film", "Faith"];
   const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [];
   for (const item of all) {
@@ -340,6 +380,8 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   const positive = pool.filter(s => !isNeg(s));
   const selected = [...positive, ...negative];
   cacheSet(key, selected, 8 * ONE_HOUR);
+  // Record selected links so future editions skip them
+  recordSeenLinks(editionKey, selected.map(s => s.link)).catch(() => {});
   return selected;
 }
 
