@@ -1,7 +1,7 @@
 import { getArchiveList } from "@/lib/stories";
 import { P } from "@/lib/palette";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export default async function ArchivePage() {
   const editions = await getArchiveList();
