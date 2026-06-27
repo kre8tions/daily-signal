@@ -101,26 +101,26 @@ function SpaceInvaderSVG({ color }: { color: string }) {
 
 // Pixelated skyline edge — card background color erupts upward in jagged pixel columns
 // Sits at the bottom of an image section, creating a serrated pixel border into the text area
-function PixelEdge({ color, seed = 0, height = 48 }: { color: string; seed?: number; height?: number }) {
-  const COLS = 48;
-  const SVG_W = 480;
-  const SVG_H = height;
-  const colW = SVG_W / COLS;
-  // Seeded pseudo-random so it's stable per card
-  const rand = (n: number) => { const x = Math.sin(n * 127.1 + seed * 311.7) * 43758.5; return x - Math.floor(x); };
-  // Build jagged top edge: card-bg color fills from the stepped edge downward
-  let d = `M0 ${SVG_H}`;
-  for (let i = 0; i < COLS; i++) {
-    // Each column steps up by a random amount; taller columns = more pixel intrusion into image
-    const h = Math.round(rand(i) * SVG_H * 0.85 + SVG_H * 0.05);
-    d += ` L${i * colW} ${SVG_H - h} L${(i + 1) * colW} ${SVG_H - h}`;
+// Bayer dither strip — sits at bottom of image, card-bg color dissolves in from bottom to top
+// COLS/ROWS ratio ~6:1 matches typical wide/short image strip for square pixels
+function PixelEdge({ color, height = 56 }: { color: string; seed?: number; height?: number }) {
+  const COLS = 60;
+  const ROWS = 10;
+  const bayer = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+  const rects: React.ReactNode[] = [];
+  for (let r = 0; r < ROWS; r++) {
+    const t = (r + 1) / ROWS; // sparse at top (r=0), solid at bottom (r=ROWS-1)
+    for (let c = 0; c < COLS; c++) {
+      if (bayer[r % 4][c % 4] / 16 < t) {
+        rects.push(<rect key={`${r}-${c}`} x={c} y={r} width={1.05} height={1.05} fill={color} />);
+      }
+    }
   }
-  d += ` L${SVG_W} ${SVG_H} Z`;
   return (
     <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height, pointerEvents: "none" }}>
-      <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} width="100%" height="100%"
+      <svg viewBox={`0 0 ${COLS} ${ROWS}`} width="100%" height="100%"
            preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
-        <path d={d} fill={color} />
+        {rects}
       </svg>
     </div>
   );
