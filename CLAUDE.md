@@ -1,5 +1,8 @@
 # The Daily Signal — Project Context
 
+## Memory
+**At the start of every session**, read `.claude/memory/project.md` — this is the accumulated knowledge base for this project, updated each session with decisions, bug fixes, and context that isn't obvious from the code.
+
 ## Live URLs
 - Production: https://daily-signal-omega.vercel.app/ (temporary — needs custom domain)
 - GitHub: github.com/kre8tions/daily-signal (`main` branch)
