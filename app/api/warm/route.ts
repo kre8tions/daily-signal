@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
-import { revalidateTag } from "next/cache";
 import { getPageData, getFullArticle, getFeatureCreature, getEdition, saveToArchive, getWriterAssignments } from "@/lib/stories";
 import { put } from "@vercel/blob";
 
@@ -21,8 +20,7 @@ async function runWarm(editionKey: string, editionLabel: string) {
       access: "public", contentType: "application/json", addRandomSuffix: false,
     });
     results["edition-blob"] = "generated";
-  } catch (e) {
-    console.error("[warm] edition-blob failed:", e);
+  } catch {
     results["edition-blob"] = "failed";
   }
 
@@ -35,27 +33,24 @@ async function runWarm(editionKey: string, editionLabel: string) {
       imageUrl: stories[0]?.imageUrl,
     });
     results["archive"] = "generated";
-  } catch (e) {
-    console.error("[warm] archive failed:", e);
+  } catch {
     results["archive"] = "failed";
   }
 
   try {
     const fc = await getFeatureCreature(editionKey);
-    console.log("[warm] FC result:", fc ? `ok (${fc.title})` : "null");
     results["feature-creature"] = fc ? "cached" : "failed";
-  } catch (e) {
-    console.error("[warm] feature-creature failed:", e);
+  } catch {
     results["feature-creature"] = "failed";
   }
 
+  const related = stories.slice(1);
   const writerSlots = getWriterAssignments(editionKey);
   await Promise.allSettled(
     stories.map(async (story, i) => {
       const key = `article-${i}-${story.link.slice(-30)}`;
-      const related = stories.filter((_, j) => j !== i).slice(0, 5).map(s => ({ title: s.title, section: s.section }));
       try {
-        const commentary = await getFullArticle(story, editionKey, writerSlots[i], related);
+        const commentary = await getFullArticle(story, related, editionKey, writerSlots[i]);
         results[key] = commentary.body ? "cached" : "failed";
       } catch (e) {
         console.error(`[warm] failed: ${key}`, e);
@@ -63,10 +58,6 @@ async function runWarm(editionKey: string, editionLabel: string) {
       }
     })
   );
-
-  // Bust the unstable_cache so the next homepage request gets fresh buildPageData
-  // (picks up correct ownedTitle/summary from article blobs, and freshly generated FC)
-  revalidateTag(`edition-${editionKey}`);
 
   const failed = Object.entries(results).filter(([, v]) => v === "failed").map(([k]) => k);
   console.log(`[warm] ${editionKey} done — ${failed.length} failed`, results);

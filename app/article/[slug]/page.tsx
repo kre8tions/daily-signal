@@ -39,12 +39,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   if (!story) notFound();
 
   const { stories } = await getPageData();
-  const relatedStories = stories.filter((s) => s.link !== story.link);
+  const related = stories.filter((s) => s.link !== story.link);
   const { key: editionKey } = getEdition();
   const storyIndex = stories.findIndex((s) => s.link === story.link);
   const writerSlots = getWriterAssignments(editionKey);
   const writerIndex = storyIndex >= 0 ? writerSlots[storyIndex] : undefined;
-  const fullArticle = await getFullArticle(story, editionKey, writerIndex, relatedStories.map(s => ({ title: s.title, section: s.section })));
+  const fullArticle = await getFullArticle(story, related, editionKey, writerIndex);
 
   const sectionColor = SECTION_COLORS[story.section] ?? "#888";
   const pubDate = new Date(story.pubDate).toLocaleDateString("en-US", {
@@ -76,7 +76,11 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </h1>
 
         {/* Meta */}
-        <div style={{ fontSize: 12, color: P.inkLight, marginBottom: 30, fontFamily: P.fontBody }}>{pubDate}</div>
+        <div style={{ display: "flex", gap: 16, fontSize: 12, color: P.inkLight, marginBottom: 30, fontFamily: P.fontBody }}>
+          <span style={{ fontWeight: 700, color: P.inkMid }}>{story.source}</span>
+          <span>·</span>
+          <span>{pubDate}</span>
+        </div>
 
         {/* Hero image */}
         {story.imageUrl && (
@@ -153,11 +157,11 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
 
         {/* Related Stories */}
-        {relatedStories.length > 0 && (
+        {related.length > 0 && (
           <div style={{ marginBottom: 48 }}>
             <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>More From Today&apos;s Edition</div>
             <div style={{ display: "flex", flexDirection: "column" }}>
-              {relatedStories.slice(0, 5).map((s) => (
+              {related.slice(0, 5).map((s) => (
                 <RelatedCard key={s.link} story={s} />
               ))}
             </div>

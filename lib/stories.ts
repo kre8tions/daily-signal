@@ -234,10 +234,10 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
     : (section && sectionFallback[section]) ?? "news media editorial";
 
   const queries = [
+    ...(imageQuery ? [imageQuery] : []),
     ...(personQuery ? [personQuery, `${personQuery} portrait`] : []),
     words.slice(0, 3).join(" "),
     words.slice(0, 2).join(" "),
-    ...(imageQuery ? [imageQuery] : []),
     fallback,
   ].filter(Boolean);
 
@@ -303,50 +303,13 @@ export async function getUniqueImages(articles: (RawItem & { imageQuery?: string
   return result;
 }
 
-// ── Cross-edition seen-links tracker ─────────────────────────────────────────
-const SEEN_BLOB = "seen-links/recent.json";
-const MAX_SEEN_EDITIONS = 5;
-
-type SeenEntry = { editionKey: string; links: string[] };
-
-async function getSeenLinks(): Promise<Set<string>> {
-  try {
-    const existing = await head(SEEN_BLOB);
-    if (!existing) return new Set();
-    const res = await fetch(existing.url + "?t=" + Date.now(), { cache: "no-store" });
-    if (!res.ok) return new Set();
-    const entries: SeenEntry[] = await res.json();
-    return new Set(entries.flatMap(e => e.links));
-  } catch { return new Set(); }
-}
-
-async function recordSeenLinks(editionKey: string, links: string[]): Promise<void> {
-  try {
-    let entries: SeenEntry[] = [];
-    try {
-      const existing = await head(SEEN_BLOB);
-      if (existing) {
-        const res = await fetch(existing.url + "?t=" + Date.now(), { cache: "no-store" });
-        if (res.ok) entries = await res.json();
-      }
-    } catch { /* start fresh */ }
-    // Prepend this edition, drop duplicates by key, keep last MAX_SEEN_EDITIONS
-    entries = [{ editionKey, links }, ...entries.filter(e => e.editionKey !== editionKey)]
-      .slice(0, MAX_SEEN_EDITIONS);
-    await put(SEEN_BLOB, JSON.stringify(entries), { access: "public", contentType: "application/json", addRandomSuffix: false });
-  } catch { /* non-fatal */ }
-}
-
 // ── RSS fetch with section quotas ─────────────────────────────────────────────
 export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   const key = `raw2_${editionKey}`;
   const hit = cacheGet<RawItem[]>(key);
   if (hit) return hit;
 
-  const [activeFeeds, seenLinks] = [
-    FEEDS.filter(f => f.section !== "Faith" || isSundayEarlyMorning()),
-    await getSeenLinks(),
-  ];
+  const activeFeeds = FEEDS.filter(f => f.section !== "Faith" || isSundayEarlyMorning());
   const results = await Promise.allSettled(
     activeFeeds.map(async (feed) => {
       const timeout = new Promise<never>((_, r) => setTimeout(() => r(new Error("t")), 8000));
@@ -360,10 +323,7 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
     })
   );
 
-  const all = dedupeByTopic(
-    results.flatMap((r) => r.status === "fulfilled" ? r.value : [])
-      .filter(item => item.link && !seenLinks.has(item.link))
-  );
+  const all = dedupeByTopic(results.flatMap((r) => r.status === "fulfilled" ? r.value : []));
   const CREATIVE = ["Entertainment", "Arts", "Culture", "Film", "Faith"];
   const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [];
   for (const item of all) {
@@ -380,46 +340,66 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   const positive = pool.filter(s => !isNeg(s));
   const selected = [...positive, ...negative];
   cacheSet(key, selected, 8 * ONE_HOUR);
-  // Record selected links so future editions skip them
-  recordSeenLinks(editionKey, selected.map(s => s.link)).catch(() => {});
   return selected;
 }
 
-// ── Cross-story synthesis ─────────────────────────────────────────────────────
-async function getSynthesis(items: RawItem[], editionKey: string): Promise<Synthesis> {
-  const key = `synthesis_${editionKey}`;
-  const hit = cacheGet<Synthesis>(key);
+// ── Claude analysis + synthesis ───────────────────────────────────────────────
+type RawAnalysis = { style?: string; ownedTitle?: string; summary?: string; bullets?: string[]; pullquote?: string; insight?: string; imageQuery?: string };
+type AnalyzeResult = { stories: RawAnalysis[]; synthesis: Synthesis };
+
+export async function analyzeAll(items: RawItem[], editionKey: string): Promise<AnalyzeResult> {
+  const key = `analysis_${editionKey}`;
+  const hit = cacheGet<AnalyzeResult>(key);
   if (hit) return hit;
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const styles = ["full", "pullquote", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief"];
   const list = items.map((a, i) =>
     `[${i}] ${a.section.toUpperCase()} — ${a.source}: ${a.title}\n${a.content.slice(0, 400)}`
   ).join("\n\n");
 
+  // Seeded writer voice for synthesis
   const synthSeed = editionKey.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 13), 0);
   const synthWriter = WRITERS[synthSeed % WRITERS.length];
 
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1200,
+    max_tokens: 5000,
     messages: [{
       role: "user",
-      content: `You are a sharp, opinionated editor covering tech, arts, music, and culture. Your perspective is centrist and intellectually honest — you challenge assumptions from all sides, give credit where it's due regardless of political tribe, and never moralize or signal virtue.
+      content: `You are a sharp, opinionated editor covering tech, arts, music, and culture. Your perspective is centrist and intellectually honest — you challenge assumptions from all sides, give credit where it's due regardless of political tribe, and never moralize or signal virtue. You are equally skeptical of corporate power, government overreach, activist excess, and reactionary nostalgia.
 
-Write through this editorial lens: ${synthWriter.style}
+For the synthesis section specifically, write through this editorial lens: ${synthWriter.style}
 
 RULES:
 - Never restate the headline. Be specific, find non-obvious angles.
 - NEVER open with "Today's", "This collection", "These stories". Jump straight into the insight.
 - Write in first-person editorial voice — opinions, interpretations, predictions.
-- Do not frame stories through an ideological lens.
+- Do not frame stories through an ideological lens. Avoid language that signals left or right allegiance.
+- When covering tech or culture, prioritize practical impact over social commentary.
 
 ${list}
 
-Return JSON only, no markdown:
-{
+Return JSON with two keys:
+
+"stories": ${items.length} objects. Styles: ${styles.map((s, i) => `[${i}]="${s}"`).join(", ")}
+
+Every story object must include:
+- "ownedTitle": 6-10 words. Rewrite the source headline as a magnetic editorial headline. Rules:
+  • SPECIFICITY: name the number, the company, the person, the country — "The $4B Bet Nobody Noticed" beats "A Surprising Investment Story"
+  • TENSION: put a contradiction, stakes, or problem inside the headline itself — not just a topic
+  • CURIOSITY GAP: reader must feel they'll understand something important after clicking — but don't be clickbait, the payoff must be real
+  • FORBIDDEN WORDS: never use "Why", "How", "The Truth About", "What You Need to Know", "Everything You Need", "A New Era", "Game-Changer", "Revolutionary"
+  • Must be completely different from the source headline. No quotes around it.
+
+Then per style:
+- "full"      → { "style":"full", "ownedTitle":"...", "summary":"2 punchy sentences", "bullets":["3 specific facts ≤15 words"], "imageQuery":"4-6 concrete visual words for Unsplash — atmospheric, no names, no text" }
+- "pullquote" → { "style":"pullquote", "ownedTitle":"...", "summary":"2 direct sentences", "pullquote":"one striking sentence", "imageQuery":"4-6 concrete visual words for Unsplash — atmospheric, no names, no text" }
+- "brief"     → { "style":"brief", "ownedTitle":"...", "summary":"2-3 sentences with real context and stakes", "insight":"why this matters — non-obvious, one sentence", "imageQuery":"4-6 concrete visual words for Unsplash — atmospheric, no names, no text" }
+
+"synthesis": {
   "theme": "One evocative noun phrase naming the underlying force or tension",
-  "observation": "STRUCTURE REQUIRED: Write the first sentence as a standalone hook. Then insert \\n\\n. Then write 1-2 follow-up sentences that deepen it. Example: 'Capital is fleeing hardware.\\n\\nThe pattern is clear: wherever supply chains constrain growth, money moves to narrative and IP instead.' Never count or reference how many articles or stories are covered.",
+  "observation": "STRUCTURE REQUIRED: Write the first sentence as a standalone hook. Then insert \\n\\n. Then write 1-2 follow-up sentences that deepen it. Example format: 'Capital is fleeing hardware.\\n\\nThe pattern is clear: wherever supply chains constrain growth, money moves to narrative and IP instead.' Never count or reference how many articles or stories are covered.",
   "takeaways": [
     "Non-obvious connection between at least two stories — name the mechanism. 1 sentence, 2 max.",
     "The deeper structural tension or irony. 1 sentence, 2 max.",
@@ -431,62 +411,51 @@ Return JSON only, no markdown:
     "One sharp sentence. A different angle — something small and low-risk a newcomer can try this week. Max 20 words.",
     "One sharp sentence. The simplest possible first step someone just starting out would actually take. Max 20 words."
   ]
-}`,
+}
+
+Return only valid JSON, no markdown.`,
     }],
   });
 
-  const rawText = msg.content[0].type === "text" ? msg.content[0].text : "{}";
-  const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
+  const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   try {
-    const parsed = JSON.parse(cleaned) as Synthesis;
+    const parsed: AnalyzeResult = JSON.parse(text);
     cacheSet(key, parsed, 8 * ONE_HOUR);
     return parsed;
   } catch {
-    return { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] };
+    return {
+      stories: items.map((_, i) => ({ style: styles[i] })),
+      synthesis: { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] },
+    };
   }
 }
 
 // ── Assemble page data (cached per edition via Next.js data cache) ────────────
 async function buildPageData(editionKey: string, editionLabel: string): Promise<PageData> {
   const raw = await fetchTopStories(editionKey);
-  const writerSlots = getWriterAssignments(editionKey);
-
-  // Run all per-story articles, cross-story synthesis, and FC in parallel.
-  // Use allSettled for articles so a single article failure doesn't kill FC or the edition blob.
-  const [articleResults, synthesis, featureCreature] = await Promise.all([
-    Promise.allSettled(
-      raw.map((item, i) =>
-        getFullArticle(
-          item, editionKey, writerSlots[i],
-          raw.filter((_, j) => j !== i).slice(0, 5).map(r => ({ title: r.title, section: r.section }))
-        )
-      )
-    ),
-    getSynthesis(raw, editionKey),
+  const [result, featureCreature] = await Promise.all([
+    analyzeAll(raw, editionKey),
     getFeatureCreature(editionKey),
   ]);
-  const articles = articleResults.map(r => r.status === "fulfilled" ? r.value : null);
-
-  const rawWithQuery = raw.map((r, i) => ({ ...r, imageQuery: articles[i]?.imageQuery }));
+  const { stories: analyses, synthesis } = result;
+  const rawWithQuery = raw.map((r, i) => ({ ...r, imageQuery: analyses[i]?.imageQuery }));
   const images = await getUniqueImages(rawWithQuery);
-
   const stories: Story[] = raw.map((r, i) => ({
-    ...r,
-    imageUrl: images[i],
-    cardStyle: "full" as Story["cardStyle"],
-    ownedTitle: articles[i]?.ownedTitle,
-    summary: articles[i]?.summary,
-    bullets: articles[i]?.bullets,
-    pullquote: articles[i]?.pullQuote,
-    insight: articles[i]?.insight,
-    imageQuery: articles[i]?.imageQuery,
+    ...r, imageUrl: images[i],
+    cardStyle: ((analyses[i]?.style ?? "brief") as Story["cardStyle"]),
+    ownedTitle: analyses[i]?.ownedTitle,
+    summary: analyses[i]?.summary, bullets: analyses[i]?.bullets,
+    pullquote: analyses[i]?.pullquote, insight: analyses[i]?.insight,
+    imageQuery: analyses[i]?.imageQuery,
   }));
-
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
+  // Save full edition data to Blob for archive page rendering
   put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
     access: "public", contentType: "application/json", addRandomSuffix: false,
   }).catch(() => {});
+  // Always update archive index when a new edition is first built
   saveToArchive({
     key: editionKey, label: editionLabel,
     date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl,
@@ -643,10 +612,6 @@ export interface ArticleCommentary {
   writer?: string;
   ownedTitle?: string;
   imageUrl2?: string;
-  summary?: string;
-  bullets?: string[];
-  insight?: string;
-  imageQuery?: string;
 }
 
 function breakLongSentences(text: string): string {
@@ -670,14 +635,9 @@ function breakLongSentences(text: string): string {
   }).join("\n\n");
 }
 
-export async function getFullArticle(
-  item: RawItem | Story,
-  editionKey: string,
-  writerIndex?: number,
-  relatedItems?: { title: string; section: string }[]
-): Promise<ArticleCommentary> {
-  const PROMPT_V = "v12"; // bump when prompt changes to invalidate old cached articles
-  const slug = createHash("md5").update(item.link).digest("hex").slice(0, 16);
+export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
+  const PROMPT_V = "v10"; // bump when prompt changes to invalidate old cached articles
+  const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
   // Check Blob cache first
@@ -693,7 +653,7 @@ export async function getFullArticle(
   } catch { /* not found — generate fresh */ }
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const related = (relatedItems ?? []).slice(0, 5);
+  const related = relatedStories.filter((s) => s.link !== story.link).slice(0, 5);
 
   // ── Pass 1: voice — write freely, pure quality, no structural constraints ──
   const writer = writerIndex !== undefined ? WRITERS[writerIndex % WRITERS.length] : null;
@@ -701,46 +661,12 @@ export async function getFullArticle(
     ? writer.style
     : `You write "The Signal Take" — a short, sharp editorial for a news digest. Your voice: the smartest person in the room who happens to be your friend. Direct. A little irreverent. Never preachy. You find the non-obvious angle and follow it somewhere unexpected.`;
 
-  // Per-writer headline formulas — concrete craft instructions, not abstract descriptions
-  const headlineInstruction = writer ? {
-    Rex: `Your ownedTitle delivers a prosecutorial verdict. Someone or something is wrong, hypocritical, or lying — name it directly. Put the accusation in the headline, not the evidence.
-FORMULA: [Entity]'s [Thing] [Does/Is] [Damning Truth] — "The EPA's Clean Air Data Has a Fossil Fuel Problem" / "Harvard's Inclusion Office Has a Transparency Exception"
-Never hedge. The headline is a verdict, not a question.`,
-    Eric: `Your ownedTitle strips the euphemism and names the thing in plain English. The headline is what they called it vs. what it actually was.
-FORMULA: They Called It [Official Name]. It Was [Plain Truth]. — OR — The [Official Word] That [What It Actually Did]
-Examples: "They Called It a Restructuring. Half the Building Is Empty." / "The Safety Protocol That Required Ignoring Safety"
-Clarity is the weapon. Short words. No jargon.`,
-    Margot: `Your ownedTitle is a cool observation with dread underneath — two true facts placed next to each other that shouldn't coexist.
-FORMULA: [Official Achievement]. [Damning Detail Nobody Mentioned.] — "Four New Species Discovered. None of Their Habitats Protected." / "The Museum Opened Its Diversity Wing. The Curators Remain 94% White."
-Distance and juxtaposition. Never raise your voice.`,
-    Finn: `Your ownedTitle is an insider thriller hook — follow the money or the mechanism, name the number, imply the story behind the story.
-FORMULA: The [Mechanism] That [Did Specific Thing] Before [Anyone/Someone] [Noticed/Acted] — "The Algorithm That Moved $800M Before the Regulators Logged In" / "What the Internal Memo Said the Week Before the Recall"
-Readers should feel they're getting access to something.`,
-    Cal: `Your ownedTitle IS the counter-intuitive reversal — the surprising truth is the whole payoff, right there in the headline.
-FORMULA: The [Expected Thing] That [Unexpected Outcome] — OR — [City/Company/Policy] [Did Unexpected Thing]. [Counter-intuitive Result].
-Examples: "The City That Reduced Homelessness by Doing Less" / "Charter Schools Are Underperforming. That Was the Plan."
-The reader's reaction should be: wait, really? Then click to find out why.`,
-    Jack: `Your ownedTitle deflates sanctimony with a sardonic sting — mock the gap between the stated intention and the actual result.
-FORMULA: [Institution] [Noble Goal]. [Absurd/Ironic Reality]. — "Silicon Valley Solves Poverty. App Store Listing Pending." / "The Inclusion Summit Had a Waitlist. For Inclusion."
-Wit over anger. The joke is the critique.`,
-    Ward: `Your ownedTitle names the status game being played — who is performing for whom, what is the real currency, and what does it cost.
-FORMULA: The [High-Status Group]'s [Thing] Was Really About [Social Currency] — "The TED Talk on Inequality Cost $6,000 to Attend" / "Princeton's Working-Class Study Was Conducted by Legacy Admits"
-Expose the social theater. Name the contradiction between the performance and the performers.`,
-  }[writer.name] ?? "" : "";
-
   const pass1msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 950,
+    max_tokens: 700,
     messages: [{
       role: "user",
       content: `${voiceInstruction}
-
-── HEADLINE FIRST ──────────────────────────────────────────────────────────────
-Write the ownedTitle before anything else. This is the most important line.
-${headlineInstruction || `Specificity beats intrigue. Name the number, company, person, or place. Put tension or contradiction INSIDE the headline — a problem, not just a topic. "The $4B Bet Nobody Noticed" beats "A Surprising Investment Story".`}
-
-Universal headline rules: 6-10 words. Must differ completely from the source headline. NEVER use: Why / How / The Truth About / Game-Changer / Revolutionary / A New Era / Revealed / What You Need to Know / Important.
-────────────────────────────────────────────────────────────────────────────────
 
 You are writing "The Signal Take" — a short, sharp editorial for a news digest.
 
@@ -768,35 +694,27 @@ Voice — write like this:
 
 Also return:
 - header: 3-5 words. A magazine sub-headline — specific and surprising, not generic. Examples of BAD headers: "The Bigger Picture", "What This Means", "A New Era". Examples of GOOD headers: "The Quiet Monopoly", "When Safety Becomes Control", "Debt That Builds Nations".
+- header2: 3-5 words. A second editorial sub-headline for the mid-article section — same rules as header but covers the second half of the piece.
 - pullQuote: copy one sentence verbatim from your body — the most arresting one. Must be word-for-word identical.
+- imageQuery2: 4-6 concrete visual/atmospheric words for a second Unsplash image search (mid-article). No names, no text, no logos. Think: dramatic lighting, textures, environment, emotion.
 
-STORY: ${item.title}
-SOURCE: ${item.source ?? ""}
-SECTION: ${item.section}
-${(() => {
-  const ri = item as RawItem;
-  const st = item as Story;
-  if (ri.content) return `RSS CONTENT: ${ri.content.slice(0, 500)}`;
-  const parts = [
-    st.summary ? `SUMMARY: ${st.summary}` : "",
-    st.bullets?.length ? `KEY FACTS: ${st.bullets.join(". ")}` : "",
-    st.insight ? `INSIGHT: ${st.insight}` : "",
-  ].filter(Boolean);
-  return parts.join("\n");
-})()}
+STORY: ${story.title}
+SOURCE: ${story.source}
+SECTION: ${story.section}
+SUMMARY: ${story.summary ?? ""}
+KEY FACTS: ${story.bullets?.join(". ") ?? ""}
+INSIGHT: ${story.insight ?? ""}
 
 TODAY'S OTHER STORIES (weave one in only if the parallel is genuinely non-obvious):
 ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
 
 Return JSON only, no markdown:
 {
-  "ownedTitle": "6-10 words. Apply your headline formula above. Different from source headline.",
+  "ownedTitle": "6-10 words in your writer voice. Magnetic editorial headline — name specifics (numbers, names, places), put tension or contradiction inside the headline itself, create a curiosity gap the article genuinely pays off. Rex: confrontational verdict. Eric: plain moral charge. Margot: cool disturbing observation. Finn: insider thriller hook. Cal: counter-intuitive reversal. Jack: sardonic sting. Ward: status-game exposure. Never use: Why/How/The Truth About/Game-Changer/Revolutionary/What You Need to Know. Must differ from source headline.",
   "header": "...",
-  "pullQuote": "Copy one sentence verbatim from your body — the most arresting one.",
-  "summary": "2 punchy sentences — what a smart friend would text you about this story. Not the lede.",
-  "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
-  "insight": "One non-obvious sentence: why this matters, who benefits, or what breaks.",
-  "imageQuery": "4-6 concrete atmospheric Unsplash words — no names, no text, no logos",
+  "header2": "...",
+  "pullQuote": "...",
+  "imageQuery2": "...",
   "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."
 }`,
     }],
@@ -804,7 +722,7 @@ Return JSON only, no markdown:
 
   const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
   const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  let pass1: { ownedTitle?: string; header?: string; pullQuote?: string; body?: string; summary?: string; bullets?: string[]; insight?: string; imageQuery?: string } = {};
+  let pass1: { ownedTitle?: string; header?: string; header2?: string; pullQuote?: string; imageQuery2?: string; body?: string } = {};
   try {
     pass1 = JSON.parse(text1);
     if (!pass1.body) throw new Error();
@@ -815,13 +733,11 @@ Return JSON only, no markdown:
 
   // ── Pass 2: structure — scaffold the free-write into the paragraph cadence ──
   let body = pass1.body ?? "";
-  let pass1Header2 = "";
-  let pass1ImageQuery2 = "";
   if (body) {
     try {
       const pass2msg = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 700,
+        max_tokens: 600,
         messages: [{
           role: "user",
           content: `Restructure this article body into exactly 4-5 paragraphs. Preserve ALL ideas and the original voice word-for-word where possible. Do not add new ideas.
@@ -837,15 +753,11 @@ Structure:
 - para4: 2-3 sentences — the turn. Complication, contradiction, or escalation.
 - para5: 1-2 sentences — landing. A sharp question, provocation, or implication. Omit if the content doesn't need it.
 
-Also return:
-- header2: 3-5 words. A second editorial sub-headline for para4 onward — same rules as a magazine sub-head but covers the second half of the argument. Specific, not generic.
-- imageQuery2: 4-6 concrete atmospheric words for a second Unsplash search. No names, no text, no logos. Think: texture, environment, light, emotion.
-
 Body to restructure:
 "${body}"
 
 Return JSON only:
-{"header2":"...","imageQuery2":"...","para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`,
+{"para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`,
         }],
       });
       const raw2 = pass2msg.content[0].type === "text" ? pass2msg.content[0].text : "{}";
@@ -861,28 +773,22 @@ Return JSON only:
             return matches.slice(0, limits[k]).join(" ").trim();
           })
           .join("\n\n");
-        if (scaffold.header2) pass1Header2 = scaffold.header2 as string;
-        if (scaffold.imageQuery2) pass1ImageQuery2 = scaffold.imageQuery2 as string;
       }
     } catch { /* pass2 failed — use pass1 body as-is */ }
   }
 
-  const imageUrl2 = pass1ImageQuery2
-    ? await fetchUnsplash(pass1ImageQuery2, item.section, 1)
-    : await fetchUnsplash(item.title, item.section, 2);
+  const imageUrl2 = pass1.imageQuery2
+    ? await fetchUnsplash(pass1.imageQuery2, story.section, 2)
+    : await fetchUnsplash(story.title, story.section, 2);
 
   const commentary: ArticleCommentary = {
     ownedTitle: pass1.ownedTitle ?? "",
     header: pass1.header ?? "",
-    header2: pass1Header2,
+    header2: pass1.header2 ?? "",
     pullQuote: pass1.pullQuote ?? "",
     imageUrl2: imageUrl2 ?? undefined,
     body: breakLongSentences(body),
     writer: writer?.name ?? "",
-    summary: pass1.summary,
-    bullets: pass1.bullets,
-    insight: pass1.insight,
-    imageQuery: pass1.imageQuery,
   };
 
   // Save to Blob for this edition
