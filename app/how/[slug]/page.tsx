@@ -32,7 +32,7 @@ export default async function HowToPage({ params, searchParams }: {
   if (!howto) notFound();
 
   return (
-    <div style={{ minHeight: "100vh", background: P.pageBg, color: P.ink, fontFamily: P.fontBody, paddingBottom: 80 }}>
+    <div style={{ minHeight: "100vh", background: P.articleBg, color: P.ink, fontFamily: P.fontBody, paddingBottom: 80 }}>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href={CURSIVE_FONT_URL} />
 
