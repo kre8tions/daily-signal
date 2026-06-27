@@ -99,6 +99,41 @@ function SpaceInvaderSVG({ color }: { color: string }) {
   );
 }
 
+// Ruler-tick border — evenly spaced ticks (tall/medium/short) around all 4 edges, no numbers
+function RulerBorder({ color, radius = 20 }: { color: string; radius?: number }) {
+  const UNIT = 10;        // px between ticks (at 1:1 — SVG units)
+  const TALL = 9; const MID = 6; const SHORT = 4;
+  const tickHeight = (i: number) => i % 4 === 0 ? TALL : i % 2 === 0 ? MID : SHORT;
+  const ticks: React.ReactNode[] = [];
+  // We use viewBox="0 0 100 100" with preserveAspectRatio="none" so the SVG stretches
+  // to the card size. Ticks are drawn in % units (0–100).
+  // Rather than computing exact card px dimensions, draw ticks in a fixed 1000×600 coord space
+  const W = 1000; const H = 600;
+  const inset = 4; const strokeW = 1.8;
+  // Top & bottom edges
+  for (let x = inset + radius; x < W - radius; x += UNIT) {
+    const i = Math.round((x - inset - radius) / UNIT);
+    const h = tickHeight(i);
+    ticks.push(<line key={`t${i}`} x1={x} y1={inset} x2={x} y2={inset + h} stroke={color} strokeWidth={strokeW} strokeLinecap="round" />);
+    ticks.push(<line key={`b${i}`} x1={x} y1={H - inset} x2={x} y2={H - inset - h} stroke={color} strokeWidth={strokeW} strokeLinecap="round" />);
+  }
+  // Left & right edges
+  for (let y = inset + radius; y < H - radius; y += UNIT) {
+    const i = Math.round((y - inset - radius) / UNIT);
+    const h = tickHeight(i);
+    ticks.push(<line key={`l${i}`} x1={inset} y1={y} x2={inset + h} y2={y} stroke={color} strokeWidth={strokeW} strokeLinecap="round" />);
+    ticks.push(<line key={`r${i}`} x1={W - inset} y1={y} x2={W - inset - h} y2={y} stroke={color} strokeWidth={strokeW} strokeLinecap="round" />);
+  }
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+         style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 }}
+         xmlns="http://www.w3.org/2000/svg">
+      <rect x={inset} y={inset} width={W - inset * 2} height={H - inset * 2} rx={radius * (H / 600)} ry={radius * (H / 600)} fill="none" stroke={color} strokeWidth={strokeW * 0.6} strokeOpacity="0.35" />
+      {ticks}
+    </svg>
+  );
+}
+
 // Pixelated skyline edge — card background color erupts upward in jagged pixel columns
 // Sits at the bottom of an image section, creating a serrated pixel border into the text area
 // Stochastic noise dither — each pixel has independent random probability that grows toward bottom
@@ -269,10 +304,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
           const slug = fc.editionKey ?? "today";
           return (
             <div style={{ gridColumn: "1 / 7", gridRow: "2 / 4", position: "relative" }}>
-              <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
-                <rect x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="20" ry="20" fill="none" stroke={color} strokeWidth="2.5" strokeDasharray="3 9" strokeLinecap="round" />
-                <rect x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="20" ry="20" fill="none" stroke={color} strokeWidth="7" strokeOpacity="0.3" strokeDasharray="1 44" strokeLinecap="round" />
-              </svg>
+              <RulerBorder color={color} radius={20} />
               <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none", color: "inherit", display: "flex", height: "100%" }}>
                 <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, display: "flex", flexDirection: "column", flex: 1 }}>
                   {fc.imageUrl && (
@@ -384,20 +416,7 @@ function FeatureCreatureCard({ fc }: { fc: FeatureCreature }) {
 
   return (
     <div style={{ maxWidth: 1200, marginTop: 16, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-      {/* Clock tick border SVG — short dashes evenly spaced like minute markers */}
-      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
-        <rect x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="22" ry="22" fill="none"
-          stroke={color} strokeWidth="3"
-          strokeDasharray="3 9"
-          strokeLinecap="round"
-        />
-        {/* Outer tick ring — longer marks every ~36px */}
-        <rect x="3" y="3" width="calc(100% - 6px)" height="calc(100% - 6px)" rx="22" ry="22" fill="none"
-          stroke={color} strokeWidth="7" strokeOpacity="0.35"
-          strokeDasharray="1 44"
-          strokeLinecap="round"
-        />
-      </svg>
+      <RulerBorder color={color} radius={22} />
 
       <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
         <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow }}>
