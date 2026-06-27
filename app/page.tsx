@@ -103,9 +103,9 @@ function SpaceInvaderSVG({ color }: { color: string }) {
 // Sits at the bottom of an image section, creating a serrated pixel border into the text area
 // Stochastic noise dither — each pixel has independent random probability that grows toward bottom
 // Organic scatter, not the regular Bayer grid pattern
-function PixelEdge({ color, seed = 0, height = 80 }: { color: string; seed?: number; height?: number }) {
-  const COLS = 72;
-  const ROWS = 14;
+function PixelEdge({ color, seed = 0, height = 56 }: { color: string; seed?: number; height?: number }) {
+  const COLS = 120; // ~400px wide ÷ ~3.3px per pixel
+  const ROWS = 18;  // ~56px tall ÷ ~3.1px per pixel → ~square pixels at 400×56 strip
   // Per-pixel seeded noise — deterministic but looks random
   const noise = (r: number, c: number) => {
     const n = Math.sin(r * 127.1 + c * 311.7 + seed * 93.3) * 43758.5453;
