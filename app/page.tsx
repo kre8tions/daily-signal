@@ -99,6 +99,31 @@ function SpaceInvaderSVG({ color }: { color: string }) {
   );
 }
 
+// Bayer 4×4 ordered dither — fades from transparent (top) to opaque (bottom)
+function PixelFade({ color, direction = "up" }: { color: string; direction?: "up" | "down" }) {
+  const COLS = 16;
+  const ROWS = 48;
+  const bayer = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+  const pw = 100 / COLS;
+  const ph = 100 / ROWS;
+  const rects: React.ReactNode[] = [];
+  for (let r = 0; r < ROWS; r++) {
+    const t = direction === "up" ? r / ROWS : 1 - r / ROWS;
+    for (let c = 0; c < COLS; c++) {
+      if (bayer[r % 4][c % 4] / 16 < t) {
+        rects.push(<rect key={`${r}-${c}`} x={`${c * pw}%`} y={`${r * ph}%`} width={`${pw + 0.15}%`} height={`${ph + 0.15}%`} fill={color} />);
+      }
+    }
+  }
+  return (
+    <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
+        {rects}
+      </svg>
+    </div>
+  );
+}
+
 function timeAgo(iso: string) {
   const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
   if (h < 1) return "Just now";
@@ -219,7 +244,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
         {s1 && (
           <a href={`/article/${urlToSlug(s1.link)}`} style={{ ...imgCard, gridColumn: "6 / 13", gridRow: "1", textDecoration: "none" }}>
             {s1.imageUrl ? <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.gradFrom}, ${P.gradTo})` }} />}
-            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to top, ${P.accent}44 0%, transparent 60%)` }} />
+            <PixelFade color={P.accent + "55"} direction="up" />
           </a>
         )}
 
@@ -242,7 +267,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                   {fc.imageUrl && (
                     <div style={{ position: "relative", flex: 1, minHeight: 200 }}>
                       <img src={fc.imageUrl} alt={fc.universe} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", position: "absolute", inset: 0 }} />
-                      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 50%, ${P.cardBg}dd 100%)` }} />
+                      <PixelFade color={P.cardBg} direction="down" />
                       <div style={{ position: "absolute", top: 12, left: 14, background: color + "ee", color: "#fff", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 4, paddingBottom: 4, paddingLeft: 10, paddingRight: 10, borderRadius: 20, display: "flex", alignItems: "center", gap: 6 }}><span>{emoji}</span> Feature Creature</div>
                       <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{fc.universe}</div>
                     </div>
@@ -267,7 +292,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
         {s2 && (
           <a href={`/article/${urlToSlug(s2.link)}`} className="ds-s2-img" style={{ ...imgCard, gridColumn: "7 / 13", gridRow: "2", textDecoration: "none" }}>
             {s2.imageUrl ? <img src={s2.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.tint}, ${P.accent}66)` }} />}
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.05) 55%, transparent 100%)" }} />
+            <PixelFade color="rgba(0,0,0,0.92)" direction="up" />
             <div style={{ position: "absolute", bottom: 20, left: 20, right: 100 }}>
               <div style={{ marginBottom: 6 }}><Pill section={s2.section} /></div>
               <div className="ds-card-h" style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.15, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 1 : -0.5, marginBottom: 8 }}>
@@ -304,7 +329,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                 {s.imageUrl && (
                   <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
                     <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                    <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 40%, ${P.cardBg}cc 100%)` }} />
+                    <PixelFade color={P.cardBg} direction="down" />
                     <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
                     <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{s.source} · {timeAgo(s.pubDate)}</div>
                   </div>
