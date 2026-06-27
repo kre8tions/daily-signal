@@ -427,12 +427,13 @@ Return JSON with two keys:
 "stories": ${items.length} objects. Styles: ${styles.map((s, i) => `[${i}]="${s}"`).join(", ")}
 
 Every story object must include:
-- "ownedTitle": 6-10 words. Rewrite the source headline as a magnetic editorial headline. Rules:
-  • SPECIFICITY: name the number, the company, the person, the country — "The $4B Bet Nobody Noticed" beats "A Surprising Investment Story"
-  • TENSION: put a contradiction, stakes, or problem inside the headline itself — not just a topic
-  • CURIOSITY GAP: reader must feel they'll understand something important after clicking — but don't be clickbait, the payoff must be real
-  • FORBIDDEN WORDS: never use "Why", "How", "The Truth About", "What You Need to Know", "Everything You Need", "A New Era", "Game-Changer", "Revolutionary"
-  • Must be completely different from the source headline. No quotes around it.
+- "ownedTitle": 6-10 words. A headline that earns the click through craft, not mystery. Pick ONE of these moves:
+  • VERDICT: name who is wrong or what is broken — "The Pentagon's $2B Cloud Deal Was Never About the Cloud"
+  • JUXTAPOSITION: two true facts that shouldn't coexist — "Four Species Discovered. Zero Habitats Protected."
+  • NUMBER + MECHANISM: name the specific number and what it did — "The Algorithm That Moved $800M Before Regulators Noticed"
+  • REVERSAL: the counter-intuitive truth IS the headline — "The City That Reduced Homelessness by Doing Less"
+  • STRIP THE EUPHEMISM: official name vs. plain reality — "They Called It Restructuring. Half the Team Is Gone."
+  FORBIDDEN: Why / How / The Truth About / Game-Changer / Revolutionary / A New Era / Revealed / What You Need to Know / Important / Surprising. Must differ completely from the source headline.
 
 Then per style:
 - "full"      → { "style":"full", "ownedTitle":"...", "summary":"2 punchy sentences", "bullets":["3 specific facts ≤15 words"], "imageQuery":"4-6 concrete visual words for Unsplash — atmospheric, no names, no text" }
@@ -678,7 +679,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v10"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v11"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
@@ -703,12 +704,46 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
     ? writer.style
     : `You write "The Signal Take" — a short, sharp editorial for a news digest. Your voice: the smartest person in the room who happens to be your friend. Direct. A little irreverent. Never preachy. You find the non-obvious angle and follow it somewhere unexpected.`;
 
+  // Per-writer headline formulas — concrete craft instructions, not abstract descriptions
+  const headlineInstruction = writer ? {
+    Rex: `Your ownedTitle delivers a prosecutorial verdict. Someone or something is wrong, hypocritical, or lying — name it directly. Put the accusation in the headline, not the evidence.
+FORMULA: [Entity]'s [Thing] [Does/Is] [Damning Truth] — "The EPA's Clean Air Data Has a Fossil Fuel Problem" / "Harvard's Inclusion Office Has a Transparency Exception"
+Never hedge. The headline is a verdict, not a question.`,
+    Eric: `Your ownedTitle strips the euphemism and names the thing in plain English. The headline is what they called it vs. what it actually was.
+FORMULA: They Called It [Official Name]. It Was [Plain Truth]. — OR — The [Official Word] That [What It Actually Did]
+Examples: "They Called It a Restructuring. Half the Building Is Empty." / "The Safety Protocol That Required Ignoring Safety"
+Clarity is the weapon. Short words. No jargon.`,
+    Margot: `Your ownedTitle is a cool observation with dread underneath — two true facts placed next to each other that shouldn't coexist.
+FORMULA: [Official Achievement]. [Damning Detail Nobody Mentioned.] — "Four New Species Discovered. None of Their Habitats Protected." / "The Museum Opened Its Diversity Wing. The Curators Remain 94% White."
+Distance and juxtaposition. Never raise your voice.`,
+    Finn: `Your ownedTitle is an insider thriller hook — follow the money or the mechanism, name the number, imply the story behind the story.
+FORMULA: The [Mechanism] That [Did Specific Thing] Before [Anyone/Someone] [Noticed/Acted] — "The Algorithm That Moved $800M Before the Regulators Logged In" / "What the Internal Memo Said the Week Before the Recall"
+Readers should feel they're getting access to something.`,
+    Cal: `Your ownedTitle IS the counter-intuitive reversal — the surprising truth is the whole payoff, right there in the headline.
+FORMULA: The [Expected Thing] That [Unexpected Outcome] — OR — [City/Company/Policy] [Did Unexpected Thing]. [Counter-intuitive Result].
+Examples: "The City That Reduced Homelessness by Doing Less" / "Charter Schools Are Underperforming. That Was the Plan."
+The reader's reaction should be: wait, really? Then click to find out why.`,
+    Jack: `Your ownedTitle deflates sanctimony with a sardonic sting — mock the gap between the stated intention and the actual result.
+FORMULA: [Institution] [Noble Goal]. [Absurd/Ironic Reality]. — "Silicon Valley Solves Poverty. App Store Listing Pending." / "The Inclusion Summit Had a Waitlist. For Inclusion."
+Wit over anger. The joke is the critique.`,
+    Ward: `Your ownedTitle names the status game being played — who is performing for whom, what is the real currency, and what does it cost.
+FORMULA: The [High-Status Group]'s [Thing] Was Really About [Social Currency] — "The TED Talk on Inequality Cost $6,000 to Attend" / "Princeton's Working-Class Study Was Conducted by Legacy Admits"
+Expose the social theater. Name the contradiction between the performance and the performers.`,
+  }[writer.name] ?? "" : "";
+
   const pass1msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 700,
     messages: [{
       role: "user",
       content: `${voiceInstruction}
+
+── HEADLINE FIRST ──────────────────────────────────────────────────────────────
+Write the ownedTitle before anything else. This is the most important line.
+${headlineInstruction || `Specificity beats intrigue. Name the number, company, person, or place. Put tension or contradiction INSIDE the headline — a problem, not just a topic. "The $4B Bet Nobody Noticed" beats "A Surprising Investment Story".`}
+
+Universal headline rules: 6-10 words. Must differ completely from the source headline. NEVER use: Why / How / The Truth About / Game-Changer / Revolutionary / A New Era / Revealed / What You Need to Know / Important.
+────────────────────────────────────────────────────────────────────────────────
 
 You are writing "The Signal Take" — a short, sharp editorial for a news digest.
 
@@ -750,7 +785,7 @@ ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
 
 Return JSON only, no markdown:
 {
-  "ownedTitle": "6-10 words in your writer voice. Magnetic editorial headline — name specifics (numbers, names, places), put tension or contradiction inside the headline itself, create a curiosity gap the article genuinely pays off. Rex: confrontational verdict. Eric: plain moral charge. Margot: cool disturbing observation. Finn: insider thriller hook. Cal: counter-intuitive reversal. Jack: sardonic sting. Ward: status-game exposure. Never use: Why/How/The Truth About/Game-Changer/Revolutionary/What You Need to Know. Must differ from source headline.",
+  "ownedTitle": "6-10 words. Apply your headline formula above. Different from source headline.",
   "header": "...",
   "pullQuote": "...",
   "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."
