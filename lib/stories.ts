@@ -436,7 +436,7 @@ async function buildPageData(editionKey: string, editionLabel: string): Promise<
   const raw = await fetchTopStories(editionKey);
   const [result, featureCreature] = await Promise.all([
     analyzeAll(raw, editionKey),
-    getFeatureCreature(editionKey),
+    getFeatureCreature(editionKey).catch(() => null),
   ]);
   const { stories: analyses, synthesis } = result;
   const rawWithQuery = raw.map((r, i) => ({ ...r, imageQuery: analyses[i]?.imageQuery }));
@@ -976,7 +976,7 @@ Return JSON only:
       editionKey,
       voiceId,
     };
-    await put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false });
+    put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false }).catch(() => {});
     return result;
   } catch { return null; }
 }

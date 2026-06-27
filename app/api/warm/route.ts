@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
+import { revalidateTag } from "next/cache";
 import { getPageData, getFullArticle, getFeatureCreature, getEdition, saveToArchive, getWriterAssignments } from "@/lib/stories";
 import { put } from "@vercel/blob";
 
@@ -43,6 +44,8 @@ async function runWarm(editionKey: string, editionLabel: string) {
   } catch {
     results["feature-creature"] = "failed";
   }
+
+  revalidateTag(`edition-${editionKey}`);
 
   const related = stories.slice(1);
   const writerSlots = getWriterAssignments(editionKey);
