@@ -974,7 +974,10 @@ Return JSON only:
     };
     await put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false });
     return result;
-  } catch { return null; }
+  } catch (e) {
+    console.error("[FC] generation failed:", e);
+    return null;
+  }
 }
 
 // ── Archive ───────────────────────────────────────────────────────────────────

@@ -40,10 +40,15 @@ async function runWarm(editionKey: string, editionLabel: string) {
 
   try {
     const fc = await getFeatureCreature(editionKey);
+    console.log("[warm] FC result:", fc ? `ok (${fc.title})` : "null — check [FC] logs");
     results["feature-creature"] = fc ? "cached" : "failed";
-  } catch {
+  } catch (e) {
+    console.error("[warm] FC threw:", e);
     results["feature-creature"] = "failed";
   }
+
+  // Revalidate here — before article loop — so it fires even if articles are slow
+  revalidateTag(`edition-${editionKey}`);
 
   const related = stories.slice(1);
   const writerSlots = getWriterAssignments(editionKey);
@@ -59,10 +64,6 @@ async function runWarm(editionKey: string, editionLabel: string) {
       }
     })
   );
-
-  // Bust the unstable_cache so the next homepage request picks up freshly
-  // generated FC and article blobs rather than serving stale pageData
-  revalidateTag(`edition-${editionKey}`);
 
   const failed = Object.entries(results).filter(([, v]) => v === "failed").map(([k]) => k);
   console.log(`[warm] ${editionKey} done — ${failed.length} failed`, results);
