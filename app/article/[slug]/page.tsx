@@ -71,10 +71,16 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </span>
         </div>
 
-        {/* Title */}
-        <h1 style={{ fontFamily: P.fontHeading, fontSize: "clamp(26px, 5vw, 42px)", fontWeight: P.dark ? 400 : 900, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" : "none" as const, marginBottom: 20 }}>
-          {story.title}
+        {/* Title — prefer writer-voiced ownedTitle once commentary loads, fall back to story title */}
+        <h1 style={{ fontFamily: P.fontHeading, fontSize: "clamp(26px, 5vw, 42px)", fontWeight: P.dark ? 400 : 900, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" : "none" as const, marginBottom: 8 }}>
+          {fullArticle?.ownedTitle || story.ownedTitle || story.title}
         </h1>
+        {/* Source headline in muted small text below */}
+        {(fullArticle?.ownedTitle || story.ownedTitle) && (
+          <div style={{ fontSize: 12, color: P.inkLight, fontFamily: P.fontBody, marginBottom: 16, fontStyle: "italic" }}>
+            Originally: {story.title}
+          </div>
+        )}
 
         {/* Meta */}
         <div style={{ display: "flex", gap: 16, fontSize: 12, color: P.inkLight, marginBottom: 30, fontFamily: P.fontBody }}>

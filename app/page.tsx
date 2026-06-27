@@ -234,7 +234,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
           <a href={`/article/${urlToSlug(s1.link)}`} style={{ gridColumn: "1 / 6", gridRow: "1", textDecoration: "none", color: "inherit" }}>
             <div style={{ ...card, height: "100%", paddingTop: 28, paddingBottom: 32, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
               <Pill section={s1.section} />
-              <h1 className="ds-card-h" style={hStyle}>{s1.title}</h1>
+              <h1 className="ds-card-h" style={hStyle}>{s1.ownedTitle || s1.title}</h1>
               {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{s1.summary}</p>}
               {s1.bullets?.length ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -307,7 +307,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
             <div style={{ position: "absolute", bottom: 20, left: 20, right: 100 }}>
               <div style={{ marginBottom: 6 }}><Pill section={s2.section} /></div>
               <div className="ds-card-h" style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.15, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 1 : -0.5, marginBottom: 8 }}>
-                <ArticleLink story={s2}>{s2.title}</ArticleLink>
+                <ArticleLink story={s2}>{s2.ownedTitle || s2.title}</ArticleLink>
               </div>
               {s2.summary && <div className="ds-card-body" style={{ fontSize: 15, lineHeight: 1.6, color: "rgba(255,255,255,0.80)", fontFamily: P.fontBody }}>{s2.summary}</div>}
             </div>
@@ -352,7 +352,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                       <span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody }}>{s.source} · {timeAgo(s.pubDate)}</span>
                     </div>
                   )}
-                  <div className="ds-card-h" style={hStyle}>{s.title}</div>
+                  <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
                   {s.summary && <div className="ds-card-body" style={bodyStyle}>{s.summary}</div>}
                   {s.insight && <div className="ds-card-insight" style={insightStyle}>{s.insight}</div>}
                   <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>

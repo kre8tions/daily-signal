@@ -17,7 +17,7 @@ export interface RawItem {
 }
 
 export interface Story {
-  title: string; source: string; section: string; link: string; pubDate: string;
+  title: string; ownedTitle?: string; source: string; section: string; link: string; pubDate: string;
   imageUrl?: string; summary?: string; bullets?: string[];
   pullquote?: string; insight?: string; cardStyle: "full" | "pullquote" | "brief";
 }
@@ -342,7 +342,7 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
 }
 
 // ── Claude analysis + synthesis ───────────────────────────────────────────────
-type RawAnalysis = { style?: string; summary?: string; bullets?: string[]; pullquote?: string; insight?: string };
+type RawAnalysis = { style?: string; ownedTitle?: string; summary?: string; bullets?: string[]; pullquote?: string; insight?: string };
 type AnalyzeResult = { stories: RawAnalysis[]; synthesis: Synthesis };
 
 export async function analyzeAll(items: RawItem[], editionKey: string): Promise<AnalyzeResult> {
@@ -381,9 +381,14 @@ ${list}
 Return JSON with two keys:
 
 "stories": ${items.length} objects. Styles: ${styles.map((s, i) => `[${i}]="${s}"`).join(", ")}
-- "full"      → { "style":"full", "summary":"2 punchy sentences", "bullets":["3 specific facts ≤15 words"] }
-- "pullquote" → { "style":"pullquote", "summary":"2 direct sentences", "pullquote":"one striking sentence" }
-- "brief"     → { "style":"brief", "summary":"2-3 sentences with real context and stakes", "insight":"why this matters — non-obvious, one sentence" }
+
+Every story object must include:
+- "ownedTitle": 5-9 words. Rewrite the source headline in our voice — a real claim or provocation, not a wire-service description. Magazine cover energy. Different from the original. No quotes.
+
+Then per style:
+- "full"      → { "style":"full", "ownedTitle":"...", "summary":"2 punchy sentences", "bullets":["3 specific facts ≤15 words"] }
+- "pullquote" → { "style":"pullquote", "ownedTitle":"...", "summary":"2 direct sentences", "pullquote":"one striking sentence" }
+- "brief"     → { "style":"brief", "ownedTitle":"...", "summary":"2-3 sentences with real context and stakes", "insight":"why this matters — non-obvious, one sentence" }
 
 "synthesis": {
   "theme": "One evocative noun phrase naming the underlying force or tension",
@@ -431,6 +436,7 @@ async function buildPageData(editionKey: string, editionLabel: string): Promise<
   const stories: Story[] = raw.map((r, i) => ({
     ...r, imageUrl: images[i],
     cardStyle: ((analyses[i]?.style ?? "brief") as Story["cardStyle"]),
+    ownedTitle: analyses[i]?.ownedTitle,
     summary: analyses[i]?.summary, bullets: analyses[i]?.bullets,
     pullquote: analyses[i]?.pullquote, insight: analyses[i]?.insight,
   }));
@@ -589,6 +595,7 @@ export interface ArticleCommentary {
   pullQuote: string;
   body: string;
   writer?: string;
+  ownedTitle?: string;
 }
 
 function breakLongSentences(text: string): string {
@@ -613,7 +620,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v8"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v9"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
@@ -685,6 +692,7 @@ ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
 
 Return JSON only, no markdown:
 {
+  "ownedTitle": "5-9 words. The headline rewritten in your voice — a real claim or provocation, not a description. Think magazine cover, not wire service. Must be different from the source headline. No quotes around it.",
   "header": "...",
   "pullQuote": "...",
   "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."
@@ -694,7 +702,7 @@ Return JSON only, no markdown:
 
   const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
   const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  let pass1: { header?: string; pullQuote?: string; body?: string } = {};
+  let pass1: { ownedTitle?: string; header?: string; pullQuote?: string; body?: string } = {};
   try {
     pass1 = JSON.parse(text1);
     if (!pass1.body) throw new Error();
@@ -750,6 +758,7 @@ Return JSON only:
   }
 
   const commentary: ArticleCommentary = {
+    ownedTitle: pass1.ownedTitle ?? "",
     header: pass1.header ?? "",
     pullQuote: pass1.pullQuote ?? "",
     body: breakLongSentences(body),
