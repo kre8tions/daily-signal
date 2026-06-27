@@ -76,11 +76,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </h1>
 
         {/* Meta */}
-        <div style={{ display: "flex", gap: 16, fontSize: 12, color: P.inkLight, marginBottom: 30, fontFamily: P.fontBody }}>
-          <span style={{ fontWeight: 700, color: P.inkMid }}>{story.source}</span>
-          <span>·</span>
-          <span>{pubDate}</span>
-        </div>
+        <div style={{ fontSize: 12, color: P.inkLight, marginBottom: 30, fontFamily: P.fontBody }}>{pubDate}</div>
 
         {/* Hero image */}
         {story.imageUrl && (

@@ -346,7 +346,7 @@ export async function EditionView({
                   ))}
                 </div>
               ) : null}
-              <span className="ds-card-meta" style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 28 }}>{s1.source} · {timeAgo(s1.pubDate)}</span>
+              <span className="ds-card-meta" style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 28 }}>{timeAgo(s1.pubDate)}</span>
               <MorePill story={s1} />
             </div>
           </a>
@@ -425,7 +425,7 @@ export async function EditionView({
             <div style={{ fontSize: 52, color: P.accent, fontFamily: P.fontHeading, flexShrink: 0, lineHeight: 0.8, opacity: 0.35, marginTop: 6 }}>"</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 17, fontStyle: "italic", color: P.ink, lineHeight: 1.5, fontFamily: P.fontBody, fontWeight: 500 }}>{s2.pullquote || s2.summary || s2.title}</div>
-              <div style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody, marginTop: 6 }}>{s2.source} · {timeAgo(s2.pubDate)}</div>
+              <div style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody, marginTop: 6 }}>{timeAgo(s2.pubDate)}</div>
             </div>
             <MorePill story={s2} />
           </a>
@@ -448,7 +448,7 @@ export async function EditionView({
                     <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
                     <PixelEdge color={P.cardBg} seed={i + 2} height={52} />
                     <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
-                    <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{s.source} · {timeAgo(s.pubDate)}</div>
+                    <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{timeAgo(s.pubDate)}</div>
                   </div>
                 )}
                 <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
@@ -456,7 +456,7 @@ export async function EditionView({
                   {!s.imageUrl && (
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <Pill section={s.section} />
-                      <span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody }}>{s.source} · {timeAgo(s.pubDate)}</span>
+                      <span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody }}>{timeAgo(s.pubDate)}</span>
                     </div>
                   )}
                   <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
