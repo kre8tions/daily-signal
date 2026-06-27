@@ -101,18 +101,23 @@ function SpaceInvaderSVG({ color }: { color: string }) {
 
 // Pixelated skyline edge — card background color erupts upward in jagged pixel columns
 // Sits at the bottom of an image section, creating a serrated pixel border into the text area
-// Bayer dither strip — sits at bottom of image, card-bg color dissolves in from bottom to top
-// COLS/ROWS ratio ~6:1 matches typical wide/short image strip for square pixels
-function PixelEdge({ color, height = 56 }: { color: string; seed?: number; height?: number }) {
-  const COLS = 60;
-  const ROWS = 10;
-  const bayer = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+// Stochastic noise dither — each pixel has independent random probability that grows toward bottom
+// Organic scatter, not the regular Bayer grid pattern
+function PixelEdge({ color, seed = 0, height = 80 }: { color: string; seed?: number; height?: number }) {
+  const COLS = 72;
+  const ROWS = 14;
+  // Per-pixel seeded noise — deterministic but looks random
+  const noise = (r: number, c: number) => {
+    const n = Math.sin(r * 127.1 + c * 311.7 + seed * 93.3) * 43758.5453;
+    return n - Math.floor(n);
+  };
   const rects: React.ReactNode[] = [];
   for (let r = 0; r < ROWS; r++) {
-    const t = (r + 1) / ROWS; // sparse at top (r=0), solid at bottom (r=ROWS-1)
+    // Density curve: slow start, steeper middle, full coverage at bottom
+    const t = Math.pow((r + 1) / ROWS, 0.7);
     for (let c = 0; c < COLS; c++) {
-      if (bayer[r % 4][c % 4] / 16 < t) {
-        rects.push(<rect key={`${r}-${c}`} x={c} y={r} width={1.05} height={1.05} fill={color} />);
+      if (noise(r, c) < t) {
+        rects.push(<rect key={`${r}-${c}`} x={c} y={r} width={1.06} height={1.06} fill={color} />);
       }
     }
   }
