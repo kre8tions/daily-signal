@@ -1,88 +1,114 @@
 ---
-name: ""
-metadata: 
+name: "daily-signal-brain"
+metadata:
   node_type: memory
-  originSessionId: 1dd5e618-afa4-4a95-a8c5-0a46d7e8b1de
+  updated: "2026-06-28"
 ---
 
-# The Daily Signal — Project
+# The Daily Signal — Project Brain
 
-Standalone project at `C:\dev\daily-signal`. Tech/entertainment/culture news aggregator.
+Standalone project at `C:\dev\daily-signal`. AI-curated news digest — 5 editions/day, editorial voice, bento grid layout.
 
-**Why:** AI-enhanced news aggregation site with bento grid layout — dark theme, color images from Unsplash, Claude Haiku summaries + insights + takeaways.
+**Live at:** https://daily-signal-omega.vercel.app  
+**Repo:** https://github.com/kre8tions/daily-signal (private, branch: main)  
+**Deploy:** git push origin main → Vercel auto-deploys
 
 ## Stack
-- **Frontend:** Next.js 15 App Router, server components only (no client state)
-- **AI:** Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) — batch summarizes 3 stories in one call
-- **Images:** Unsplash API (`UNSPLASH_ACCESS_KEY` in `.env.local`) — keyword search from headline
-- **News:** RSS feeds via `rss-parser` — The Verge, Ars Technica, Wired, Deadline, Variety, Guardian Culture/Science, Hyperallergic
-- **Cache:** File-based in OS temp dir (`lib/cache.ts`) — `cacheClearAll()` nukes everything
-- **Cache bust:** GET `/api/revalidate`
+- **Frontend:** Next.js 15 App Router, server components
+- **AI:** Claude Haiku 4.5 (`claude-haiku-4-5-20251001`)
+- **Images:** Unsplash `/search/photos?per_page=1`
+- **News:** 15 RSS feeds via `rss-parser`
+- **Persistence:** Vercel Blob (`@vercel/blob`) — Pro plan (500k ops/month)
+- **Editions:** 5/day keyed by UTC hour — Early (5–9), Morning (9–13), Afternoon (13–17), Evening (17–21), Night (21–5)
+- **Cache:** `unstable_cache` keyed by editionKey, `revalidate: 28800`, `tags: ['edition-${key}']`
 
-## Architecture (current, simplified)
-`app/page.tsx` does everything inline — no separate API route needed for the 3-story view:
-1. Fetches top 3 stories from RSS feeds in parallel
-2. Calls Claude once to batch-analyze all 3 (summary + insights + takeaways)
-3. Fetches Unsplash images for all 3 in parallel
-4. Renders bento grid server-side
+## Generation Architecture (Option C — current as of 2026-06-28, commit 007603f)
 
-## Layout (bento grid, dark theme)
+`getFullArticle` is the single source of truth for all story metadata.
+
 ```
-[Hero text card — spans 2 rows] [Hero image card — full color photo]
-                                 [Story 2 headline bar]
-[Story 2 image card]             [Story 3 text + colored insight card]
-──────────────────────────────────────────────────────────
-[Story 1 takeaways]  [Story 2 takeaways]  [Story 3 takeaways]
+Pre-warm (16 min before edition boundary):
+  fetchTopStories(nextEditionKey)
+  → Promise.allSettled(getFullArticle × 11) ← card metadata + article body in one blob
+  → getSynthesis(raw, editionKey)            ← cross-story analysis
+  → getFeatureCreature(editionKey)           ← 3-pass FC generation
+  → revalidateTag(edition-${editionKey})
+
+Edition start — buildPageData():
+  All functions find blobs → instant reads → no cold start
 ```
 
-## Design tokens
-- Page bg: `#111113`
-- Card bg: `#1c1c1e` (Apple dark mode grey — elevated from bg)
-- No borders on cards
-- Border radius: 20px
-- Section accent colors: Tech=#3b82f6, Entertainment=#ec4899, Culture=#a78bfa, Science=#34d399, Arts=#fbbf24
-- Images: full opacity, `linear-gradient(to top, rgba(0,0,0,0.85), transparent)` overlay
-- Text: white headlines, `#888` body, `#444` meta
+**Why Option C:** previously `analyzeAll` generated card titles and `getFullArticle` generated article titles independently → different titles on card vs article page. Option C unifies them into a single blob per story.
+
+**Cost:** ~$0.15–0.20/edition × 5/day = ~$23/month flat.
+
+## Key Functions (lib/stories.ts)
+- `getFullArticle(story, related, editionKey, writerIndex)` — PROMPT_V="v11", blob: `articles/v11/{editionKey}/{md5(link)}.json`. Pass1 (950 tok): ownedTitle, summary, bullets, insight, imageQuery, header, pullQuote, body. Pass2 (700 tok): paragraph structure + header2 + imageQuery2.
+- `getSynthesis(items, editionKey)` — blob: `synthesis/v1/{editionKey}.json`. 1500 tok.
+- `getFeatureCreature(editionKey)` — blob: `feature-creature/v19/{editionKey}.json`. 3-pass.
+- `buildPageData(editionKey, editionLabel)` — exported, called directly by pre-warm and via `getPageData()`.
+- `getEdition()` — current edition key from UTC hour
+- `getNextEdition()` — next edition key (now + 16 min)
+- `getWriterAssignments(editionKey)` — 11 writer slots via seeded shuffle
+
+## Writers (7 personas, seeded per edition)
+Rex (contrarian) · Eric (plain moralist) · Margot (cool observer) · Finn (thriller narrative) · Cal (counter-intuitive) · Jack (sardonic) · Ward (status anthropologist)
+
+## Card Styles (position-based)
+`CARD_STYLES = ["full", "pullquote", "brief", "brief", ...]` — Story[0]=hero, Story[1]=pullquote, rest=brief
+
+## Cron Jobs (vercel.json — Vercel native crons, CRON_SECRET header auth)
+```
+/api/revalidate  → 0 5 * * *    (daily cache bust)
+/api/pre-warm    → 44 4,8,12,16,20 * * *  (pre-generates next edition)
+```
+Manual trigger: `GET /api/pre-warm?secret=<CRON_SECRET>`  
+`/api/warm` still exists for manual force-regenerate of current edition (not on cron).
+
+## Blob Key Patterns
+- `articles/v11/{editionKey}/{slug}.json`
+- `synthesis/v1/{editionKey}.json`
+- `feature-creature/v19/{editionKey}.json`
+- `archive/editions/{editionKey}.json`
+- `archive/index.json`
+
+## Archive System
+- `getArchiveList` uses `list({ prefix: "archive/editions/" })` as authoritative source (not index)
+- `app/archive/page.tsx` is `force-dynamic`
+- `saveToArchive` fetches index with `?t=Date.now()` + `cache: "no-store"`
 
 ## Key Files
 ```
-app/page.tsx          — entire app (feeds + Claude + Unsplash + render)
-app/layout.tsx        — ClientBody for suppressHydrationWarning
-app/ClientBody.tsx    — "use client" body wrapper
-app/globals.css       — base CSS (dark body bg)
-app/api/revalidate/   — cache bust endpoint
-lib/cache.ts          — file-based TTL cache with cacheClearAll()
-lib/news.ts           — RSS fetching + Google Trends (not used in current simple view)
-lib/claude.ts         — batch summarization (not used in current simple view)
-.env.local            — ANTHROPIC_API_KEY + UNSPLASH_ACCESS_KEY
+app/page.tsx                     — homepage (EditionView)
+app/article/[slug]/page.tsx      — article detail
+app/archive/page.tsx             — past editions list (force-dynamic)
+app/signal-desk/page.tsx         — internal tool (password: "office")
+app/api/pre-warm/route.ts        — PRIMARY cron: pre-generates next edition
+app/api/warm/route.ts            — manual: force-regen current edition
+app/api/revalidate/route.ts      — cache bust
+lib/stories.ts                   — all data logic
+lib/palette.ts                   — 5 rotating daily palettes
+components/EditionView.tsx       — homepage layout component
 ```
 
-## Env vars needed
+## Resilience
+- FC `.catch(() => null)` — FC failure cannot kill homepage cache
+- FC blob save is fire-and-forget — result returned even if write fails
+- `Promise.allSettled` for articles — one failure cannot cascade
+- `revalidateTag` fires in pre-warm after generation
+
+## Known Issues / Next Steps
+1. **Missing images** — some cards still have no image (RSS absent → OG blocked → Unsplash failed). imageQuery now comes from Claude — watch if coverage improves.
+2. **Debug routes** — `app/api/debug-archive`, `app/api/rebuild-archive` can be cleaned up
+3. **Custom domain** — still on `daily-signal-omega.vercel.app`
+4. **Share button** — not yet built
+
+## Env Vars Required
 ```
-ANTHROPIC_API_KEY=sk-ant-...
-UNSPLASH_ACCESS_KEY=E3hwonWnj8_...   ← already set
+ANTHROPIC_API_KEY
+UNSPLASH_ACCESS_KEY
+CRON_SECRET
+BLOB_READ_WRITE_TOKEN
 ```
-
-## To Run
-```powershell
-cd C:\dev\daily-signal
-npm run dev   # → http://localhost:3000
-```
-
-## Current State (2026-06-20)
-- 3-story bento grid working
-- Dark theme with `#1c1c1e` grey cards, white text
-- Unsplash color images loading correctly
-- Claude summaries + insights + takeaways working
-- JSON parse fixed (strips ```json fences)
-- Hydration warning fixed (ClientBody.tsx)
-
-## Next Steps (pick up here)
-1. Expand to more stories — add row 2 of bento with stories 4-6
-2. Add section filtering nav (click Technology → filter to tech stories)
-3. Add article detail page `/article/[id]` with full insights layout
-4. Add caching so Claude isn't called on every reload
-5. Consider deploying to Vercel
-
-## How to apply
-When user returns, load this file. The simplified `app/page.tsx` is the source of truth — ignore the older `lib/news.ts` and `lib/claude.ts` complexity for now. Pick up from "Next Steps."
+</content>
+</invoke>
