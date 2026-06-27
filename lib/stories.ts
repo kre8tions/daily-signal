@@ -972,7 +972,11 @@ Return JSON only:
       editionKey,
       voiceId,
     };
-    await put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false });
+    try {
+      await put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false });
+    } catch (e) {
+      console.error("[FC] blob save failed:", e);
+    }
     return result;
   } catch (e) {
     console.error("[FC] generation failed:", e);
