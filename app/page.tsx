@@ -109,9 +109,9 @@ function RulerBorder({ color }: { color: string }) {
   // Deterministic seismic noise — tremor + occasional spike
   const noise = (i: number): number => {
     const t = i * 0.18;
-    const tremor = Math.sin(t * 4.1 + 0.3) * 2.5 + Math.sin(t * 9.7 + 1.8) * 1.2 + Math.sin(t * 17.3 + 3.1) * 0.6;
+    const tremor = Math.sin(t * 4.1 + 0.3) * 2.25 + Math.sin(t * 9.7 + 1.8) * 1.08 + Math.sin(t * 17.3 + 3.1) * 0.54;
     const spikeSeed = Math.sin(t * 2.3 + 0.9) * Math.sin(t * 3.7 + 2.1);
-    const spike = spikeSeed > 0.6 ? spikeSeed * 22 : spikeSeed < -0.6 ? spikeSeed * 18 : 0;
+    const spike = spikeSeed > 0.6 ? spikeSeed * 19.8 : spikeSeed < -0.6 ? spikeSeed * 16.2 : 0;
     return tremor + spike;
   };
 
