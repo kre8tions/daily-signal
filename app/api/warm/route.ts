@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { getPageData, getFullArticle, getFeatureCreature, getEdition, saveToArchive, getWriterAssignments } from "@/lib/stories";
+import { put } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -8,8 +9,20 @@ export const maxDuration = 60;
 async function runWarm(editionKey: string, editionLabel: string) {
   const results: Record<string, "cached" | "generated" | "failed"> = {};
 
-  const { stories, synthesis } = await getPageData();
+  const pageData = await getPageData();
+  const { stories, synthesis } = pageData;
   results["synthesis"] = synthesis.actions?.length > 0 && synthesis.theme ? "cached" : "failed";
+
+  // Always persist full edition JSON to Blob — needed for archive page rendering
+  // (buildPageData does this too, but only on a cache miss)
+  try {
+    await put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
+      access: "public", contentType: "application/json", addRandomSuffix: false,
+    });
+    results["edition-blob"] = "generated";
+  } catch {
+    results["edition-blob"] = "failed";
+  }
 
   try {
     await saveToArchive({
