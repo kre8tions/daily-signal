@@ -451,9 +451,10 @@ async function buildPageData(editionKey: string, editionLabel: string): Promise<
   const raw = await fetchTopStories(editionKey);
   const writerSlots = getWriterAssignments(editionKey);
 
-  // Run all per-story articles, cross-story synthesis, and FC in parallel
-  const [articles, synthesis, featureCreature] = await Promise.all([
-    Promise.all(
+  // Run all per-story articles, cross-story synthesis, and FC in parallel.
+  // Use allSettled for articles so a single article failure doesn't kill FC or the edition blob.
+  const [articleResults, synthesis, featureCreature] = await Promise.all([
+    Promise.allSettled(
       raw.map((item, i) =>
         getFullArticle(
           item, editionKey, writerSlots[i],
@@ -464,6 +465,7 @@ async function buildPageData(editionKey: string, editionLabel: string): Promise<
     getSynthesis(raw, editionKey),
     getFeatureCreature(editionKey),
   ]);
+  const articles = articleResults.map(r => r.status === "fulfilled" ? r.value : null);
 
   const rawWithQuery = raw.map((r, i) => ({ ...r, imageQuery: articles[i]?.imageQuery }));
   const images = await getUniqueImages(rawWithQuery);
