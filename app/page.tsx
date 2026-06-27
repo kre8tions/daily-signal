@@ -1,4 +1,4 @@
-import { getPageData, urlToSlug, actionSlug, type Story, type Synthesis, type FeatureCreature } from "@/lib/stories";
+import { getPageData, getEdition, urlToSlug, actionSlug, getSynthWriterIndex, type Story, type Synthesis, type FeatureCreature } from "@/lib/stories";
 import { P, QUOTE_FONT, SECTION_COLORS, TAGLINE, TAGLINE_FONT, ACTION_LABEL, ACTION_EMOJI, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL } from "@/lib/palette";
 import type { Metadata } from "next";
 import { EmailCapture } from "./EmailCapture";
@@ -168,6 +168,8 @@ function MorePill({ story }: { story: Story }) {
 export default async function Home({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
   const { section: activeSection } = await searchParams;
   const { stories: allStories, synthesis, editionLabel, featureCreature } = await getPageData();
+  const { key: editionKey } = getEdition();
+  const synthWriterIndex = getSynthWriterIndex(editionKey);
 
   const sections = Array.from(new Set(allStories.map((s) => s.section)));
   const stories = activeSection
@@ -327,7 +329,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       </div>
 
       {/* ── Synthesis ── */}
-      {!activeSection && synthesis?.theme && <Synthesis synthesis={synthesis} stories={stories} />}
+      {!activeSection && synthesis?.theme && <Synthesis synthesis={synthesis} stories={stories} writerIndex={synthWriterIndex} />}
 
       {/* ── Row 2: s3–s11 ── */}
       {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).length > 0 && (
@@ -433,11 +435,13 @@ function FeatureCreatureCard({ fc }: { fc: FeatureCreature }) {
 }
 
 // ── Synthesis component ───────────────────────────────────────────────────────
-function Synthesis({ synthesis, stories }: { synthesis: Synthesis; stories: Story[] }) {
+function Synthesis({ synthesis, stories, writerIndex }: { synthesis: Synthesis; stories: Story[]; writerIndex: number }) {
   return (
     <>
     <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden" }}>
+      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
+        {/* Writer ID badge — top-right, tracking only */}
+        <div style={{ position: "absolute", top: 12, right: 16, fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: P.accent, opacity: 0.45, letterSpacing: 1, userSelect: "none" as const }}>W{writerIndex}</div>
         {/* Header band */}
         <div style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ width: 55, height: 55, borderRadius: "50%", background: P.cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><SpaceInvaderSVG color={P.accent} /></div>

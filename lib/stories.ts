@@ -578,6 +578,11 @@ export function getWriterAssignments(editionKey: string): number[] {
   return slots;
 }
 
+export function getSynthWriterIndex(editionKey: string): number {
+  const synthSeed = editionKey.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 13), 0);
+  return synthSeed % WRITERS.length;
+}
+
 // ── Full editorial rewrite for article detail ─────────────────────────────────
 export interface ArticleCommentary {
   header: string;
