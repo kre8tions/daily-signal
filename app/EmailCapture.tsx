@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-export function EmailCapture({ accent, ink, cardBg, fontBody }: { accent: string; ink: string; cardBg: string; fontBody: string }) {
+export function EmailCapture({ accent, ink, cardBg, fontBody, pillHeight = 36 }: { accent: string; ink: string; cardBg: string; fontBody: string; pillHeight?: number }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
@@ -40,8 +40,8 @@ export function EmailCapture({ accent, ink, cardBg, fontBody }: { accent: string
         required
         style={{
           background: cardBg, border: `1px solid ${accent}44`, borderRadius: 50,
-          paddingTop: 10, paddingBottom: 10, paddingLeft: 20, paddingRight: 20,
-          fontSize: 13, color: ink, fontFamily: fontBody, outline: "none", minWidth: 200,
+          height: pillHeight, paddingLeft: 20, paddingRight: 20,
+          fontSize: 13, color: ink, fontFamily: fontBody, outline: "none", minWidth: 180, boxSizing: "border-box",
         }}
       />
       <button
@@ -49,9 +49,9 @@ export function EmailCapture({ accent, ink, cardBg, fontBody }: { accent: string
         disabled={status === "loading"}
         style={{
           background: accent, color: "#000", border: "none", borderRadius: 50,
-          paddingTop: 10, paddingBottom: 10, paddingLeft: 22, paddingRight: 22,
+          height: pillHeight, paddingLeft: 22, paddingRight: 22,
           fontSize: 13, fontWeight: 700, fontFamily: fontBody, cursor: "pointer",
-          opacity: status === "loading" ? 0.6 : 1,
+          opacity: status === "loading" ? 0.6 : 1, boxSizing: "border-box",
         }}
       >
         {status === "loading" ? "..." : "Get the Signal"}

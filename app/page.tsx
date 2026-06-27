@@ -208,18 +208,20 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
         </div>
       </div>
 
-      {/* ── Nav pills + email capture ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1200, marginTop: 0, marginBottom: 14, marginLeft: "auto", marginRight: "auto" }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      {/* ── Nav pills + tagline + email capture ── */}
+      <div className="ds-nav-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1200, marginTop: 0, marginBottom: 14, marginLeft: "auto", marginRight: "auto", gap: 12, flexWrap: "wrap" as const }}>
+        {/* Left: pills + tagline */}
+        <div className="ds-nav-left" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
           <a href="/" style={{ textDecoration: "none" }}>
-            <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${P.accent}`, background: P.accent + "22", color: P.accent }}>Today</span>
+            <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.accent}`, background: P.accent + "22", color: P.accent }}>Today</span>
           </a>
           <a href="/archive" style={{ textDecoration: "none" }}>
-            <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, borderRadius: 20, border: `1px solid ${P.tint}66`, background: "transparent", color: P.inkLight }}>Archive</span>
+            <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>Archive</span>
           </a>
-          <span style={{ fontSize: 26, fontWeight: 700, fontStyle: "normal", fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, color: P.accent, marginLeft: 16 }}>{TAGLINE}</span>
+          <span style={{ fontSize: 22, fontWeight: 700, fontStyle: "normal", fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, color: P.accent, marginLeft: 8 }}>{TAGLINE}</span>
         </div>
-        <EmailCapture accent={P.accent} ink={P.ink} cardBg={P.cardBg} fontBody={P.fontBody} />
+        {/* Right: email capture — stacks below on narrow screens */}
+        <EmailCapture accent={P.accent} ink={P.ink} cardBg={P.cardBg} fontBody={P.fontBody} pillHeight={36} />
       </div>
 
       {/* ── Top bento — 12-col grid so row 1 splits at col 5 (TEXT|image) while rows 2-3 split at col 6 (FC|s2) ── */}
