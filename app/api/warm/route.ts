@@ -44,13 +44,13 @@ async function runWarm(editionKey: string, editionLabel: string) {
     results["feature-creature"] = "failed";
   }
 
-  const related = stories.slice(1);
   const writerSlots = getWriterAssignments(editionKey);
   await Promise.allSettled(
     stories.map(async (story, i) => {
       const key = `article-${i}-${story.link.slice(-30)}`;
+      const related = stories.filter((_, j) => j !== i).slice(0, 5).map(s => ({ title: s.title, section: s.section }));
       try {
-        const commentary = await getFullArticle(story, related, editionKey, writerSlots[i]);
+        const commentary = await getFullArticle(story, editionKey, writerSlots[i], related);
         results[key] = commentary.body ? "cached" : "failed";
       } catch (e) {
         console.error(`[warm] failed: ${key}`, e);
