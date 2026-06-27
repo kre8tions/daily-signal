@@ -347,8 +347,19 @@ export async function EditionView({
           );
         })()}
 
+        {!featureCreature && (
+          <div style={{ gridColumn: "1 / 7", gridRow: "2 / 4", position: "relative" }}>
+            <RulerBorder color={P.inkLight} />
+            <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "40px 32px" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.inkLight, fontFamily: P.fontBody, opacity: 0.5 }}>Feature Creature</div>
+              <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 28, color: P.inkLight, lineHeight: 1.2, textAlign: "center" as const, opacity: 0.4 }}>Population: 0</div>
+              <div style={{ fontSize: 13, color: P.inkLight, fontFamily: P.fontBody, opacity: 0.35, letterSpacing: 1 }}>Coming soon</div>
+            </div>
+          </div>
+        )}
+
         {s2 && (
-          <a href={`/article/${urlToSlug(s2.link)}`} className="ds-s2-img" style={{ ...imgCard, gridColumn: featureCreature ? "7 / 13" : "1 / 13", gridRow: "2", textDecoration: "none" }}>
+          <a href={`/article/${urlToSlug(s2.link)}`} className="ds-s2-img" style={{ ...imgCard, gridColumn: "7 / 13", gridRow: "2", textDecoration: "none" }}>
             {s2.imageUrl ? <img src={s2.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.tint}, ${P.accent}66)` }} />}
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.05) 55%, transparent 100%)" }} />
             <div style={{ position: "absolute", bottom: 20, left: 20, right: 100 }}>
@@ -363,7 +374,7 @@ export async function EditionView({
         )}
 
         {s2 && (
-          <a href={`/article/${urlToSlug(s2.link)}`} style={{ ...card, gridColumn: featureCreature ? "7 / 13" : "1 / 13", gridRow: "3", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 100, gap: 18, textDecoration: "none", color: "inherit" }}>
+          <a href={`/article/${urlToSlug(s2.link)}`} style={{ ...card, gridColumn: "7 / 13", gridRow: "3", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 100, gap: 18, textDecoration: "none", color: "inherit" }}>
             <div style={{ fontSize: 52, color: P.accent, fontFamily: P.fontHeading, flexShrink: 0, lineHeight: 0.8, opacity: 0.35, marginTop: 6 }}>"</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 17, fontStyle: "italic", color: P.ink, lineHeight: 1.5, fontFamily: P.fontBody, fontWeight: 500 }}>{s2.pullquote || s2.summary || s2.title}</div>
