@@ -1,4 +1,4 @@
-import { getPageData, getEdition, getWriterAssignments, getArchiveList, getArchivedPageData, WRITERS, urlToSlug } from "@/lib/stories";
+import { getPageData, getEdition, getWriterAssignments, getSynthWriterIndex, getFCWriterIndex, getArchiveList, getArchivedPageData, WRITERS, urlToSlug } from "@/lib/stories";
 import { P } from "@/lib/palette";
 import { DeskClient } from "./DeskClient";
 
@@ -30,9 +30,29 @@ const writers = WRITERS.map((w, i) => ({
   personality: WRITER_STYLE[w.name] ?? "",
 }));
 
+type StoryLike = { title: string; ownedTitle?: string; source: string; section: string; link: string };
+type FCData = { title?: string; universe?: string; angleLabel?: string; editionKey?: string } | null | undefined;
+
+function buildRows(stories: StoryLike[], editionKey: string, fc: FCData, synthTheme?: string) {
+  const writerSlots = getWriterAssignments(editionKey);
+  const storyRows = stories.map((s, i) => ({
+    title: s.title, ownedTitle: s.ownedTitle ?? "", source: s.source, section: s.section,
+    link: s.link, slug: urlToSlug(s.link), writerIdx: writerSlots[i] ?? 0, cardType: "story" as const,
+  }));
+  const synthRow = {
+    title: synthTheme ?? "", ownedTitle: "", source: "", section: "Synthesis",
+    link: "", slug: "", writerIdx: getSynthWriterIndex(editionKey), cardType: "synthesis" as const,
+  };
+  const fcRow = fc ? {
+    title: fc.title ?? "", ownedTitle: fc.angleLabel ?? "", source: fc.universe ?? "", section: "Feature Creature",
+    link: "", slug: fc.editionKey ? `/feature-creature/${fc.editionKey}` : "", writerIdx: getFCWriterIndex(editionKey), cardType: "fc" as const,
+  } : null;
+  return [synthRow, ...(fcRow ? [fcRow] : []), ...storyRows];
+}
+
 export default async function SignalDeskPage() {
   const { key: currentKey } = getEdition();
-  const { stories: currentStories, synthesis: currentSynthesis, editionLabel } = await getPageData();
+  const { stories: currentStories, synthesis: currentSynthesis, editionLabel, featureCreature: currentFC } = await getPageData();
 
   const archiveList = await getArchiveList();
   const archivedKeys = archiveList.map(e => e.key).filter(k => k !== currentKey);
@@ -50,22 +70,12 @@ export default async function SignalDeskPage() {
       label: r.value.data.editionLabel ?? r.value.key,
       theme: r.value.data.synthesis?.theme ?? "",
       isCurrent: false,
-      rows: r.value.data.stories.map((s, i) => {
-        const writerSlots = getWriterAssignments(r.value.key);
-        const wi = writerSlots[i] ?? 0;
-        return { title: s.title, ownedTitle: s.ownedTitle ?? "", source: s.source, section: s.section, link: s.link, slug: urlToSlug(s.link), writerIdx: wi };
-      }),
+      rows: buildRows(r.value.data.stories, r.value.key, r.value.data.featureCreature ?? null, r.value.data.synthesis?.theme),
     }))
     .sort((a, b) => b.key.localeCompare(a.key));
 
-  const currentRows = currentStories.map((s, i) => {
-    const writerSlots = getWriterAssignments(currentKey);
-    const wi = writerSlots[i] ?? 0;
-    return { title: s.title, ownedTitle: s.ownedTitle ?? "", source: s.source, section: s.section, link: s.link, slug: urlToSlug(s.link), writerIdx: wi };
-  });
-
   const allEditions = [
-    { key: currentKey, label: editionLabel, theme: currentSynthesis?.theme ?? "", isCurrent: true, rows: currentRows },
+    { key: currentKey, label: editionLabel, theme: currentSynthesis?.theme ?? "", isCurrent: true, rows: buildRows(currentStories, currentKey, currentFC, currentSynthesis?.theme) },
     ...archivedEditions,
   ];
 

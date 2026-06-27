@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-type Row = { title: string; ownedTitle: string; source: string; section: string; link: string; slug: string; writerIdx: number };
+type Row = { title: string; ownedTitle: string; source: string; section: string; link: string; slug: string; writerIdx: number; cardType: "story" | "synthesis" | "fc" };
 type Edition = { key: string; label: string; theme: string; isCurrent: boolean; rows: Row[] };
 type Writer = { id: number; name: string; inspiration: string; personality: string };
 type Palette = { pageBg: string; cardBg: string; ink: string; inkMid: string; inkLight: string; accent: string; tint: string; fontBody: string; fontHeading: string };
@@ -70,22 +70,40 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                   </tr>
                 </thead>
                 <tbody>
-                  {edition.rows.map((row, i) => {
+                  {(() => {
+                    let storyCount = 0;
+                    return edition.rows.map((row, i) => {
                     const writer = writers[row.writerIdx % writers.length];
+                    const isCard = row.cardType === "synthesis" || row.cardType === "fc";
+                    const storyNum = isCard ? null : ++storyCount;
+                    const na = <span style={{ color: P.inkLight, opacity: 0.35 }}>—</span>;
+                    const sectionColor = row.cardType === "synthesis" ? P.accent : row.cardType === "fc" ? "#8B5CF6" : P.inkLight;
                     return (
-                      <tr key={i} style={{ borderBottom: `1px solid ${P.tint}33` }}>
-                        <td style={{ padding: "10px 10px", color: P.inkLight, fontSize: 11, verticalAlign: "top" as const }}>{i + 1}</td>
+                      <tr key={i} style={{ borderBottom: `1px solid ${P.tint}33`, background: isCard ? P.tint + "18" : "transparent" }}>
+                        <td style={{ padding: "10px 10px", color: P.inkLight, fontSize: 11, verticalAlign: "top" as const }}>{storyNum ?? ""}</td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, minWidth: 200 }}>
-                          <a href={`/article/${row.slug}`} style={{ color: P.accent, textDecoration: "none", fontWeight: 600, lineHeight: 1.35, display: "block" }}>
-                            {row.ownedTitle || <span style={{ color: P.inkLight, fontStyle: "italic" }}>—</span>}
-                          </a>
+                          {isCard ? (
+                            row.slug ? (
+                              <a href={row.slug} style={{ color: P.inkMid, textDecoration: "none", fontWeight: 600, lineHeight: 1.35, display: "block" }}>{row.title || na}</a>
+                            ) : (
+                              <span style={{ color: P.inkMid, fontWeight: 600, lineHeight: 1.35, display: "block" }}>{row.title || na}</span>
+                            )
+                          ) : (
+                            <a href={`/article/${row.slug}`} style={{ color: P.accent, textDecoration: "none", fontWeight: 600, lineHeight: 1.35, display: "block" }}>
+                              {row.ownedTitle || na}
+                            </a>
+                          )}
                         </td>
-                        <td style={{ padding: "10px 10px", color: P.inkMid, verticalAlign: "top" as const, lineHeight: 1.4, minWidth: 200 }}>{row.title}</td>
+                        <td style={{ padding: "10px 10px", color: P.inkMid, verticalAlign: "top" as const, lineHeight: 1.4, minWidth: 200 }}>
+                          {isCard ? (row.ownedTitle ? <span style={{ color: P.inkLight, fontSize: 12, fontStyle: "italic" }}>{row.ownedTitle}</span> : na) : row.title}
+                        </td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, whiteSpace: "nowrap" as const }}>
-                          <a href={row.link} target="_blank" rel="noopener noreferrer" style={{ color: P.inkLight, textDecoration: "none", fontSize: 12 }}>{row.source} ↗</a>
+                          {isCard ? (row.source ? <span style={{ color: P.inkLight, fontSize: 12 }}>{row.source}</span> : na) : (
+                            <a href={row.link} target="_blank" rel="noopener noreferrer" style={{ color: P.inkLight, textDecoration: "none", fontSize: 12 }}>{row.source} ↗</a>
+                          )}
                         </td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const }}>
-                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: P.inkLight, background: P.tint + "44", padding: "3px 8px", borderRadius: 20 }}>{row.section}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: sectionColor, background: sectionColor + "22", padding: "3px 8px", borderRadius: 20 }}>{row.section}</span>
                         </td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, textAlign: "center" as const }}>
                           <span style={{ fontSize: 11, fontWeight: 700, color: P.accent, fontFamily: "monospace" }}>W{writer.id}</span>
@@ -95,7 +113,8 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, color: P.inkLight, fontSize: 12, lineHeight: 1.4, minWidth: 220 }}>{writer.personality}</td>
                       </tr>
                     );
-                  })}
+                  });
+                  })()}
                 </tbody>
               </table>
             </div>

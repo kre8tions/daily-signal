@@ -594,6 +594,11 @@ export function getSynthWriterIndex(editionKey: string): number {
   return synthSeed % WRITERS.length;
 }
 
+export function getFCWriterIndex(editionKey: string): number {
+  const fcSeed = editionKey.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 7), 0);
+  return fcSeed % WRITERS.length;
+}
+
 // ── Full editorial rewrite for article detail ─────────────────────────────────
 export interface ArticleCommentary {
   header: string;
