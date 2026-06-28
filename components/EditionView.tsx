@@ -201,30 +201,35 @@ function S1FlightPaths({ seed, color }: { seed: number; color: string }) {
   const W = 800, H = 500;
   const sr = (n: number) => { const x = Math.sin(seed * 9301 + n * 49297 + 233995) * 10000; return x - Math.floor(x); };
 
-  // Single path: random start, random end, 1-2 loop waypoints
-  const start = { x: sr(1) * W * 0.7 + W * 0.05, y: sr(2) * H * 0.7 + H * 0.1 };
-  const end   = { x: sr(3) * W * 0.7 + W * 0.15, y: sr(4) * H * 0.7 + H * 0.1 };
+  // Spread start/end across the full image for a longer path
+  const start = { x: sr(1) * W * 0.35 + W * 0.05, y: sr(2) * H * 0.7 + H * 0.1 };
+  const end   = { x: sr(3) * W * 0.35 + W * 0.60, y: sr(4) * H * 0.7 + H * 0.1 };
   const numLoops = 1 + Math.floor(sr(5) * 2);
 
+  // Build smooth waypoints — each cp1 is the reflection of previous cp2 through the waypoint
+  // to guarantee C1 continuity (no sharp corners)
   let d = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`;
   let prev = start;
-  let lastCp2 = start;
+  let lastCp2 = start; // will be reflected for next segment's cp1
 
   for (let l = 0; l < numLoops; l++) {
-    const lb = 6 + l * 6;
-    const mid = { x: sr(lb) * W * 0.6 + W * 0.2, y: sr(lb + 1) * H * 0.6 + H * 0.2 };
-    const cp1 = { x: prev.x + (sr(lb + 2) - 0.5) * W * 0.8, y: prev.y + (sr(lb + 3) - 0.5) * H * 0.8 };
-    const cp2 = { x: mid.x + (sr(lb + 4) - 0.5) * W * 0.5, y: mid.y + (sr(lb + 5) - 0.5) * H * 0.5 };
+    const lb = 6 + l * 5;
+    const mid = { x: sr(lb) * W * 0.5 + W * 0.25, y: sr(lb + 1) * H * 0.5 + H * 0.15 };
+    // Reflect lastCp2 through prev for smooth entry
+    const cp1 = { x: 2 * prev.x - lastCp2.x, y: 2 * prev.y - lastCp2.y };
+    // Exit cp2: push away from mid in a wide arc
+    const cp2 = { x: mid.x + (sr(lb + 2) - 0.5) * W * 1.1, y: mid.y + (sr(lb + 3) - 0.5) * H * 1.1 };
     d += ` C ${cp1.x.toFixed(1)} ${cp1.y.toFixed(1)}, ${cp2.x.toFixed(1)} ${cp2.y.toFixed(1)}, ${mid.x.toFixed(1)} ${mid.y.toFixed(1)}`;
     lastCp2 = cp2; prev = mid;
   }
 
-  const fcp1 = { x: prev.x + (sr(20) - 0.5) * W * 0.5, y: prev.y + (sr(21) - 0.5) * H * 0.5 };
-  const fcp2 = { x: end.x + (sr(22) - 0.5) * W * 0.25, y: end.y + (sr(23) - 0.5) * H * 0.25 };
+  // Final segment to end — smooth entry + wide exit control
+  const fcp1 = { x: 2 * prev.x - lastCp2.x, y: 2 * prev.y - lastCp2.y };
+  const fcp2 = { x: end.x + (sr(20) - 0.5) * W * 0.55, y: end.y + (sr(21) - 0.5) * H * 0.55 };
   d += ` C ${fcp1.x.toFixed(1)} ${fcp1.y.toFixed(1)}, ${fcp2.x.toFixed(1)} ${fcp2.y.toFixed(1)}, ${end.x.toFixed(1)} ${end.y.toFixed(1)}`;
-  lastCp2 = fcp2;
 
-  const planeAngle = Math.atan2(end.y - lastCp2.y, end.x - lastCp2.x) * 180 / Math.PI;
+  // Plane faces opposite to direction of arrival (departing)
+  const planeAngle = Math.atan2(end.y - fcp2.y, end.x - fcp2.x) * 180 / Math.PI + 180;
 
   const startPx = `${(start.x / W * 100).toFixed(2)}%`;
   const startPy = `${(start.y / H * 100).toFixed(2)}%`;
@@ -236,15 +241,9 @@ function S1FlightPaths({ seed, color }: { seed: number; color: string }) {
       <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", inset: 0 }}>
         <path d={d} fill="none" stroke={color} strokeWidth="2.5" strokeDasharray="4 9" strokeLinecap="round" opacity="0.65" />
       </svg>
-      {/* Start pin */}
-      <div style={{ position: "absolute", left: startPx, top: startPy, transform: "translate(-50%, calc(-100% + 2.5px))", zIndex: 3, pointerEvents: "none" }}>
-        <svg width="14" height="19" viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="10" cy="10" r="10" fill={color} opacity={0.9} />
-          <circle cx="10" cy="10" r="4.5" fill="#fff" opacity={0.9} />
-          <path d="M10,28 L4,14 Q10,2 16,14 Z" fill={color} opacity={0.9} />
-        </svg>
-      </div>
-      {/* Plane at end, rotated to direction of travel */}
+      {/* X mark at start — treasure map style */}
+      <div style={{ position: "absolute", left: startPx, top: startPy, transform: "translate(-50%,-50%)", zIndex: 3, pointerEvents: "none", fontSize: 18, fontWeight: 900, color, opacity: 0.9, lineHeight: 1, fontFamily: "Arial Black, sans-serif", textShadow: `0 0 4px rgba(0,0,0,0.6)` }}>✕</div>
+      {/* Plane at end, rotated 180° from arrival direction */}
       <div style={{ position: "absolute", left: endPx, top: endPy, transform: `translate(-50%,-50%) rotate(${planeAngle}deg)`, zIndex: 3, pointerEvents: "none", marginTop: -2 }}>
         <svg width="32" height="32" viewBox="0 0 24 24" fill={color} opacity={0.9} xmlns="http://www.w3.org/2000/svg">
           <path d="M21,16l-9-5V3.5C12,2.67,11.33,2,10.5,2S9,2.67,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" />
