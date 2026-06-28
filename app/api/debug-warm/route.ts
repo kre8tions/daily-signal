@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   try {
     const pageData = await buildPageData(editionKey, editionLabel);
     const blobResult = await put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
-      access: "public", contentType: "application/json", addRandomSuffix: false,
+      access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true,
     });
     revalidateTag(`edition-${editionKey}`);
     return NextResponse.json({

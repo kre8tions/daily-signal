@@ -476,7 +476,7 @@ Return JSON only, no markdown:
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   try {
     const parsed = JSON.parse(cleaned) as Synthesis;
-    put(blobKey, JSON.stringify(parsed), { access: "public", contentType: "application/json", addRandomSuffix: false }).catch(() => {});
+    put(blobKey, JSON.stringify(parsed), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
     return parsed;
   } catch {
     return { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] };
@@ -532,7 +532,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
   put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
-    access: "public", contentType: "application/json", addRandomSuffix: false,
+    access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true,
   }).catch(() => {});
   saveToArchive({
     key: editionKey, label: editionLabel,
@@ -613,7 +613,7 @@ Return only valid JSON.`,
 
     const text = msg.content[0].type === "text" ? msg.content[0].text.trim() : "";
     const json = JSON.parse(text.replace(/^```json\n?/, "").replace(/\n?```$/, "")) as HowTo;
-    await put(blobKey, JSON.stringify(json), { access: "public", contentType: "application/json", addRandomSuffix: false });
+    await put(blobKey, JSON.stringify(json), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
     return json;
   } catch { return null; }
 }
@@ -936,7 +936,7 @@ Return JSON only:
 
   // Save to Blob for this edition
   try {
-    await put(blobKey, JSON.stringify(commentary), { access: "public", contentType: "application/json", addRandomSuffix: false });
+    await put(blobKey, JSON.stringify(commentary), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
   } catch { /* non-fatal */ }
 
   return commentary;
@@ -1115,7 +1115,7 @@ Return JSON only:
       editionKey,
       voiceId,
     };
-    put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false }).catch(() => {});
+    put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
     return result;
   } catch { return null; }
 }
@@ -1133,7 +1133,7 @@ export async function saveToArchive(entry: ArchiveEntry) {
         if (imgRes.ok) {
           const imgBuffer = await imgRes.arrayBuffer();
           const imgBlob = await put(`archive/photos/${entry.key}.jpg`, imgBuffer, {
-            access: "public", contentType: "image/jpeg", addRandomSuffix: false,
+            access: "public", contentType: "image/jpeg", addRandomSuffix: false, allowOverwrite: true,
           });
           blobImageUrl = imgBlob.url;
         }
@@ -1154,7 +1154,7 @@ export async function saveToArchive(entry: ArchiveEntry) {
       list.unshift({ ...entry, imageUrl: blobImageUrl });
       if (list.length > 90) list.pop();
       await put("archive/index.json", JSON.stringify(list), {
-        access: "public", contentType: "application/json", addRandomSuffix: false,
+        access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true,
       });
     }
   } catch { /* non-fatal */ }
