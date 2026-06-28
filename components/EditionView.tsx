@@ -139,15 +139,13 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
 
   return (
     <>
-      {/* Dots only — stretching is fine for small circles */}
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
-        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 }}
-        xmlns="http://www.w3.org/2000/svg">
-        {dots.map((d, i) => <circle key={i} cx={d.x} cy={d.y} r={3.5} fill={color} opacity={0.75} />)}
-      </svg>
+      {/* Dots as HTML so they stay perfectly circular */}
+      {dots.map((d, i) => (
+        <div key={i} style={{ position: "absolute", left: `${(d.x / W * 100).toFixed(2)}%`, top: `${(d.y / H * 100).toFixed(2)}%`, width: 7, height: 7, borderRadius: "50%", background: color, opacity: 0.75, transform: "translate(-50%,-50%)", pointerEvents: "none", zIndex: 10 }} />
+      ))}
       {/* Pin — HTML so it's never distorted */}
       <div style={{ position: "absolute", left: sPx, top: sPy, transform: "translate(-50%, -100%)", zIndex: 11, pointerEvents: "none" }}>
-        <svg width="15" height="21" viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg">
+        <svg width="14" height="19" viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg">
           <circle cx="10" cy="10" r="10" fill={color} opacity={0.9} />
           <circle cx="10" cy="10" r="4.5" fill="#fff" opacity={0.9} />
           <path d="M10,28 L4,14 Q10,2 16,14 Z" fill={color} opacity={0.9} />
@@ -155,7 +153,7 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
       </div>
       {/* Airplane — HTML so it's never distorted */}
       <div style={{ position: "absolute", left: ePx, top: ePy, transform: `translate(-50%, -50%) rotate(${planeAngle}deg)`, zIndex: 11, pointerEvents: "none" }}>
-        <svg width="33" height="33" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg width="38" height="38" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path d="M21,16l-9-5V3.5C12,2.7,11.3,2,10.5,2S9,2.7,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" fill={color} opacity={0.95} />
         </svg>
       </div>
