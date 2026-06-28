@@ -4,11 +4,9 @@ import { EmailCapture } from "@/app/EmailCapture";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function timeAgo(iso: string) {
-  const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
-  if (h < 1) return "Just now";
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed + 1) * 10000;
+  return x - Math.floor(x);
 }
 
 function Pill({ section }: { section: string }) {
@@ -345,7 +343,6 @@ export async function EditionView({
                   ))}
                 </div>
               ) : null}
-              <span className="ds-card-meta" style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, position: "absolute", bottom: 22, left: 28 }}>{s1.source} · {timeAgo(s1.pubDate)}</span>
               <MorePill story={s1} />
             </div>
           </a>
@@ -424,7 +421,6 @@ export async function EditionView({
             <div style={{ fontSize: 52, color: P.accent, fontFamily: P.fontHeading, flexShrink: 0, lineHeight: 0.8, opacity: 0.35, marginTop: 6 }}>"</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 17, fontStyle: "italic", color: P.ink, lineHeight: 1.5, fontFamily: P.fontBody, fontWeight: 500 }}>{s2.pullquote || s2.summary || s2.title}</div>
-              <div style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody, marginTop: 6 }}>{s2.source} · {timeAgo(s2.pubDate)}</div>
             </div>
             <MorePill story={s2} />
           </a>
@@ -435,41 +431,54 @@ export async function EditionView({
       {synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />}
 
       {/* Row 2: s3–s11 */}
-      {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).length > 0 && (
-        <div className="ds-row2" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 0, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
-          {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).map((s, i) => {
-            const firstSentence = s?.summary ? (s.summary.match(/^[^.!?]+[.!?]/) ?? [s.summary])[0].trim() : undefined;
-            return s && (
-            <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
-              <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
-                {s.imageUrl && (
-                  <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
-                    <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
-                    <PixelEdge color={P.cardBg} seed={i + 2} height={52} />
-                    <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
-                    <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{s.source} · {timeAgo(s.pubDate)}</div>
-                  </div>
-                )}
-                <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
-                  {s.imageUrl && <PixelEdgeTop color={P.pageBg} seed={i + 2} height={28} />}
-                  {!s.imageUrl && (
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Pill section={s.section} />
-                      <span style={{ fontSize: 10, color: P.inkLight, fontFamily: P.fontBody }}>{s.source} · {timeAgo(s.pubDate)}</span>
+      {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).length > 0 && (() => {
+        const editionSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+        return (
+          <div className="ds-row2" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 0, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
+            {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).map((s, i) => {
+              const showPullquote = seededRandom(editionSeed + i * 37) < 0.25;
+              const showBullets = !showPullquote && seededRandom(editionSeed + i * 59) < 0.25;
+              const firstSentence = s?.summary ? (s.summary.match(/^[^.!?]+[.!?]/) ?? [s.summary])[0].trim() : undefined;
+              return s && (
+                <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
+                  <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
+                    {s.imageUrl && (
+                      <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
+                        <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
+                        <PixelEdge color={P.cardBg} seed={i + 2} height={52} />
+                        <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
+                      </div>
+                    )}
+                    <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
+                      {s.imageUrl && <PixelEdgeTop color={P.pageBg} seed={i + 2} height={28} />}
+                      {!s.imageUrl && <Pill section={s.section} />}
+                      <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
+                      {showPullquote && s.pullquote ? (
+                        <div style={{ borderLeft: `3px solid ${P.accent}`, paddingLeft: 14, marginTop: 2 }}>
+                          <div style={{ fontSize: 15, fontStyle: "italic", color: P.inkMid, lineHeight: 1.6, fontFamily: P.fontBody }}>{s.pullquote}</div>
+                        </div>
+                      ) : showBullets && s.bullets?.length ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {s.bullets.slice(0, 3).map((b, bi) => (
+                            <div key={bi} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, lineHeight: 1.55, color: P.inkMid, fontFamily: P.fontBody }}>
+                              <span style={{ color: P.accent, flexShrink: 0, fontWeight: 700 }}>*</span>{b}
+                            </div>
+                          ))}
+                        </div>
+                      ) : firstSentence ? (
+                        <div className="ds-card-body" style={bodyStyle}>{firstSentence}</div>
+                      ) : null}
+                      <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
+                      </div>
                     </div>
-                  )}
-                  <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
-                  {firstSentence && <div className="ds-card-body" style={bodyStyle}>{firstSentence}</div>}
-                  <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
                   </div>
-                </div>
-              </div>
-            </a>
-            );
-          })}
-        </div>
-      )}
+                </a>
+              );
+            })}
+          </div>
+        );
+      })()}
 
 
       {/* Internal desk link (homepage only) */}
