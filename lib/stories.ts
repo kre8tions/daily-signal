@@ -155,7 +155,7 @@ export function getEdition(): { label: string; key: string } {
 
 export function getNextEdition(): { label: string; key: string } {
   const future = new Date(Date.now() + 16 * 60 * 1000);
-  const h = future.getHours();
+  const h = future.getUTCHours();
   const date = future.toISOString().slice(0, 10);
   if (h >= 5  && h < 9)  return { label: "Early Morning Edition", key: `${date}_early`    };
   if (h >= 9  && h < 13) return { label: "Morning Edition",       key: `${date}_morning`  };
