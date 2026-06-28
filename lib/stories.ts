@@ -746,17 +746,14 @@ function breakLongSentences(text: string): string {
   }).join("\n\n");
 }
 
-export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number, forcePass2 = false): Promise<ArticleCommentary> {
+export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
   const PROMPT_V = "v14"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
   const hasImg2 = seededRandom(refSeed + 7) < 0.2;
   const hasKeyFacts = !hasCta && seededRandom(refSeed + 19) < 0.33;
-  // forcePass2 uses a separate blob key so article detail pages cache independently of homepage cards
-  const blobKey = forcePass2
-    ? `articles/${PROMPT_V}-full/${editionKey}/${slug}.json`
-    : `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
+  const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
   // Check Blob cache first
   try {
@@ -842,13 +839,13 @@ Return JSON only, no markdown:
     pass1 = { header: "", body: isJson ? "" : text1 };
   }
 
-  // ── Pass 2: structure — skipped for brief cards on homepage; always runs for article detail (forcePass2) ──
+  // ── Pass 2: structure — always runs; isBrief only gates imageUrl2 (no mid-article image for brief cards) ──
   const isBrief = story.cardStyle === "brief";
   let body = pass1.body ?? "";
   let pass1Header2 = "";
   let pass1ImageQuery2 = "";
   let extractedPullQuote = "";
-  if (body && (!isBrief || forcePass2)) {
+  if (body) {
     try {
       const pass2msg = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
