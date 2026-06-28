@@ -44,7 +44,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const storyIndex = stories.findIndex((s) => s.link === story.link);
   const writerSlots = getWriterAssignments(editionKey);
   const writerIndex = storyIndex >= 0 ? writerSlots[storyIndex] : undefined;
-  const fullArticle = await getFullArticle(story, related, editionKey, writerIndex);
+  let fullArticle: ArticleCommentary | null = null;
+  try {
+    fullArticle = await getFullArticle(story, related, editionKey, writerIndex);
+  } catch { /* generation failed — render article without commentary */ }
 
   const sectionColor = SECTION_COLORS[story.section] ?? "#888";
   const pubDate = new Date(story.pubDate).toLocaleDateString("en-US", {
