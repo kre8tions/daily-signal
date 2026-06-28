@@ -438,7 +438,7 @@ export async function EditionView({
           const emoji = angleEmoji[fc.angleKey] ?? "🪄";
           const slug = fc.editionKey ?? editionKey;
           const borderSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 3), 0);
-          const borderColor = seededRandom(borderSeed) > 0.5 ? P.accent2 : color;
+          const borderColor = P.pageBg;
           return (
             <div style={{ gridColumn: "1 / 7", gridRow: "2 / 4", position: "relative" }}>
               <FlightPathBorder color={borderColor} seed={borderSeed} />
@@ -479,30 +479,25 @@ export async function EditionView({
         )}
 
         {s2 && (
-          <a href={`/article/${urlToSlug(s2.link)}`} style={{ gridColumn: "7 / 13", gridRow: "2 / 4", textDecoration: "none", color: "inherit", display: "flex" }}>
-            <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
-              {s2.imageUrl && (
-                <div style={{ position: "relative", height: 240, background: P.tint + "44", flexShrink: 0 }}>
-                  <img src={s2.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
-                  <PixelEdge color={P.cardBg} seed={1} height={52} />
-                  <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s2.section} /></div>
-                </div>
-              )}
-              <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
-                {s2.imageUrl && <PixelEdgeTop color={P.pageBg} seed={1} height={28} />}
-                {!s2.imageUrl && <Pill section={s2.section} />}
-                <div className="ds-card-h" style={hStyle}>{s2.ownedTitle || s2.title}</div>
-                {s2.summary && <div className="ds-card-body" style={bodyStyle}>{s2.summary}</div>}
-                {s2.pullquote && (
-                  <div style={{ borderLeft: `3px solid ${P.accent}`, paddingLeft: 14, marginTop: 2 }}>
-                    <div style={{ fontSize: 15, fontStyle: "italic", color: P.inkMid, lineHeight: 1.6, fontFamily: P.fontBody }}>{s2.pullquote}</div>
-                  </div>
-                )}
-                <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
-                </div>
-              </div>
+          <a href={`/article/${urlToSlug(s2.link)}`} className="ds-s2-img" style={{ ...imgCard, gridColumn: "7 / 13", gridRow: "2", textDecoration: "none" }}>
+            {s2.imageUrl ? <img src={s2.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.tint}, ${P.accent}66)` }} />}
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.05) 55%, transparent 100%)" }} />
+            <div style={{ position: "absolute", bottom: 20, left: 20, right: 100 }}>
+              <div style={{ marginBottom: 6 }}><Pill section={s2.section} /></div>
+              <div className="ds-card-h" style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.15, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 1 : -0.5, marginBottom: 8 }}>{s2.ownedTitle || s2.title}</div>
+              {s2.summary && <div className="ds-card-body" style={{ fontSize: 15, lineHeight: 1.6, color: "rgba(255,255,255,0.80)", fontFamily: P.fontBody }}>{s2.summary}</div>}
             </div>
+            <MorePill story={s2} />
+          </a>
+        )}
+
+        {s2 && (
+          <a href={`/article/${urlToSlug(s2.link)}`} style={{ ...card, gridColumn: "7 / 13", gridRow: "3", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 100, gap: 18, textDecoration: "none", color: "inherit" }}>
+            <div style={{ fontSize: 52, color: P.accent, fontFamily: P.fontHeading, flexShrink: 0, lineHeight: 0.8, opacity: 0.35, marginTop: 6 }}>"</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 17, fontStyle: "italic", color: P.ink, lineHeight: 1.5, fontFamily: P.fontBody, fontWeight: 500 }}>{s2.pullquote || s2.summary || s2.title}</div>
+            </div>
+            <MorePill story={s2} />
           </a>
         )}
       </div>
