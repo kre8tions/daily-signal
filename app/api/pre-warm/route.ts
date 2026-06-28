@@ -4,7 +4,7 @@ import { revalidateTag } from "next/cache";
 import { buildPageData, getNextEdition } from "@/lib/stories";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 async function runPreWarm(editionKey: string, editionLabel: string) {
   try {

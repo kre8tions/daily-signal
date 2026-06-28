@@ -5,7 +5,7 @@ import { getPageData, getFullArticle, getFeatureCreature, getEdition, saveToArch
 import { put } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 async function runWarm(editionKey: string, editionLabel: string) {
   const results: Record<string, "cached" | "generated" | "failed"> = {};
