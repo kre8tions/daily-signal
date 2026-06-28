@@ -246,9 +246,9 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
 
   const queries = [
     ...(personQuery ? [personQuery, `${personQuery} portrait`] : []),
+    ...(imageQuery ? [imageQuery] : []),
     words.slice(0, 3).join(" "),
     words.slice(0, 2).join(" "),
-    ...(imageQuery ? [imageQuery] : []),
     fallback,
   ].filter(Boolean);
 
@@ -643,7 +643,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v11"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v12"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
@@ -721,7 +721,7 @@ Return JSON only, no markdown:
   "summary": "2 punchy sentences — what happened and why it matters. Be specific.",
   "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
   "insight": "1 sentence — the non-obvious angle or implication",
-  "imageQuery": "4-6 concrete atmospheric words for Unsplash hero image. No names, no text, no logos.",
+  "imageQuery": "4-6 words for Unsplash hero image. Include the main subject, industry, or setting so the image is specific to this story. No proper nouns, no brand names, no text, no logos. Examples: 'courtroom judge gavel law', 'electric car charging station night', 'military drone desert surveillance', 'cheerleaders stadium performance crowd'.",
   "header": "...",
   "pullQuote": "...",
   "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."
