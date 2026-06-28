@@ -123,7 +123,7 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
 
   const DOT_SPACING = 26;
   const dots: { x: number; y: number }[] = [];
-  for (let d = startDist + DOT_SPACING; d < endDist - DOT_SPACING; d += DOT_SPACING) {
+  for (let d = startDist + DOT_SPACING; d < endDist - DOT_SPACING * 2.5; d += DOT_SPACING) {
     const p = ptAt(d); dots.push({ x: p.x, y: p.y });
   }
 
@@ -152,8 +152,8 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
         </svg>
       </div>
       {/* Airplane — HTML so it's never distorted */}
-      <div style={{ position: "absolute", left: ePx, top: ePy, transform: `translate(-50%, -50%) rotate(${planeAngle}deg)`, zIndex: 11, pointerEvents: "none" }}>
-        <svg width="38" height="38" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <div style={{ position: "absolute", left: ePx, top: ePy, transform: `translate(-50%, -50%) rotate(${planeAngle}deg)`, marginTop: -2, zIndex: 11, pointerEvents: "none" }}>
+        <svg width="42" height="42" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path d="M21,16l-9-5V3.5C12,2.7,11.3,2,10.5,2S9,2.7,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" fill={color} opacity={0.95} />
         </svg>
       </div>
