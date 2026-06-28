@@ -693,7 +693,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v12"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v13"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
@@ -750,7 +750,7 @@ Voice — write like this:
 - No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...".
 
 Also return:
-- header: 3-5 words. A magazine sub-headline — specific and surprising, not generic. Examples of BAD headers: "The Bigger Picture", "What This Means", "A New Era". Examples of GOOD headers: "The Quiet Monopoly", "When Safety Becomes Control", "Debt That Builds Nations".
+- header: 3-5 words. Magazine sub-headline — specific, not generic. No colons. BAD: "The Bigger Picture", "What This Means", "A New Era". GOOD: "The Quiet Monopoly", "Debt That Builds Nations", "Nobody Saw It Coming".
 - pullQuote: copy one sentence verbatim from your body — the most arresting one. Must be word-for-word identical.
 
 STORY: ${story.title}
@@ -767,7 +767,7 @@ ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
 
 Return JSON only, no markdown:
 {
-  "ownedTitle": "6-10 words in your writer voice. Magnetic editorial headline — name specifics (numbers, names, places), put tension or contradiction inside the headline itself, create a curiosity gap the article genuinely pays off. Rex: confrontational verdict. Eric: plain moral charge. Margot: cool disturbing observation. Finn: insider thriller hook. Cal: counter-intuitive reversal. Jack: sardonic sting. Ward: status-game exposure. Never use: Why/How/The Truth About/Game-Changer/Revolutionary/What You Need to Know. Must differ from source headline.",
+  "ownedTitle": "5-9 words. A human journalist wrote this, not an AI. Strong verb, concrete nouns, no abstraction. Put the actual tension or finding in the words themselves — don't gesture at it. For Science: name the specific discovery or finding, not just that one happened. FORBIDDEN PATTERNS — never use these: colons (almost never — 1 in 200 headlines earns one); 'X: When Y'; 'X as [abstract noun]'; 'Becomes [Cultural Noun]' (phenomenon, spectacle, currency, commodity); 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'/'Revolutionary'. Writer voice: Rex=confrontational verdict, Eric=plain moral charge, Margot=cool disturbing observation, Finn=insider thriller hook, Cal=counter-intuitive reversal, Jack=sardonic sting, Ward=status-game exposure. GOOD: 'Four Chameleons Named, Zero Habitats Protected' / 'Mathematicians Crack the 80-Year Randomness Problem' / 'Jackass Ends Because Bodies Run Out of Luck'. BAD: 'The Cheerleader Trap: When Visibility Becomes the Cage' / 'Optimism as Commodity, Resistance as Product'. Must differ from source headline.",
   "summary": "2 punchy sentences — what happened and why it matters. Be specific.",
   "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
   "insight": "1 sentence — the non-obvious angle or implication",
@@ -815,7 +815,7 @@ Structure:
 - para5: 1-2 sentences — landing. A sharp question, provocation, or implication. Omit if the content doesn't need it.
 
 Also return:
-- header2: 3-5 words. A second editorial sub-headline for para4 onward — same rules as a magazine sub-head but covers the second half of the argument. Specific, not generic.
+- header2: 3-5 words. Second sub-headline covering the second half of the argument. Specific, no colons, not generic.
 - imageQuery2: 4-6 concrete atmospheric words for a second Unsplash search. No names, no text, no logos. Think: texture, environment, light, emotion.
 
 Body to restructure:
