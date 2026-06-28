@@ -52,6 +52,11 @@ export async function GET(req: Request) {
       : "returned null";
   } catch (e) { archivedResult = String(e); }
 
+  // Check individual article blobs
+  const { list } = await import("@vercel/blob");
+  const articleBlobs = await list({ prefix: `articles/v17/${key}/` });
+  const articleBlobSummary = articleBlobs.blobs.map(b => ({ path: b.pathname, size: b.size }));
+
   // Test getPageData (goes through unstable_cache)
   let pageDataResult: unknown = null;
   try {
@@ -59,5 +64,5 @@ export async function GET(req: Request) {
     pageDataResult = { storyCount: pd.stories.length, firstTitle: pd.stories[0]?.title, theme: pd.synthesis.theme };
   } catch (e) { pageDataResult = String(e); }
 
-  return NextResponse.json({ editionKey: key, blobs: checks, archiveContent, archivedResult, pageDataResult });
+  return NextResponse.json({ editionKey: key, blobs: checks, archiveContent, archivedResult, pageDataResult, articleBlobs: articleBlobSummary });
 }
