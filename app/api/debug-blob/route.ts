@@ -28,5 +28,20 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ editionKey: key, blobs: checks });
+  // Fetch actual content of archive blob
+  let archiveContent: unknown = null;
+  try {
+    const info = await head(`archive/editions/${key}.json`);
+    if (info) {
+      const res = await fetch(info.url);
+      const data = await res.json() as { stories?: unknown[]; synthesis?: { theme?: string } };
+      archiveContent = {
+        storyCount: Array.isArray(data.stories) ? data.stories.length : "n/a",
+        firstTitle: Array.isArray(data.stories) && data.stories.length > 0 ? (data.stories[0] as { title?: string }).title : null,
+        theme: data.synthesis?.theme ?? null,
+      };
+    }
+  } catch { archiveContent = "fetch failed"; }
+
+  return NextResponse.json({ editionKey: key, blobs: checks, archiveContent });
 }
