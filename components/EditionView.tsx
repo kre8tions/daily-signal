@@ -438,7 +438,12 @@ export async function EditionView({
             {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).map((s, i) => {
               const showPullquote = seededRandom(editionSeed + i * 37) < 0.25;
               const showBullets = !showPullquote && seededRandom(editionSeed + i * 59) < 0.25;
-              const firstSentence = s?.summary ? (s.summary.match(/^[^.!?]+[.!?]/) ?? [s.summary])[0].trim() : undefined;
+              const twoSentences = seededRandom(editionSeed + i * 71) < 0.5;
+              const summaryText = s?.summary
+                ? twoSentences
+                  ? s.summary
+                  : (s.summary.match(/^[^.!?]+[.!?]/) ?? [s.summary])[0].trim()
+                : undefined;
               return s && (
                 <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
                   <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
@@ -453,6 +458,7 @@ export async function EditionView({
                       {s.imageUrl && <PixelEdgeTop color={P.pageBg} seed={i + 2} height={28} />}
                       {!s.imageUrl && <Pill section={s.section} />}
                       <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
+                      {summaryText && <div className="ds-card-body" style={bodyStyle}>{summaryText}</div>}
                       {showPullquote && s.pullquote ? (
                         <div style={{ borderLeft: `3px solid ${P.accent}`, paddingLeft: 14, marginTop: 2 }}>
                           <div style={{ fontSize: 15, fontStyle: "italic", color: P.inkMid, lineHeight: 1.6, fontFamily: P.fontBody }}>{s.pullquote}</div>
@@ -465,8 +471,6 @@ export async function EditionView({
                             </div>
                           ))}
                         </div>
-                      ) : firstSentence ? (
-                        <div className="ds-card-body" style={bodyStyle}>{firstSentence}</div>
                       ) : null}
                       <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
