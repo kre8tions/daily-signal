@@ -147,15 +147,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         ) : null}
 
 
-        {/* Signal Insight */}
-        {story.insight && (
-          <div style={{ background: `${P.accent}12`, borderRadius: 16, paddingTop: 20, paddingBottom: 20, paddingLeft: 26, paddingRight: 26, marginBottom: 36, border: `1px solid ${P.accent}33` }}>
-            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Signal Insight</div>
-            <p style={{ fontSize: 15, lineHeight: 1.7, color: P.inkMid, fontStyle: "italic", fontFamily: P.fontBody, marginBottom: 0 }}>{story.insight}</p>
-          </div>
-        )}
-
-
         {/* Related Stories */}
         {related.length > 0 && (
           <div style={{ marginBottom: 48 }}>

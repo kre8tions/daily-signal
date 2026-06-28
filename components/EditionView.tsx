@@ -263,7 +263,6 @@ export async function EditionView({
   const imgCard: React.CSSProperties = { ...card, position: "relative", background: P.tint + "44" };
   const hStyle: React.CSSProperties = { fontFamily: P.fontHeading, fontSize: 22, fontWeight: 800, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0 };
   const bodyStyle: React.CSSProperties = { fontSize: 15, lineHeight: 1.7, color: P.inkMid, fontFamily: P.fontBody };
-  const insightStyle: React.CSSProperties = { borderLeft: `3px solid ${P.accent}66`, paddingLeft: 12, fontSize: 13, color: P.inkMid, lineHeight: 1.55, fontStyle: "italic", fontFamily: P.fontBody };
 
   return (
     <div className="ds-page" style={{ minHeight: "100vh", background: P.pageBg, fontFamily: P.fontBody, paddingTop: 24, paddingBottom: 60, paddingLeft: 20, paddingRight: 20, color: P.ink }}>
@@ -461,7 +460,6 @@ export async function EditionView({
                   )}
                   <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
                   {firstSentence && <div className="ds-card-body" style={bodyStyle}>{firstSentence}</div>}
-                  {s.insight && <div className="ds-card-insight" style={insightStyle}>{s.insight}</div>}
                   <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
                   </div>
