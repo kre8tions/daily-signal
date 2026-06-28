@@ -724,6 +724,7 @@ export interface ArticleCommentary {
   header: string;
   header2?: string;
   pullQuote: string;
+  pullQuoteAfterPara?: number;
   body: string;
   writer?: string;
   ownedTitle?: string;
@@ -757,7 +758,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v16"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v17"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
@@ -829,6 +830,7 @@ Return JSON only, no markdown:
   "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
   "imageQuery": "4-6 words for Unsplash hero image. Include the main subject, industry, or setting so the image is specific to this story. No proper nouns, no brand names, no text, no logos. Examples: 'courtroom judge gavel law', 'electric car charging station night', 'military drone desert surveillance', 'cheerleaders stadium performance crowd'.",
   "header": "...",
+  "pullQuote": "1 sentence. Your sharpest, most arresting framing of the central tension — a paraphrase, not a direct quote from the source. Something a reader would screenshot.",
   "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."${hasCta ? `,
   "cta": {
     "header": "2-4 words. Active verb phrase. E.g. 'Try This Tonight', 'Start Here', 'Read This Next'.",
@@ -840,7 +842,7 @@ Return JSON only, no markdown:
 
   const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
   const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  let pass1: { ownedTitle?: string; summary?: string; bullets?: string[]; imageQuery?: string; header?: string; body?: string; cta?: { header: string; body: string } } = {};
+  let pass1: { ownedTitle?: string; summary?: string; bullets?: string[]; imageQuery?: string; header?: string; pullQuote?: string; body?: string; cta?: { header: string; body: string } } = {};
   try {
     pass1 = JSON.parse(text1);
     if (!pass1.body) throw new Error();
@@ -854,7 +856,8 @@ Return JSON only, no markdown:
   let body = pass1.body ?? "";
   let pass1Header2 = "";
   let pass1ImageQuery2 = "";
-  let extractedPullQuote = "";
+  let extractedPullQuote = pass1.pullQuote ?? "";
+  let pullQuoteAfterPara = 4;
   if (body) {
     try {
       const pass2msg = await client.messages.create({
@@ -878,13 +881,13 @@ Structure:
 Also return:
 - header2: 3-5 words. Second sub-headline covering the second half of the argument. Specific, no colons, not generic.
 - imageQuery2: 4-6 concrete atmospheric words for a second Unsplash search. No names, no text, no logos. Think: texture, environment, light, emotion.
-- pullQuote: One genuinely interesting sentence copied verbatim from para2, para3, or para4 — never para1, never para5. Pick the most arresting, specific, or surprising sentence. Word-for-word identical to what appears in the body.
+- pullQuoteAfterPara: 4 or 5 only. Which paragraph the pull quote should follow. Must be after header2 (which appears before para4). Choose 4 if the energy peaks in para4, choose 5 if para5 is the stronger landing.
 
 Body to restructure:
 "${body}"
 
 Return JSON only:
-{"header2":"...","imageQuery2":"...","pullQuote":"...","para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`,
+{"header2":"...","imageQuery2":"...","pullQuoteAfterPara":4,"para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`,
         }],
       });
       const raw2 = pass2msg.content[0].type === "text" ? pass2msg.content[0].text : "{}";
@@ -902,8 +905,9 @@ Return JSON only:
           .join("\n\n");
         if (scaffold.header2) pass1Header2 = scaffold.header2 as string;
         if (scaffold.imageQuery2) pass1ImageQuery2 = scaffold.imageQuery2 as string;
-        if (scaffold.pullQuote) extractedPullQuote = scaffold.pullQuote as string;
-        else if (scaffold.para2) extractedPullQuote = scaffold.para2 as string;
+        if (typeof scaffold.pullQuoteAfterPara === "number" && (scaffold.pullQuoteAfterPara === 4 || scaffold.pullQuoteAfterPara === 5)) {
+          pullQuoteAfterPara = scaffold.pullQuoteAfterPara as number;
+        }
       }
     } catch { /* pass2 failed — use pass1 body as-is */ }
   }
@@ -922,6 +926,7 @@ Return JSON only:
     header: pass1.header ?? "",
     header2: pass1Header2,
     pullQuote: extractedPullQuote,
+    pullQuoteAfterPara,
     imageUrl2: imageUrl2 ?? undefined,
     body: breakLongSentences(body),
     writer: writer?.name ?? "",
