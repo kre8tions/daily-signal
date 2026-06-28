@@ -758,7 +758,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v17"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v18"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
@@ -808,6 +808,7 @@ Voice — write like this:
 - Vivid and specific — name the thing, don't describe it abstractly.
 - No academic hedging: never "one might argue", "it is worth noting", "this suggests that".
 - No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...", "No one is saying out loud...".
+- No semicolons — ever. Rewrite any semicolon sentence as two separate sentences.
 
 Also return:
 - header: 3-5 words. Magazine sub-headline — specific, not generic. No colons. BAD: "The Bigger Picture", "What This Means", "A New Era". GOOD: "The Quiet Monopoly", "Debt That Builds Nations", "Nobody Saw It Coming".
@@ -825,7 +826,7 @@ ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
 
 Return JSON only, no markdown:
 {
-  "ownedTitle": "5-9 words. A human journalist wrote this, not an AI. Strong verb, concrete nouns, no abstraction. Put the actual tension or finding in the words themselves — don't gesture at it. For Science: name the specific discovery or finding, not just that one happened. FORBIDDEN PATTERNS — never use these: colons (almost never — 1 in 200 headlines earns one); 'X: When Y'; 'X as [abstract noun]'; 'Becomes [Cultural Noun]' (phenomenon, spectacle, currency, commodity); 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'/'Revolutionary'. Writer voice: Rex=confrontational verdict, Eric=plain moral charge, Margot=cool disturbing observation, Finn=insider thriller hook, Cal=counter-intuitive reversal, Jack=sardonic sting, Ward=status-game exposure. GOOD: 'Four Chameleons Named, Zero Habitats Protected' / 'Mathematicians Crack the 80-Year Randomness Problem' / 'Jackass Ends Because Bodies Run Out of Luck'. BAD: 'The Cheerleader Trap: When Visibility Becomes the Cage' / 'Optimism as Commodity, Resistance as Product'. Must differ from source headline.",
+  "ownedTitle": "5-9 words. A human journalist wrote this, not an AI. Strong verb, concrete nouns, no abstraction. Put the actual tension or finding in the words themselves — don't gesture at it. For Science: name the specific discovery or finding, not just that one happened. MUST BE FACTUALLY ACCURATE — never assert a claim the article doesn't support; if the article says Mars has tectonic recycling, don't imply Earth doesn't. FORBIDDEN PATTERNS — never use these: colons (almost never — 1 in 200 headlines earns one); 'X: When Y'; 'X as [abstract noun]'; 'Becomes [Cultural Noun]' (phenomenon, spectacle, currency, commodity); 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'/'Revolutionary'. Writer voice: Rex=confrontational verdict, Eric=plain moral charge, Margot=cool disturbing observation, Finn=insider thriller hook, Cal=counter-intuitive reversal, Jack=sardonic sting, Ward=status-game exposure. GOOD: 'Four Chameleons Named, Zero Habitats Protected' / 'Mathematicians Crack the 80-Year Randomness Problem' / 'Jackass Ends Because Bodies Run Out of Luck'. BAD: 'The Cheerleader Trap: When Visibility Becomes the Cage' / 'Optimism as Commodity, Resistance as Product'. Must differ from source headline.",
   "summary": "2 punchy sentences — what happened and why it matters. Be specific.",
   "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
   "imageQuery": "4-6 words for Unsplash hero image. Include the main subject, industry, or setting so the image is specific to this story. No proper nouns, no brand names, no text, no logos. Examples: 'courtroom judge gavel law', 'electric car charging station night', 'military drone desert surveillance', 'cheerleaders stadium performance crowd'.",
@@ -1017,7 +1018,7 @@ Return JSON only, no markdown:
   "callToAction": "1 sentence. Specific imperative — a real thing to DO, WATCH, BUILD, or READ today. Not 'explore this topic'. Name the exact thing.",
   "digDeeper": "1 sentence. One specific book, film, essay, paper, or rabbit hole — with enough detail to find it. Not a genre. Not a Wikipedia article.",
   "pullQuote": "Copy one sentence verbatim from your body — the most arresting one. Word-for-word identical.",
-  "imageQuery": "4-6 concrete visual nouns for Unsplash. Describe a real-world scene or object related to the article's central idea — NOT the fictional universe itself. E.g. for a Blade Runner/rain article: 'rain slicked city street neon reflection'."
+  "imageQuery": "4-6 concrete visual nouns for Unsplash. Describe a real-world scene or object related to the article's central idea — NOT the fictional universe itself. CRITICAL: match the mood and tone of the source. Dark/thriller source = dark moody image. Hopeful source = bright open image. E.g. for a Blade Runner/rain article: 'rain slicked city street neon reflection'. For Ex Machina/isolation: 'empty modernist room glass walls solitude'. For a hopeful space film: 'astronaut sunrise orbit earth'."
 }`
         }],
       }),
