@@ -270,7 +270,7 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
 }
 
 function imgCacheKey(link: string) {
-  return `artimg_v3_${Buffer.from(link).toString("base64").slice(0, 24).replace(/[^a-z0-9]/gi, "_")}`;
+  return `artimg_v4_${createHash("md5").update(link).digest("hex")}`;
 }
 
 async function getArticleImage(article: { link: string; title: string; section?: string; rssImageUrl?: string; imageQuery?: string }): Promise<string | undefined> {
@@ -331,16 +331,21 @@ function getPreviousEditionKey(editionKey: string): string | null {
 }
 
 async function loadUsedLinks(editionKey: string): Promise<Set<string>> {
-  const prevKey = getPreviousEditionKey(editionKey);
-  if (!prevKey) return new Set();
-  try {
-    const blob = await head(`archive/editions/${prevKey}.json`);
-    if (!blob) return new Set();
-    const res = await fetch(blob.url, { cache: "no-store" });
-    if (!res.ok) return new Set();
-    const data = await res.json() as { stories: { link: string }[] };
-    return new Set(data.stories.map(s => s.link));
-  } catch { return new Set(); }
+  const prev1 = getPreviousEditionKey(editionKey);
+  const prev2 = prev1 ? getPreviousEditionKey(prev1) : null;
+  const keys = [prev1, prev2].filter(Boolean) as string[];
+  if (!keys.length) return new Set();
+  const results = await Promise.all(keys.map(async (key) => {
+    try {
+      const blob = await head(`archive/editions/${key}.json`);
+      if (!blob) return [];
+      const res = await fetch(blob.url, { cache: "no-store" });
+      if (!res.ok) return [];
+      const data = await res.json() as { stories: { link: string }[] };
+      return data.stories.map(s => s.link);
+    } catch { return []; }
+  }));
+  return new Set(results.flat());
 }
 
 // ── RSS fetch with section quotas ─────────────────────────────────────────────
