@@ -199,7 +199,8 @@ async function scrapeOgImage(url: string): Promise<string | undefined> {
            ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
     const imgUrl = m?.[1];
     if (!imgUrl) return undefined;
-    if (/bbci\.co\.uk|placeholder|logo|icon|favicon/i.test(imgUrl)) return undefined;
+    // Reject known-bad image patterns: logos, placeholders, and site-wide default social images
+    if (/bbci\.co\.uk|placeholder|logo|icon|favicon|\/og\.|\/og-|og_image|og-image|social[-_]share|share[-_]image|default[-_]image|fallback|\/share\.|\/social\./i.test(imgUrl)) return undefined;
     return imgUrl;
   } catch { return undefined; }
 }
@@ -321,16 +322,22 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   if (hit) return hit;
 
   const activeFeeds = FEEDS.filter(f => f.section !== "Faith" || isSundayEarlyMorning());
+  const FRESH_MS = 10 * ONE_HOUR; // prefer articles published within last 10 hours
+  const now = Date.now();
+
   const results = await Promise.allSettled(
     activeFeeds.map(async (feed) => {
       const timeout = new Promise<never>((_, r) => setTimeout(() => r(new Error("t")), 8000));
       const parsed = await Promise.race([parser.parseURL(feed.url), timeout]);
-      return parsed.items.slice(0, 3).map((item) => ({
+      const mapped = parsed.items.slice(0, 8).map((item) => ({
         title: decodeEntities(item.title ?? ""), content: decodeEntities(item.contentSnippet ?? ""),
         source: feed.source, section: feed.section,
         link: item.link ?? "", pubDate: item.pubDate ?? new Date().toISOString(),
         rssImageUrl: extractRssImage(item),
       }));
+      // Prefer fresh articles; fall back to most recent if none are fresh
+      const fresh = mapped.filter(i => now - new Date(i.pubDate).getTime() < FRESH_MS);
+      return (fresh.length > 0 ? fresh : mapped).slice(0, 3);
     })
   );
 
