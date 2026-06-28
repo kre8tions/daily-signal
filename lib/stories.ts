@@ -388,13 +388,9 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   const results = rawFeeds.map(r => {
     if (r.status === "rejected") return { status: "fulfilled" as const, value: [] as RawItem[] };
     const mapped = r.value;
-    const unusedFresh = mapped.filter(i => !usedLinks.has(i.link) && isF(i));
     const unused      = mapped.filter(i => !usedLinks.has(i.link));
-    const allFresh    = mapped.filter(i => isF(i));
-    const pool = unusedFresh.length > 0 ? unusedFresh
-               : unused.length      > 0 ? unused
-               : allFresh.length    > 0 ? allFresh
-               : mapped;
+    const unusedFresh = unused.filter(i => isF(i));
+    const pool = unusedFresh.length > 0 ? unusedFresh : unused;
     return { status: "fulfilled" as const, value: pool.slice(0, 3) };
   });
 
