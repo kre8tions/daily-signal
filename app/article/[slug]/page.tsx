@@ -77,8 +77,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
         {/* Meta */}
         <div style={{ display: "flex", gap: 16, fontSize: 12, color: P.inkLight, marginBottom: 30, fontFamily: P.fontBody }}>
-          <span style={{ fontWeight: 700, color: P.inkMid }}>{story.source}</span>
-          <span>·</span>
+          {fullArticle?.writer && <span style={{ fontWeight: 700, color: P.inkMid }}>{fullArticle.writer}</span>}
+          {fullArticle?.writer && <span>·</span>}
           <span>{pubDate}</span>
         </div>
 
@@ -93,12 +93,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         {/* Editorial commentary */}
         {fullArticle?.body && (
           <div style={{ marginBottom: 36 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 20 }}>
-              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>The Signal Take</div>
-              {fullArticle.writer && (
-                <div style={{ fontSize: 12, color: P.inkLight, fontFamily: P.fontBody, letterSpacing: 0.5 }}>by {fullArticle.writer}</div>
-              )}
-            </div>
             {fullArticle.header && (
               <div style={{ fontFamily: P.fontHeading, fontSize: "clamp(22px, 4vw, 34px)", fontWeight: P.dark ? 400 : 900, letterSpacing: P.dark ? 2 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, color: sectionColor, lineHeight: 1.1, marginBottom: 20 }}>
                 {fullArticle.header}
