@@ -337,7 +337,7 @@ function getPreviousEditionKey(editionKey: string): string | null {
 async function loadUsedLinks(editionKey: string): Promise<Set<string>> {
   const keys: string[] = [];
   let cur = editionKey;
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 150; i++) {
     const prev = getPreviousEditionKey(cur);
     if (!prev) break;
     keys.push(prev);
@@ -767,15 +767,28 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const hasImg2 = seededRandom(refSeed + 7) < 0.2;
   const hasKeyFacts = !hasCta && seededRandom(refSeed + 19) < 0.33;
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
+  const globalKey = `articles/${PROMPT_V}/by-slug/${slug}.json`;
 
-  // Check Blob cache first
+  // Check global slug cache first (reuse content if this link was ever processed)
+  try {
+    const global = await head(globalKey);
+    if (global) {
+      const res = await fetch(global.url, { cache: "no-store" });
+      if (res.ok) {
+        const cached = await res.json() as ArticleCommentary;
+        if (cached.body) return cached;
+      }
+    }
+  } catch { /* not found */ }
+
+  // Check edition-scoped blob cache
   try {
     const existing = await head(blobKey);
     if (existing) {
       const res = await fetch(existing.url, { cache: "no-store" });
       if (res.ok) {
         const cached = await res.json() as ArticleCommentary;
-        if (cached.body) return cached; // only use cache if body is non-empty
+        if (cached.body) return cached;
       }
     }
   } catch { /* not found — generate fresh */ }
@@ -937,9 +950,10 @@ Return JSON only:
     hasKeyFacts,
   };
 
-  // Save to Blob for this edition
+  // Save to Blob for this edition + global slug cache (reuse if link ever recurs)
   try {
     await put(blobKey, JSON.stringify(commentary), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
+    put(globalKey, JSON.stringify(commentary), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
   } catch { /* non-fatal */ }
 
   return commentary;
