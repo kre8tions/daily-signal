@@ -431,7 +431,7 @@ export async function EditionView({
 
         {!featureCreature && (
           <div style={{ gridColumn: "1 / 7", gridRow: "2 / 4", position: "relative" }}>
-            <RulerBorder color={P.inkLight} />
+            <FlightPathBorder color={P.inkLight} seed={0} />
             <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "40px 32px" }}>
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.inkLight, fontFamily: P.fontBody, opacity: 0.5 }}>Feature Creature</div>
               <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 28, color: P.inkLight, lineHeight: 1.2, textAlign: "center" as const, opacity: 0.4 }}>Population: 0</div>
