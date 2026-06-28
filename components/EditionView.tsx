@@ -225,8 +225,9 @@ function S1FlightPaths({ seed, color }: { seed: number; color: string }) {
 
   const start = pts[0];
   const end = pts[pts.length - 1];
-  // +90 because the SVG airplane nose points up (north) at 0°, not right
-  const planeAngle = Math.atan2(end.y - lastCp2.y, end.x - lastCp2.x) * 180 / Math.PI + 90;
+  // Plane at START, angle derived from first segment departure direction
+  const firstCp1 = { x: p[1].x + (p[2].x - p[0].x) * tension / 3, y: p[1].y + (p[2].y - p[0].y) * tension / 3 };
+  const planeAngle = Math.atan2(firstCp1.y - start.y, firstCp1.x - start.x) * 180 / Math.PI + 90;
 
   const startPx = `${(start.x / W * 100).toFixed(2)}%`;
   const startPy = `${(start.y / H * 100).toFixed(2)}%`;
@@ -238,12 +239,17 @@ function S1FlightPaths({ seed, color }: { seed: number; color: string }) {
       <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", inset: 0 }}>
         <path d={d} fill="none" stroke={color} strokeWidth="2.5" strokeDasharray="4 9" strokeLinecap="round" opacity="0.65" />
       </svg>
-      {/* X mark at start */}
-      <div style={{ position: "absolute", left: startPx, top: startPy, transform: "translate(-50%,-50%)", zIndex: 3, pointerEvents: "none", fontSize: 18, fontWeight: 900, color, opacity: 0.9, lineHeight: 1, fontFamily: "Arial Black, sans-serif", textShadow: "0 0 4px rgba(0,0,0,0.6)" }}>✕</div>
-      {/* Plane at end facing direction of travel */}
-      <div style={{ position: "absolute", left: endPx, top: endPy, transform: `translate(-50%,-50%) rotate(${planeAngle}deg)`, zIndex: 3, pointerEvents: "none", marginTop: -2 }}>
+      {/* Plane at start, facing direction of departure */}
+      <div style={{ position: "absolute", left: startPx, top: startPy, transform: `translate(-50%,-50%) rotate(${planeAngle}deg)`, zIndex: 3, pointerEvents: "none" }}>
         <svg width="32" height="32" viewBox="0 0 24 24" fill={color} opacity={0.9} xmlns="http://www.w3.org/2000/svg">
           <path d="M21,16l-9-5V3.5C12,2.67,11.33,2,10.5,2S9,2.67,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" />
+        </svg>
+      </div>
+      {/* Bold painted X at end */}
+      <div style={{ position: "absolute", left: endPx, top: endPy, transform: "translate(-50%,-50%)", zIndex: 3, pointerEvents: "none" }}>
+        <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+          <line x1="3" y1="3" x2="25" y2="25" stroke={color} strokeWidth="5.5" strokeLinecap="round" opacity="0.92" />
+          <line x1="25" y1="3" x2="3" y2="25" stroke={color} strokeWidth="5.5" strokeLinecap="round" opacity="0.92" />
         </svg>
       </div>
     </div>
