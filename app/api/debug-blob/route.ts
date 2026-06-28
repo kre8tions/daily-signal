@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { head } from "@vercel/blob";
-import { getEdition, getArchivedPageData } from "@/lib/stories";
+import { getEdition, getArchivedPageData, getPageData } from "@/lib/stories";
 
 export const dynamic = "force-dynamic";
 
@@ -52,5 +52,12 @@ export async function GET(req: Request) {
       : "returned null";
   } catch (e) { archivedResult = String(e); }
 
-  return NextResponse.json({ editionKey: key, blobs: checks, archiveContent, archivedResult });
+  // Test getPageData (goes through unstable_cache)
+  let pageDataResult: unknown = null;
+  try {
+    const pd = await getPageData();
+    pageDataResult = { storyCount: pd.stories.length, firstTitle: pd.stories[0]?.title, theme: pd.synthesis.theme };
+  } catch (e) { pageDataResult = String(e); }
+
+  return NextResponse.json({ editionKey: key, blobs: checks, archiveContent, archivedResult, pageDataResult });
 }
