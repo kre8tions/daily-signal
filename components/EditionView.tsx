@@ -440,8 +440,8 @@ export async function EditionView({
               const showBullets = !showPullquote && seededRandom(editionSeed + i * 59) < 0.25;
               const twoSentences = seededRandom(editionSeed + i * 71) < 0.5;
               const summaryText = twoSentences
-                ? s.summary
-                : (s.summary.match(/^[^.!?]+[.!?]/) ?? [s.summary])[0].trim();
+                ? s.summary!
+                : (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
               return (
                 <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
                   <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
