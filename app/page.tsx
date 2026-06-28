@@ -2,7 +2,7 @@ import { getPageData, getEdition, getArchiveList } from "@/lib/stories";
 import type { Metadata } from "next";
 import { EditionView } from "@/components/EditionView";
 
-export const revalidate = 14400;
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { stories, synthesis } = await getPageData();
