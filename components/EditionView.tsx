@@ -1,5 +1,6 @@
 import { urlToSlug, actionSlug, getSynthWriterIndex, type Story, type Synthesis, type FeatureCreature } from "@/lib/stories";
 import { P, QUOTE_FONT, SECTION_COLORS, ACTION_LABEL, ACTION_EMOJI, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL, TAGLINE } from "@/lib/palette";
+import { EditionCountdown } from "@/app/EditionCountdown";
 import { EmailCapture } from "@/app/EmailCapture";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -277,7 +278,10 @@ export async function EditionView({
         </div>
         <div style={{ textAlign: "right" as const }}>
           <div style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody }}>{dateStr}</div>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody, marginTop: 3 }}>{editionLabel}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 3 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{editionLabel}</div>
+            {!isArchive && <EditionCountdown fontBody={P.fontBody} accent={P.accent} inkLight={P.inkLight} />}
+          </div>
         </div>
       </div>
 
