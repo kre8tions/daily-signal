@@ -144,7 +144,7 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
         <div key={i} style={{ position: "absolute", left: `${(d.x / W * 100).toFixed(2)}%`, top: `${(d.y / H * 100).toFixed(2)}%`, width: 5, height: 5, borderRadius: "50%", background: color, opacity: 0.75, transform: "translate(-50%,-50%)", pointerEvents: "none", zIndex: 10 }} />
       ))}
       {/* Pin — HTML so it's never distorted */}
-      <div style={{ position: "absolute", left: sPx, top: sPy, transform: "translate(-50%, -100%)", zIndex: 11, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", left: sPx, top: sPy, transform: "translate(-50%, calc(-100% + 2.5px))", zIndex: 11, pointerEvents: "none" }}>
         <svg width="14" height="19" viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg">
           <circle cx="10" cy="10" r="10" fill={color} opacity={0.9} />
           <circle cx="10" cy="10" r="4.5" fill="#fff" opacity={0.9} />
