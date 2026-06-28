@@ -315,6 +315,34 @@ export async function getUniqueImages(articles: (RawItem & { imageQuery?: string
   return result;
 }
 
+// ── Edition key helpers ───────────────────────────────────────────────────────
+const SLOT_ORDER = ["early", "morning", "afternoon", "evening", "night"] as const;
+
+function getPreviousEditionKey(editionKey: string): string | null {
+  const parts = editionKey.split("_");
+  const slot = parts[parts.length - 1];
+  const date = parts.slice(0, -1).join("_");
+  const idx = SLOT_ORDER.indexOf(slot as typeof SLOT_ORDER[number]);
+  if (idx < 0) return null;
+  if (idx > 0) return `${date}_${SLOT_ORDER[idx - 1]}`;
+  const d = new Date(date + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() - 1);
+  return `${d.toISOString().slice(0, 10)}_night`;
+}
+
+async function loadUsedLinks(editionKey: string): Promise<Set<string>> {
+  const prevKey = getPreviousEditionKey(editionKey);
+  if (!prevKey) return new Set();
+  try {
+    const blob = await head(`archive/editions/${prevKey}.json`);
+    if (!blob) return new Set();
+    const res = await fetch(blob.url, { cache: "no-store" });
+    if (!res.ok) return new Set();
+    const data = await res.json() as { stories: { link: string }[] };
+    return new Set(data.stories.map(s => s.link));
+  } catch { return new Set(); }
+}
+
 // ── RSS fetch with section quotas ─────────────────────────────────────────────
 export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   const key = `raw2_${editionKey}`;
@@ -322,24 +350,39 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   if (hit) return hit;
 
   const activeFeeds = FEEDS.filter(f => f.section !== "Faith" || isSundayEarlyMorning());
-  const FRESH_MS = 10 * ONE_HOUR; // prefer articles published within last 10 hours
+  const FRESH_MS = 10 * ONE_HOUR;
   const now = Date.now();
 
-  const results = await Promise.allSettled(
-    activeFeeds.map(async (feed) => {
-      const timeout = new Promise<never>((_, r) => setTimeout(() => r(new Error("t")), 8000));
-      const parsed = await Promise.race([parser.parseURL(feed.url), timeout]);
-      const mapped = parsed.items.slice(0, 8).map((item) => ({
-        title: decodeEntities(item.title ?? ""), content: decodeEntities(item.contentSnippet ?? ""),
-        source: feed.source, section: feed.section,
-        link: item.link ?? "", pubDate: item.pubDate ?? new Date().toISOString(),
-        rssImageUrl: extractRssImage(item),
-      }));
-      // Prefer fresh articles; fall back to most recent if none are fresh
-      const fresh = mapped.filter(i => now - new Date(i.pubDate).getTime() < FRESH_MS);
-      return (fresh.length > 0 ? fresh : mapped).slice(0, 3);
-    })
-  );
+  // Load previous edition's used links + all feeds in parallel, then filter
+  const [rawFeeds, usedLinks] = await Promise.all([
+    Promise.allSettled(
+      activeFeeds.map(async (feed) => {
+        const timeout = new Promise<never>((_, r) => setTimeout(() => r(new Error("t")), 8000));
+        const parsed = await Promise.race([parser.parseURL(feed.url), timeout]);
+        return parsed.items.slice(0, 8).map((item) => ({
+          title: decodeEntities(item.title ?? ""), content: decodeEntities(item.contentSnippet ?? ""),
+          source: feed.source, section: feed.section,
+          link: item.link ?? "", pubDate: item.pubDate ?? new Date().toISOString(),
+          rssImageUrl: extractRssImage(item),
+        }));
+      })
+    ),
+    loadUsedLinks(editionKey),
+  ]);
+
+  const isF = (i: RawItem) => now - new Date(i.pubDate).getTime() < FRESH_MS;
+  const results = rawFeeds.map(r => {
+    if (r.status === "rejected") return { status: "fulfilled" as const, value: [] as RawItem[] };
+    const mapped = r.value;
+    const unusedFresh = mapped.filter(i => !usedLinks.has(i.link) && isF(i));
+    const allFresh    = mapped.filter(i => isF(i));
+    const unused      = mapped.filter(i => !usedLinks.has(i.link));
+    const pool = unusedFresh.length > 0 ? unusedFresh
+               : allFresh.length    > 0 ? allFresh
+               : unused.length      > 0 ? unused
+               : mapped;
+    return { status: "fulfilled" as const, value: pool.slice(0, 3) };
+  });
 
   const all = dedupeByTopic(results.flatMap((r) => r.status === "fulfilled" ? r.value : []));
   const CREATIVE = ["Entertainment", "Arts", "Culture", "Film", "Faith"];
