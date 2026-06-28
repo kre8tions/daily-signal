@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { revalidateTag } from "next/cache";
-import { getPageData, getFullArticle, getFeatureCreature, getEdition, saveToArchive, getWriterAssignments } from "@/lib/stories";
+import { buildPageData, getFullArticle, getFeatureCreature, getEdition, saveToArchive, getWriterAssignments } from "@/lib/stories";
 import { put } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export const maxDuration = 300;
 async function runWarm(editionKey: string, editionLabel: string) {
   const results: Record<string, "cached" | "generated" | "failed"> = {};
 
-  const pageData = await getPageData();
+  const pageData = await buildPageData(editionKey, editionLabel);
   const { stories, synthesis } = pageData;
   results["synthesis"] = synthesis.actions?.length > 0 && synthesis.theme ? "cached" : "failed";
 
