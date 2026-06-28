@@ -132,6 +132,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         )}
 
+        {/* CTA box — appears on ~20% of articles, seeded per story */}
+        {fullArticle?.cta && (
+          <div style={{ background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 16, paddingTop: 22, paddingBottom: 22, paddingLeft: 28, paddingRight: 28, marginBottom: 28, display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{fullArticle.cta.header}</div>
+            <p style={{ fontSize: 16, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody, margin: 0 }}>{fullArticle.cta.body}</p>
+          </div>
+        )}
+
         {/* Key Facts */}
         {story.bullets?.length ? (
           <div style={{ background: P.cardBg, borderRadius: 16, paddingTop: 22, paddingBottom: 22, paddingLeft: 28, paddingRight: 28, marginBottom: 28, boxShadow: P.shadow }}>

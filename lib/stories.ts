@@ -19,7 +19,7 @@ export interface RawItem {
 export interface Story {
   title: string; ownedTitle?: string; source: string; section: string; link: string; pubDate: string;
   imageUrl?: string; summary?: string; bullets?: string[];
-  pullquote?: string; cardStyle: "full" | "pullquote" | "brief";
+  pullquote?: string; cta?: { header: string; body: string }; cardStyle: "full" | "pullquote" | "brief";
   imageQuery?: string; content?: string;
 }
 
@@ -501,6 +501,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     bullets: arts[i]?.bullets,
     pullquote: arts[i]?.pullQuote,
     imageQuery: arts[i]?.imageQuery,
+    cta: arts[i]?.cta,
   }));
 
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
@@ -701,6 +702,7 @@ export interface ArticleCommentary {
   summary?: string;
   bullets?: string[];
   imageQuery?: string;
+  cta?: { header: string; body: string };
 }
 
 function breakLongSentences(text: string): string {
@@ -728,6 +730,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const PROMPT_V = "v14"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
+  const hasCta = seededRandom(refSeed + 13) < 0.2;
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
   // Check Blob cache first
@@ -794,14 +797,18 @@ Return JSON only, no markdown:
   "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
   "imageQuery": "4-6 words for Unsplash hero image. Include the main subject, industry, or setting so the image is specific to this story. No proper nouns, no brand names, no text, no logos. Examples: 'courtroom judge gavel law', 'electric car charging station night', 'military drone desert surveillance', 'cheerleaders stadium performance crowd'.",
   "header": "...",
-  "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."
+  "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."${hasCta ? `,
+  "cta": {
+    "header": "2-4 words. Active verb phrase. E.g. 'Try This Tonight', 'Start Here', 'Read This Next'.",
+    "body": "1 sentence. A specific thing to DO, WATCH, READ, or TRY that connects directly to this story. Name the exact thing. Beginner-friendly, low-commitment. Not a genre — a specific title, tool, experiment, or action."
+  }` : ""}
 }`,
     }],
   });
 
   const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
   const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  let pass1: { ownedTitle?: string; summary?: string; bullets?: string[]; imageQuery?: string; header?: string; body?: string } = {};
+  let pass1: { ownedTitle?: string; summary?: string; bullets?: string[]; imageQuery?: string; header?: string; body?: string; cta?: { header: string; body: string } } = {};
   try {
     pass1 = JSON.parse(text1);
     if (!pass1.body) throw new Error();
@@ -881,6 +888,7 @@ Return JSON only:
     imageUrl2: imageUrl2 ?? undefined,
     body: breakLongSentences(body),
     writer: writer?.name ?? "",
+    cta: pass1.cta ?? undefined,
   };
 
   // Save to Blob for this edition
