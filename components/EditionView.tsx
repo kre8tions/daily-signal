@@ -200,59 +200,56 @@ function PixelEdgeTop({ color, seed = 0, height = 32 }: { color: string; seed?: 
 function S1FlightPaths({ seed, color }: { seed: number; color: string }) {
   const W = 800, H = 500;
   const sr = (n: number) => { const x = Math.sin(seed * 9301 + n * 49297 + 233995) * 10000; return x - Math.floor(x); };
-  const pt = (nx: number, ny: number) => ({ x: nx * W, y: ny * H });
 
-  // Generate 3-4 flight paths, each with random start/end + 1-2 control point loops
-  const numPaths = 3 + Math.floor(sr(0) * 2);
-  const paths: { d: string; planeX: number; planeY: number; angle: number }[] = [];
+  // Single path: random start, random end, 1-2 loop waypoints
+  const start = { x: sr(1) * W * 0.7 + W * 0.05, y: sr(2) * H * 0.7 + H * 0.1 };
+  const end   = { x: sr(3) * W * 0.7 + W * 0.15, y: sr(4) * H * 0.7 + H * 0.1 };
+  const numLoops = 1 + Math.floor(sr(5) * 2);
 
-  for (let p = 0; p < numPaths; p++) {
-    const base = p * 17;
-    const start = pt(sr(base + 1), sr(base + 2));
-    const end = pt(sr(base + 3), sr(base + 4));
+  let d = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`;
+  let prev = start;
+  let lastCp2 = start;
 
-    // 1-2 loop control points in between
-    const numLoops = 1 + Math.floor(sr(base + 5) * 2);
-    let d = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`;
-    let prev = start;
-
-    for (let l = 0; l < numLoops; l++) {
-      const lb = base + 6 + l * 4;
-      const mid = pt(sr(lb) * 0.6 + 0.2, sr(lb + 1) * 0.6 + 0.2);
-      const cp1 = { x: prev.x + (sr(lb + 2) - 0.5) * W * 0.8, y: prev.y + (sr(lb + 3) - 0.5) * H * 0.8 };
-      const cp2 = { x: mid.x + (sr(lb + 4) - 0.5) * W * 0.5, y: mid.y + (sr(lb + 5) - 0.5) * H * 0.5 };
-      d += ` C ${cp1.x.toFixed(1)} ${cp1.y.toFixed(1)}, ${cp2.x.toFixed(1)} ${cp2.y.toFixed(1)}, ${mid.x.toFixed(1)} ${mid.y.toFixed(1)}`;
-      prev = mid;
-    }
-
-    // Final curve to end
-    const fcp1 = { x: prev.x + (sr(base + 13) - 0.5) * W * 0.6, y: prev.y + (sr(base + 14) - 0.5) * H * 0.6 };
-    const fcp2 = { x: end.x + (sr(base + 15) - 0.5) * W * 0.3, y: end.y + (sr(base + 16) - 0.5) * H * 0.3 };
-    d += ` C ${fcp1.x.toFixed(1)} ${fcp1.y.toFixed(1)}, ${fcp2.x.toFixed(1)} ${fcp2.y.toFixed(1)}, ${end.x.toFixed(1)} ${end.y.toFixed(1)}`;
-
-    // Angle at end for plane rotation (approximate tangent)
-    const angle = Math.atan2(end.y - fcp2.y, end.x - fcp2.x) * 180 / Math.PI;
-    paths.push({ d, planeX: end.x, planeY: end.y, angle });
+  for (let l = 0; l < numLoops; l++) {
+    const lb = 6 + l * 6;
+    const mid = { x: sr(lb) * W * 0.6 + W * 0.2, y: sr(lb + 1) * H * 0.6 + H * 0.2 };
+    const cp1 = { x: prev.x + (sr(lb + 2) - 0.5) * W * 0.8, y: prev.y + (sr(lb + 3) - 0.5) * H * 0.8 };
+    const cp2 = { x: mid.x + (sr(lb + 4) - 0.5) * W * 0.5, y: mid.y + (sr(lb + 5) - 0.5) * H * 0.5 };
+    d += ` C ${cp1.x.toFixed(1)} ${cp1.y.toFixed(1)}, ${cp2.x.toFixed(1)} ${cp2.y.toFixed(1)}, ${mid.x.toFixed(1)} ${mid.y.toFixed(1)}`;
+    lastCp2 = cp2; prev = mid;
   }
+
+  const fcp1 = { x: prev.x + (sr(20) - 0.5) * W * 0.5, y: prev.y + (sr(21) - 0.5) * H * 0.5 };
+  const fcp2 = { x: end.x + (sr(22) - 0.5) * W * 0.25, y: end.y + (sr(23) - 0.5) * H * 0.25 };
+  d += ` C ${fcp1.x.toFixed(1)} ${fcp1.y.toFixed(1)}, ${fcp2.x.toFixed(1)} ${fcp2.y.toFixed(1)}, ${end.x.toFixed(1)} ${end.y.toFixed(1)}`;
+  lastCp2 = fcp2;
+
+  const planeAngle = Math.atan2(end.y - lastCp2.y, end.x - lastCp2.x) * 180 / Math.PI;
+
+  const startPx = `${(start.x / W * 100).toFixed(2)}%`;
+  const startPy = `${(start.y / H * 100).toFixed(2)}%`;
+  const endPx   = `${(end.x   / W * 100).toFixed(2)}%`;
+  const endPy   = `${(end.y   / H * 100).toFixed(2)}%`;
 
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}>
       <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", inset: 0 }}>
-        <defs>
-          <style>{`@keyframes dash-march{to{stroke-dashoffset:-60}}`}</style>
-        </defs>
-        {paths.map((path, i) => (
-          <path key={i} d={path.d} fill="none" stroke={color} strokeWidth="2" strokeDasharray="8 10" opacity="0.55"
-            style={{ animation: `dash-march ${3 + i * 0.7}s linear infinite` }} />
-        ))}
+        <path d={d} fill="none" stroke={color} strokeWidth="2.5" strokeDasharray="4 9" strokeLinecap="round" opacity="0.65" />
       </svg>
-      {paths.map((path, i) => (
-        <div key={i} style={{ position: "absolute", left: `${(path.planeX / W * 100).toFixed(2)}%`, top: `${(path.planeY / H * 100).toFixed(2)}%`, transform: `translate(-50%,-50%) rotate(${path.angle}deg)`, zIndex: 3, pointerEvents: "none" }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill={color} opacity={0.85} xmlns="http://www.w3.org/2000/svg">
-            <path d="M21,16l-9-5V3.5C12,2.67,11.33,2,10.5,2S9,2.67,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" />
-          </svg>
-        </div>
-      ))}
+      {/* Start pin */}
+      <div style={{ position: "absolute", left: startPx, top: startPy, transform: "translate(-50%, calc(-100% + 2.5px))", zIndex: 3, pointerEvents: "none" }}>
+        <svg width="14" height="19" viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="10" cy="10" r="10" fill={color} opacity={0.9} />
+          <circle cx="10" cy="10" r="4.5" fill="#fff" opacity={0.9} />
+          <path d="M10,28 L4,14 Q10,2 16,14 Z" fill={color} opacity={0.9} />
+        </svg>
+      </div>
+      {/* Plane at end, rotated to direction of travel */}
+      <div style={{ position: "absolute", left: endPx, top: endPy, transform: `translate(-50%,-50%) rotate(${planeAngle}deg)`, zIndex: 3, pointerEvents: "none", marginTop: -2 }}>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill={color} opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+          <path d="M21,16l-9-5V3.5C12,2.67,11.33,2,10.5,2S9,2.67,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" />
+        </svg>
+      </div>
     </div>
   );
 }
