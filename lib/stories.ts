@@ -503,7 +503,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   const rawWithQuery = raw.map((r, i) => ({ ...r, imageQuery: arts[i]?.imageQuery }));
   const images = await getUniqueImages(rawWithQuery);
 
-  const stories: Story[] = raw.map((r, i) => ({
+  const allStories: Story[] = raw.map((r, i) => ({
     ...r,
     imageUrl: images[i],
     cardStyle: CARD_STYLES[i] ?? "brief",
@@ -515,6 +515,14 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     cta: arts[i]?.cta,
     hasKeyFacts: arts[i]?.hasKeyFacts,
   }));
+
+  // Promote successful stories into s1/s2 if they failed; push failed to end as placeholders
+  const successful = allStories.filter(s => s.summary);
+  const failed = allStories.filter(s => !s.summary);
+  const stories: Story[] = [
+    ...successful.map((s, i) => ({ ...s, cardStyle: CARD_STYLES[i] ?? "brief" as Story["cardStyle"] })),
+    ...failed.map(s => ({ ...s, cardStyle: "brief" as const })),
+  ];
 
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);

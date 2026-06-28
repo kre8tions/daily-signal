@@ -436,15 +436,21 @@ export async function EditionView({
         return (
           <div className="ds-row2" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 0, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
             {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).map((s, i) => {
+              if (!s?.summary) return (
+                <div key={i} style={{ display: "flex" }}>
+                  <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, background: P.cardBg, boxShadow: P.shadow, flex: 1, alignItems: "center", justifyContent: "center", minHeight: 200, opacity: 0.35 }}>
+                    <style>{`@keyframes ph-pulse{0%,100%{opacity:0.35}50%{opacity:0.65}}`}</style>
+                    <div style={{ animation: "ph-pulse 2.4s ease-in-out infinite", fontSize: 10, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>Next Edition</div>
+                  </div>
+                </div>
+              );
               const showPullquote = seededRandom(editionSeed + i * 37) < 0.25;
               const showBullets = !showPullquote && seededRandom(editionSeed + i * 59) < 0.25;
               const twoSentences = seededRandom(editionSeed + i * 71) < 0.5;
-              const summaryText = s?.summary
-                ? twoSentences
-                  ? s.summary
-                  : (s.summary.match(/^[^.!?]+[.!?]/) ?? [s.summary])[0].trim()
-                : undefined;
-              return s && (
+              const summaryText = twoSentences
+                ? s.summary
+                : (s.summary.match(/^[^.!?]+[.!?]/) ?? [s.summary])[0].trim();
+              return (
                 <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
                   <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
                     {s.imageUrl && (
