@@ -25,6 +25,7 @@ export interface Story {
 
 export interface Synthesis {
   theme: string; observation: string; takeaways: string[]; conclusion: string; actions: string[];
+  imageUrl?: string;
 }
 
 export interface PageData {
@@ -476,6 +477,11 @@ Return JSON only, no markdown:
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   try {
     const parsed = JSON.parse(cleaned) as Synthesis;
+    // Fetch a Unsplash image using the most evocative words from the theme
+    const themeQuery = (parsed.theme || "").replace(/[^a-zA-Z\s]/g, "").trim();
+    if (themeQuery) {
+      parsed.imageUrl = await fetchUnsplash(themeQuery, undefined, 1, themeQuery).catch(() => undefined);
+    }
     put(blobKey, JSON.stringify(parsed), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
     return parsed;
   } catch {

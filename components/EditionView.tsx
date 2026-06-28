@@ -217,11 +217,18 @@ function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synt
             </svg>
           </div>
           {synthesis.observation && (
-            <div style={{ paddingTop: 16, paddingBottom: 14, paddingLeft: 28, paddingRight: 28, borderBottom: `1px solid ${P.tint}44` }}>
-              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Observation</div>
-              {synthesis.observation.split("\n\n").filter(Boolean).map((para, i) => (
-                <p key={i} style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: i < synthesis.observation.split("\n\n").length - 1 ? 14 : 0, maxWidth: 820, fontFamily: P.fontBody }}>{para}</p>
-              ))}
+            <div style={{ paddingTop: 16, paddingBottom: 14, paddingLeft: 28, paddingRight: 28, borderBottom: `1px solid ${P.tint}44`, display: "flex", alignItems: "flex-start", gap: 28 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Observation</div>
+                {synthesis.observation.split("\n\n").filter(Boolean).map((para, i) => (
+                  <p key={i} style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: i < synthesis.observation.split("\n\n").length - 1 ? 14 : 0, fontFamily: P.fontBody }}>{para}</p>
+                ))}
+              </div>
+              {synthesis.imageUrl && (
+                <div style={{ flexShrink: 0, width: 200, height: 200, borderRadius: "50%", overflow: "hidden", border: `3px solid ${P.accent}44`, boxShadow: `0 0 0 6px ${P.accent}18`, marginTop: 4 }}>
+                  <img src={synthesis.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
+                </div>
+              )}
             </div>
           )}
           <div className="ds-synthesis-body" style={{ paddingTop: 18, paddingBottom: 24, paddingLeft: 28, paddingRight: 28, display: "grid", gridTemplateColumns: "3fr 2fr", gap: 36 }}>
