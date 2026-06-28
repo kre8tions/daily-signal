@@ -757,7 +757,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v15"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v16"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
@@ -806,7 +806,7 @@ Voice — write like this:
 - Vary sentence length. Short punches. Then one that earns it. Then short again.
 - Vivid and specific — name the thing, don't describe it abstractly.
 - No academic hedging: never "one might argue", "it is worth noting", "this suggests that".
-- No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...".
+- No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...", "No one is saying out loud...".
 
 Also return:
 - header: 3-5 words. Magazine sub-headline — specific, not generic. No colons. BAD: "The Bigger Picture", "What This Means", "A New Era". GOOD: "The Quiet Monopoly", "Debt That Builds Nations", "Nobody Saw It Coming".
@@ -866,10 +866,10 @@ Return JSON only, no markdown:
 
 Two jobs only:
 1. Enforce the paragraph structure below
-2. Break any sentence over 20 words at a natural clause boundary — em-dash, semicolon, "and", "but", "because", "which", "so". Keep both halves punchy.
+2. Break any sentence over 20 words at a natural clause boundary — em-dash, "and", "but", "because", "which", "so". Keep both halves punchy.
 
 Structure:
-- para1: EXACTLY 1 sentence — the hook. Irreversible opener. No exceptions.
+- para1: EXACTLY 1 sentence — the hook. Irreversible opener. No exceptions. NEVER split at a semicolon — rewrite to remove it if needed.
 - para2: EXACTLY 1 sentence — deepens or reframes the hook. Creates tension.
 - para3: 1-2 sentences — first insight or evidence. The "here's why" moment.
 - para4: 2-3 sentences — the turn. Complication, contradiction, or escalation.
@@ -878,12 +878,13 @@ Structure:
 Also return:
 - header2: 3-5 words. Second sub-headline covering the second half of the argument. Specific, no colons, not generic.
 - imageQuery2: 4-6 concrete atmospheric words for a second Unsplash search. No names, no text, no logos. Think: texture, environment, light, emotion.
+- pullQuote: One genuinely interesting sentence copied verbatim from para2, para3, or para4 — never para1, never para5. Pick the most arresting, specific, or surprising sentence. Word-for-word identical to what appears in the body.
 
 Body to restructure:
 "${body}"
 
 Return JSON only:
-{"header2":"...","imageQuery2":"...","para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`,
+{"header2":"...","imageQuery2":"...","pullQuote":"...","para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`,
         }],
       });
       const raw2 = pass2msg.content[0].type === "text" ? pass2msg.content[0].text : "{}";
@@ -901,7 +902,8 @@ Return JSON only:
           .join("\n\n");
         if (scaffold.header2) pass1Header2 = scaffold.header2 as string;
         if (scaffold.imageQuery2) pass1ImageQuery2 = scaffold.imageQuery2 as string;
-        if (scaffold.para1) extractedPullQuote = scaffold.para1 as string;
+        if (scaffold.pullQuote) extractedPullQuote = scaffold.pullQuote as string;
+        else if (scaffold.para2) extractedPullQuote = scaffold.para2 as string;
       }
     } catch { /* pass2 failed — use pass1 body as-is */ }
   }
