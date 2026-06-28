@@ -147,7 +147,7 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
       </svg>
       {/* Pin — HTML so it's never distorted */}
       <div style={{ position: "absolute", left: sPx, top: sPy, transform: "translate(-50%, -100%)", zIndex: 11, pointerEvents: "none" }}>
-        <svg width="20" height="28" viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg">
+        <svg width="15" height="21" viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg">
           <circle cx="10" cy="10" r="10" fill={color} opacity={0.9} />
           <circle cx="10" cy="10" r="4.5" fill="#fff" opacity={0.9} />
           <path d="M10,28 L4,14 Q10,2 16,14 Z" fill={color} opacity={0.9} />
@@ -155,7 +155,7 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
       </div>
       {/* Airplane — HTML so it's never distorted */}
       <div style={{ position: "absolute", left: ePx, top: ePy, transform: `translate(-50%, -50%) rotate(${planeAngle}deg)`, zIndex: 11, pointerEvents: "none" }}>
-        <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg width="33" height="33" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path d="M21,16l-9-5V3.5C12,2.7,11.3,2,10.5,2S9,2.7,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" fill={color} opacity={0.95} />
         </svg>
       </div>
