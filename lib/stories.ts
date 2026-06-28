@@ -545,14 +545,11 @@ export async function getPageData(): Promise<PageData> {
   const { label: editionLabel, key: editionKey } = getEdition();
   return unstable_cache(
     async () => {
-      try {
-        return await buildPageData(editionKey, editionLabel);
-      } catch {
-        // Claude unavailable — serve last successful generation from archive blob
-        const archived = await getArchivedPageData(editionKey);
-        if (archived) return archived;
-        return { stories: [], synthesis: { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] }, editionLabel };
-      }
+      // Never generate live — pre-warm owns all generation.
+      // Read from in-memory cache or archive blob only.
+      const archived = await getArchivedPageData(editionKey);
+      if (archived) return archived;
+      return { stories: [], synthesis: { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] }, editionLabel };
     },
     [editionKey],
     { revalidate: 28800, tags: [`edition-${editionKey}`] }
