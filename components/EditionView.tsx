@@ -65,32 +65,60 @@ function SpaceInvaderSVG({ color }: { color: string }) {
   );
 }
 
-function RulerBorder({ color, seed = 0, squiggle = 1 }: { color: string; seed?: number; squiggle?: number }) {
-  const W = 1000; const H = 600;
-  const STEP = 6; const BASE = 5;
-  // Vary phase offsets and spike threshold per edition seed
-  const p1 = (seed * 0.37) % (Math.PI * 2);
-  const p2 = (seed * 0.71) % (Math.PI * 2);
-  const p3 = (seed * 1.13) % (Math.PI * 2);
-  const spikeThresh = 0.45 + (seed % 7) * 0.04; // 0.45–0.69, varies per edition
-  const noise = (i: number): number => {
-    const t = i * 0.18;
-    const tremor = Math.sin(t * 4.1 + p1) * 2.25 * squiggle + Math.sin(t * 9.7 + p2) * 1.08 * squiggle + Math.sin(t * 17.3 + p3) * 0.54;
-    const spikeSeed = Math.sin(t * 2.3 + 0.9) * Math.sin(t * 3.7 + 2.1);
-    const spike = spikeSeed > spikeThresh ? spikeSeed * 19.8 * squiggle : spikeSeed < -spikeThresh ? spikeSeed * 16.2 * squiggle : 0;
-    return tremor + spike;
+function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number }) {
+  const W = 1000; const H = 600; const R = 20; const PAD = 6;
+  const sr = (n: number) => { const s = Math.sin(seed * 9301 + n * 49297 + 233995); return s - Math.floor(s); };
+
+  // Perimeter as points: top→right→bottom→left corners smoothed
+  // Total perimeter length (approx)
+  const perim = 2 * (W + H);
+  const closure = 0.50 + sr(0) * 0.45; // 50–95% of perimeter
+  const startFrac = sr(1); // where on perimeter the pin starts
+  const startDist = startFrac * perim;
+  const endDist = startDist + closure * perim;
+
+  // Given a distance along the perimeter, return {x, y, angle}
+  const sides = [
+    { len: W, x: (d: number) => PAD + d, y: () => PAD, a: 90 },            // top L→R
+    { len: H, x: () => W - PAD, y: (d: number) => PAD + d, a: 180 },       // right T→B
+    { len: W, x: (d: number) => W - PAD - d, y: () => H - PAD, a: 270 },   // bottom R→L
+    { len: H, x: () => PAD, y: (d: number) => H - PAD - d, a: 0 },         // left B→T
+  ];
+  const ptAt = (dist: number) => {
+    let d = ((dist % perim) + perim) % perim;
+    for (const s of sides) { if (d <= s.len) return { x: s.x(d), y: s.y(d), a: s.a }; d -= s.len; }
+    return { x: PAD, y: PAD, a: 90 };
   };
-  const pts: string[] = [];
-  let i = 0;
-  for (let x = 0; x <= W; x += STEP, i++) pts.push(`${i === 0 ? "M" : "L"}${x.toFixed(1)},${(BASE + noise(i)).toFixed(1)}`);
-  for (let y = STEP; y <= H; y += STEP, i++) pts.push(`L${(W - BASE - noise(i)).toFixed(1)},${y.toFixed(1)}`);
-  for (let x = W - STEP; x >= 0; x -= STEP, i++) pts.push(`L${x.toFixed(1)},${(H - BASE - noise(i)).toFixed(1)}`);
-  for (let y = H - STEP; y >= 0; y -= STEP, i++) pts.push(`L${(BASE + noise(i)).toFixed(1)},${y.toFixed(1)}`);
+
+  // Build dot positions along the path
+  const DOT_SPACING = 14;
+  const dots: { x: number; y: number }[] = [];
+  for (let d = startDist + DOT_SPACING; d < endDist - DOT_SPACING * 2; d += DOT_SPACING) {
+    const p = ptAt(d); dots.push({ x: p.x, y: p.y });
+  }
+
+  const start = ptAt(startDist);
+  const end = ptAt(endDist);
+  const planeAngle = end.a;
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 }} xmlns="http://www.w3.org/2000/svg">
-      <defs><filter id="seismic-ink" x="-2%" y="-2%" width="104%" height="104%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="5" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
-      <path d={pts.join(" ") + " Z"} fill="none" stroke={color} strokeWidth={3.5} strokeOpacity={0.15} strokeLinejoin="round" strokeLinecap="round" transform="translate(1,1)" />
-      <path d={pts.join(" ") + " Z"} fill="none" stroke={color} strokeWidth={2} strokeOpacity={0.85} strokeLinejoin="round" strokeLinecap="round" filter="url(#seismic-ink)" />
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 }}
+      xmlns="http://www.w3.org/2000/svg">
+      {/* Dots */}
+      {dots.map((d, i) => <circle key={i} cx={d.x} cy={d.y} r={3.5} fill={color} opacity={0.7} />)}
+      {/* Pin at start */}
+      <g transform={`translate(${start.x},${start.y})`}>
+        <circle cx={0} cy={-13} r={9} fill={color} opacity={0.9} />
+        <circle cx={0} cy={-13} r={4} fill="#fff" opacity={0.9} />
+        <path d="M0,0 L-6,-8 Q0,-22 6,-8 Z" fill={color} opacity={0.9} />
+      </g>
+      {/* Airplane at end */}
+      <g transform={`translate(${end.x},${end.y}) rotate(${planeAngle})`}>
+        <path d="M0,-14 L5,6 L0,3 L-5,6 Z" fill={color} opacity={0.95} />
+        <path d="M-12,0 L12,0 L10,3 L-10,3 Z" fill={color} opacity={0.95} />
+        <path d="M-5,5 L5,5 L4,8 L-4,8 Z" fill={color} opacity={0.95} />
+      </g>
     </svg>
   );
 }
@@ -373,10 +401,9 @@ export async function EditionView({
           const slug = fc.editionKey ?? editionKey;
           const borderSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 3), 0);
           const borderColor = seededRandom(borderSeed) > 0.5 ? P.accent2 : color;
-          const squiggle = 0.6 + seededRandom(borderSeed + 1) * 1.2; // 0.6–1.8
           return (
             <div style={{ gridColumn: "1 / 7", gridRow: "2 / 4", position: "relative" }}>
-              <RulerBorder color={borderColor} seed={borderSeed} squiggle={squiggle} />
+              <FlightPathBorder color={borderColor} seed={borderSeed} />
               <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none", color: "inherit", display: "flex", height: "100%" }}>
                 <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, display: "flex", flexDirection: "column", flex: 1 }}>
                   {fc.imageUrl && (
