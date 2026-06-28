@@ -3,16 +3,16 @@ import { useEffect, useState } from "react";
 
 function getNextEditionStart(): Date {
   const now = new Date();
-  const h = now.getHours();
+  const h = now.getUTCHours();
   const next = new Date(now);
-  next.setSeconds(0);
-  next.setMilliseconds(0);
-  if (h < 5)       { next.setHours(5,  0, 0, 0); }
-  else if (h < 9)  { next.setHours(9,  0, 0, 0); }
-  else if (h < 13) { next.setHours(13, 0, 0, 0); }
-  else if (h < 17) { next.setHours(17, 0, 0, 0); }
-  else if (h < 21) { next.setHours(21, 0, 0, 0); }
-  else             { next.setDate(next.getDate() + 1); next.setHours(5, 0, 0, 0); }
+  next.setUTCSeconds(0);
+  next.setUTCMilliseconds(0);
+  if (h < 5)       { next.setUTCHours(5,  0, 0, 0); }
+  else if (h < 9)  { next.setUTCHours(9,  0, 0, 0); }
+  else if (h < 13) { next.setUTCHours(13, 0, 0, 0); }
+  else if (h < 17) { next.setUTCHours(17, 0, 0, 0); }
+  else if (h < 21) { next.setUTCHours(21, 0, 0, 0); }
+  else             { next.setUTCDate(next.getUTCDate() + 1); next.setUTCHours(5, 0, 0, 0); }
   return next;
 }
 
