@@ -121,9 +121,9 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
   const startDist = sr(1) * totalLen;
   const endDist = startDist + closure * totalLen;
 
-  const DOT_SPACING = 13;
+  const DOT_SPACING = 26;
   const dots: { x: number; y: number }[] = [];
-  for (let d = startDist + DOT_SPACING; d < endDist - DOT_SPACING * 2; d += DOT_SPACING) {
+  for (let d = startDist + DOT_SPACING; d < endDist - DOT_SPACING; d += DOT_SPACING) {
     const p = ptAt(d); dots.push({ x: p.x, y: p.y });
   }
 
@@ -141,7 +141,7 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
     <>
       {/* Dots as HTML so they stay perfectly circular */}
       {dots.map((d, i) => (
-        <div key={i} style={{ position: "absolute", left: `${(d.x / W * 100).toFixed(2)}%`, top: `${(d.y / H * 100).toFixed(2)}%`, width: 7, height: 7, borderRadius: "50%", background: color, opacity: 0.75, transform: "translate(-50%,-50%)", pointerEvents: "none", zIndex: 10 }} />
+        <div key={i} style={{ position: "absolute", left: `${(d.x / W * 100).toFixed(2)}%`, top: `${(d.y / H * 100).toFixed(2)}%`, width: 5, height: 5, borderRadius: "50%", background: color, opacity: 0.75, transform: "translate(-50%,-50%)", pointerEvents: "none", zIndex: 10 }} />
       ))}
       {/* Pin — HTML so it's never distorted */}
       <div style={{ position: "absolute", left: sPx, top: sPy, transform: "translate(-50%, -100%)", zIndex: 11, pointerEvents: "none" }}>
