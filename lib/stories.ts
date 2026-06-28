@@ -758,7 +758,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v17"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v18"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
@@ -869,10 +869,10 @@ Return JSON only, no markdown:
 
 Two jobs only:
 1. Enforce the paragraph structure below
-2. Break any sentence over 20 words at a natural clause boundary — em-dash, "and", "but", "because", "which", "so". Keep both halves punchy.
+2. Break any sentence over 20 words at a natural clause boundary — em-dash, "and", "but", "because", "which", "so". Keep both halves punchy. NEVER break at a semicolon — rewrite to remove it entirely.
 
 Structure:
-- para1: EXACTLY 1 sentence — the hook. Irreversible opener. No exceptions. NEVER split at a semicolon — rewrite to remove it if needed.
+- para1: EXACTLY 1 sentence — the hook. Irreversible opener. No exceptions.
 - para2: EXACTLY 1 sentence — deepens or reframes the hook. Creates tension.
 - para3: 1-2 sentences — first insight or evidence. The "here's why" moment.
 - para4: 2-3 sentences — the turn. Complication, contradiction, or escalation.
@@ -1005,7 +1005,7 @@ Voice:
 - Vary sentence length. Short punches. Then one that earns it. Then short again.
 - Vivid and specific — name the actual thing, don't describe it abstractly.
 - No hedging: never "one might argue", "it is worth noting", "this suggests that".
-- No throat-clearing: never "In a world where...", "It's no secret...", "Now more than ever...".
+- No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...", "No one is saying out loud...".
 
 Return JSON only, no markdown:
 {
@@ -1038,7 +1038,7 @@ Return JSON only, no markdown:
 
 Two jobs only:
 1. Enforce the paragraph structure below
-2. Break any sentence over 20 words at a natural clause boundary — em-dash, semicolon, "and", "but", "because", "which", "so". Keep both halves punchy.
+2. Break any sentence over 20 words at a natural clause boundary — em-dash, "and", "but", "because", "which", "so". Keep both halves punchy. NEVER break at a semicolon — rewrite to remove it entirely.
 
 Structure:
 - para1: EXACTLY 1 sentence — the hook. The irreversible opener. No exceptions.
