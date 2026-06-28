@@ -829,12 +829,13 @@ Return JSON only, no markdown:
     pass1 = { header: "", body: isJson ? "" : text1 };
   }
 
-  // ── Pass 2: structure — scaffold the free-write into the paragraph cadence ──
+  // ── Pass 2: structure — only for s1 (full) and s2 (pullquote); brief cards skip ──
+  const isBrief = story.cardStyle === "brief";
   let body = pass1.body ?? "";
   let pass1Header2 = "";
   let pass1ImageQuery2 = "";
   let extractedPullQuote = "";
-  if (body) {
+  if (body && !isBrief) {
     try {
       const pass2msg = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
@@ -885,7 +886,7 @@ Return JSON only:
     } catch { /* pass2 failed — use pass1 body as-is */ }
   }
 
-  const imageUrl2 = hasImg2
+  const imageUrl2 = (!isBrief && hasImg2)
     ? (pass1ImageQuery2
         ? await fetchUnsplash(pass1ImageQuery2, story.section, 1)
         : await fetchUnsplash(story.title, story.section, 2))
