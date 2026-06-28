@@ -123,7 +123,7 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
 
   const DOT_SPACING = 26;
   const dots: { x: number; y: number }[] = [];
-  for (let d = startDist + DOT_SPACING; d < endDist - DOT_SPACING * 2.5; d += DOT_SPACING) {
+  for (let d = startDist + DOT_SPACING; d < endDist - DOT_SPACING * 1.8; d += DOT_SPACING) {
     const p = ptAt(d); dots.push({ x: p.x, y: p.y });
   }
 
