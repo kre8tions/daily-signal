@@ -210,7 +210,7 @@ function S1FlightPaths({ seed, color }: { seed: number; color: string }) {
   }
 
   // Convert Catmull-Rom to cubic bezier segments (tension = 0.5)
-  const tension = 0.5;
+  const tension = 0.35;
   // Duplicate first and last for phantom endpoints
   const p = [pts[0], ...pts, pts[pts.length - 1]];
   let d = `M ${p[1].x.toFixed(1)} ${p[1].y.toFixed(1)}`;
@@ -225,8 +225,8 @@ function S1FlightPaths({ seed, color }: { seed: number; color: string }) {
 
   const start = pts[0];
   const end = pts[pts.length - 1];
-  // Plane faces direction of travel at the end
-  const planeAngle = Math.atan2(end.y - lastCp2.y, end.x - lastCp2.x) * 180 / Math.PI;
+  // +90 because the SVG airplane nose points up (north) at 0°, not right
+  const planeAngle = Math.atan2(end.y - lastCp2.y, end.x - lastCp2.x) * 180 / Math.PI + 90;
 
   const startPx = `${(start.x / W * 100).toFixed(2)}%`;
   const startPy = `${(start.y / H * 100).toFixed(2)}%`;
