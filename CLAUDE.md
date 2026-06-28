@@ -1,142 +1,105 @@
-# The Daily Signal — Project Context
+# The Daily Signal — Claude Context
 
-## Memory
-**At the start of every session**, read `.claude/memory/project.md` — this is the accumulated knowledge base for this project, updated each session with decisions, bug fixes, and context that isn't obvious from the code.
-
-## Live URLs
-- Production: https://daily-signal-omega.vercel.app/ (temporary — needs custom domain)
-- GitHub: github.com/kre8tions/daily-signal (`main` branch)
-- Local: C:\dev\daily-signal
-
-## Git
-```
-/mingw64/bin/git -C /c/dev/daily-signal add .
-/mingw64/bin/git -C /c/dev/daily-signal commit -m "message"
-/mingw64/bin/git -C /c/dev/daily-signal push origin main
-```
-Vercel auto-deploys on every push to `main`. Always check Vercel dashboard for red error indicator — build failures are silent.
+Live: https://daily-signal-omega.vercel.app/ (custom domain pending)
+GitHub: github.com/kre8tions/daily-signal (main branch)
+Local: C:\dev\daily-signal
 
 ## Stack
-- Next.js 15 App Router (server components only, no client except EmailCapture)
-- Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) — story analysis, article commentary, FC generation
-- Vercel Blob (`@vercel/blob`) — persistent cache for articles, FC, archive, subscribers, photos
-- Unsplash API — image fallback when OG scrape fails
-- rss-parser — RSS feed ingestion
-- File-based TTL cache in `/tmp` — homepage analysis (unreliable across Lambda instances)
+Next.js 15 App Router (server components, no client except EmailCapture), Claude Haiku 4.5 (`claude-haiku-4-5-20251001`), Unsplash API, Vercel Blob, rss-parser, Vercel Pro.
 
 ## Env Vars (set in Vercel dashboard)
 - `ANTHROPIC_API_KEY`
 - `UNSPLASH_ACCESS_KEY`
-- `BLOB_READ_WRITE_TOKEN` — auto-injected by Vercel, do not set manually
-
-## Key Files
-| File | Purpose |
-|------|---------|
-| `app/page.tsx` | Homepage 12-col bento grid + Synthesis + EmailCapture + What To Do |
-| `app/article/[slug]/page.tsx` | Article detail — header + pull-quote + commentary |
-| `app/feature-creature/[slug]/page.tsx` | FC article page (blob v18) |
-| `app/archive/page.tsx` | Archive list |
-| `app/archive/[key]/page.tsx` | Single archived edition view |
-| `app/api/revalidate/route.ts` | Clears file cache + revalidatePath |
-| `app/api/warm/route.ts` | Pre-generates FC + all articles + writes archive entry |
-| `lib/stories.ts` | All data logic: RSS, dedup, Claude, Blob cache, images, FC, archive |
-| `lib/palette.ts` | Design tokens, cursive font pool, FC_UNIVERSES/FC_ANGLES, ACTION_LABELS |
-| `lib/cache.ts` | File-based TTL cache (homepage analysis only) |
-
-## Cron Jobs (vercel.json)
-- `/api/revalidate` — every 4h at :00 (clears cache, forces fresh homepage)
-- `/api/warm` — every 4h at :05 (pre-generates FC + all 11 articles + archive entry)
-- No manual triggers needed after deploy. Hit `/api/warm` once manually to backfill current edition.
+- `BLOB_READ_WRITE_TOKEN` — auto-injected by Vercel
+- `CRON_SECRET` — protects all API endpoints
 
 ## Editions
-5 per day (~4 hours each): early, morning, afternoon, evening, night.
-Edition key format: `2026-06-26_morning`
+5/day (~4h each): early, morning, afternoon, evening, night.
+Key format: `2026-06-28_morning`
+UTC boundaries: Early 5–9, Morning 9–13, Afternoon 13–17, Evening 17–21, Night 21–5.
+
+## Generation Flow
+- **`buildPageData`** is the ONLY generation entrypoint
+- **`getPageData` is READ-ONLY** — only reads blobs/cache, never generates
+- **User visits never trigger generation**
+- `/api/pre-warm` fires 16 min before each boundary via Vercel native cron (`44 4,8,12,16,20 * * *`) + cron-job.org backup
+- `/api/warm` is manual/fallback — calls `buildPageData` directly
+- All endpoints require `?secret=CRON_SECRET`
+- `getNextEdition()` uses `getUTCHours()` (not local time)
+- All `put()` calls MUST include `allowOverwrite: true`
 
 ## Blob Cache Keys
 | Key | Content |
 |-----|---------|
-| `articles/v8/{editionKey}/{md5slug}.json` | ArticleCommentary JSON |
-| `feature-creature/v19/{editionKey}.json` | FeatureCreature JSON |
-| `archive/index.json` | ArchiveEntry[] list |
-| `archive/editions/{key}.json` | Full PageData for archived edition |
-| `archive/photos/{editionKey}.jpg` | Persisted hero image |
-| `subscribers.json` | Email list |
+| `articles/v18/{editionKey}/{slug}.json` | ArticleCommentary (edition-scoped) |
+| `articles/v18/by-slug/{slug}.json` | ArticleCommentary (global reuse — checked first) |
+| `feature-creature/v20/{editionKey}.json` | FeatureCreature JSON |
+| `synthesis/v1/{editionKey}.json` | Synthesis JSON (includes `imageUrl`) |
+| `archive/editions/{key}.json` | Full PageData for edition |
+| `archive/index.json` | ArchiveEntry[] list (max 90) |
 
-**Bump version prefix** (v6, v17) when changing prompts to invalidate old cache.
+**Bump `PROMPT_V`** in `getFullArticle` when changing prompts to invalidate cached articles.
 
-## Writer Personas (7 writers, randomly assigned per edition)
-`getWriterAssignments(editionKey)` — seeded Fisher-Yates shuffle → 11 slots (all 7 writers appear, 4 get 2 articles, 3 get 1). Passed as `writerIndex` to `getFullArticle`. Writer name stored in `ArticleCommentary.writer` and rendered as "by [Name]" byline on article page.
-- Rex (Hitchens style): prosecutorial, equal-opportunity contrarian, history as weapon
-- Eric (Orwell style): plain language, concrete detail, moral clarity without preaching
-- Margot (Didion style): cool, observational, fragments that accumulate
-- Finn (Michael Lewis style): narrative-driven, follows incentives, insider perspective
-- Cal (Gladwell style): counter-intuitive hooks, anecdote as argument
-- Jack (P.J. O'Rourke style): sardonic, funny, mocks sanctimony on all sides
-- Ward (Tom Wolfe style): status games, social anthropology, exclamation marks
+## Dedup Rules
+- `loadUsedLinks` walks back 150 editions (~30 days) — hard filter, NO fallback to used links
+- Global slug cache (`by-slug/`) — if a link recurs, reuse previously generated content (no Claude/Unsplash call)
 
-## Article Commentary (`getFullArticle`) — v8
-Returns `ArticleCommentary { header, pullQuote, body, writer }` JSON, stored as `.json` blob.
-- `header`: 3-5 word evocative sub-headline — rendered in `P.fontHeading` at section color
-- `pullQuote`: verbatim sentence from body — rendered as blockquote after para 3
-- `body`: paragraphs separated by `\n\n`
-- Post-processed by `breakLongSentences()` — breaks sentences >20 words at natural clause boundaries (em-dash, semicolon, conjunctions)
-- Paragraph cadence: 1 sentence / 1 sentence / 1-2 sentences / 1-3 sentences
-- One reference max from the 2000+ source pool (BANNED list in prompt)
-- 200-280 words total
+## Layout (EditionView.tsx)
+```
+Row 1:   [S1 text col 1-5]  [S1 image + S1FlightPaths col 6-13]
+Row 2-3: [FC card col 1-6]  [S2 top col 7-13 row 2] [S2 quote col 7-13 row 3]
+Below:   Synthesis card → S3-S11 3-column grid
+```
 
-## Feature Creature (`getFeatureCreature`) — v17
-Two-pass generation:
-- **Pass1**: free creative write — 180-220 words, voice = "smart friend texting at 11pm", no sentence cap
-- **Pass2**: scaffold into para1(1)/para2(1)/para3(1-2)/para4(2-3)/para5(1-3) + break sentences >20 words
-- `trimSentences(str, max)` safety net per paragraph
-- `imageQuery`: Claude-generated 4-6 concrete visual words → Unsplash search
-- Vision review: Haiku scores image 1-10, accept ≥6; pull-quote fallback if rejected
-- `ctaHeader`: 2-4 word active phrase before CTA (rendered in cursive font)
-- `headers[0]` before para1, `headers[1]` before para4
-- Mid-article: imageUrl2 after para3, or pullQuote blockquote if no image
+### FC Card
+- **Inverted colors**: `P.ink` background, `P.pageBg` text
+- `FlightPathBorder` uses FC angle color (teal/blue/pink), seeded per edition
+- 50-95% closure, random start position
+- Pin: 14×19px, tip aligned to center line via `translate(-50%, calc(-100% + 2.5px))`
+- Plane: 42px, angle uses **+90° offset** (SVG nose points up at 0°)
+- Dots: 5×5px HTML divs at DOT_SPACING=26, gap=DOT_SPACING×1.8 before plane
 
-## Homepage Layout (12-column grid)
-- Row 1: s1 text `col 1/6`, s1 image `col 6/13`
-- Rows 2-3: FC `col 1/7`, s2 image `col 7/13` (row 2), s2 pullquote `col 7/13` (row 3)
-- 11 stories total (fills 3-col bottom grid evenly)
-- Story pool interleaved: sci[0], cre[0], sci[1], cre[1], cre[2], sci[2], cre[3], cre[4], tec[0-2]
-- `NEGATIVE_RE` filter: deaths/disasters/crimes pushed past position 3
+### S1 Flight Path Overlay (S1FlightPaths component)
+- Catmull-Rom spline through 5-7 random waypoints, tension=0.35
+- Plane (42px) offset 48px **before** path start, facing departure direction
+- Bold SVG X (20px, two lines strokeWidth=5.5 round caps) at path **end**
+- Line: `strokeDasharray="4 9"`, strokeWidth=2.5, no animation, seeded per edition
+- Angle formula: `atan2 * 180/PI + 90` (accounts for SVG orientation)
 
-## Image Fetching Pipeline
-1. RSS image URL (if clean)
-2. OG scrape from article URL (3s timeout)
-3. Unsplash fallback — filters 80+ common names (NAME_RE), section-aware queries
-4. `getUniqueImages()` deduplicates across all cards
+### S2 Cards
+- Top (row 2): S3-S11 style — image + pill + title + summary. No pullquote, bullets, or More pill
+- Bottom (row 3): Quote strip. No More pill
 
-## Design System (`lib/palette.ts`)
-- 5 rotating palettes (daily). `P` = today's palette.
-- `P.pageBg`, `P.cardBg`, `P.ink`, `P.inkMid`, `P.inkLight`, `P.accent`, `P.tint`, `P.shadow`
-- `P.fontHeading`, `P.fontBody`, `P.dark` (boolean)
-- `contrastColor(hex)` — returns #000 or #fff for contrast
-- `SECTION_COLORS` — per-section accent colors
-- `CURSIVE_FONT_FAMILY` / `CURSIVE_FONT_URL` — rotating per edition (used in FC pages only)
-- `ACTION_LABELS` / `ACTION_EMOJI` — rotating titles/emojis for What To Do card
+### Synthesis Card
+- Observation section: flex row — text left, 200×200px circular Unsplash image right
+- Image fetched at generation from `theme` keywords, stored in synthesis blob
 
-## Article Pages
-- `force-dynamic` (no ISR)
-- Georgia serif body text, 19px, 1.9 line-height, maxWidth 720px
-- Section color header above "The Signal Take" label
-- Pull-quote blockquote (section color) injected after paragraph 3
-- Home pill button (no arrows), Read Full Article pill
+## Prompt Rules (lib/stories.ts)
+- `PROMPT_V = "v18"` — bump when prompt changes
+- No semicolons — ever (pass1 voice rules)
+- `ownedTitle`: MUST BE FACTUALLY ACCURATE — never assert claims the article doesn't support
+- FC `imageQuery`: match mood/tone of the source (dark source = dark moody image)
 
-## Archive
-- `saveToArchive()` called from `/api/warm` — reliably writes index entry each edition
-- Archive index at `archive/index.json`, max 90 entries
-- `/archive` page: pill nav, 3-col card grid
-- `/archive/[key]`: pill "Archive" nav button
+## Writer Personas (7 writers, seeded per edition)
+Rex (Hitchens), Eric (Orwell), Margot (Didion), Finn (M. Lewis), Cal (Gladwell), Jack (O'Rourke), Ward (Tom Wolfe)
 
-## Deployment Notes
-- Vercel Hobby plan = max 1 cron/day. Current cron: 6am (revalidate + warm). Other 4 editions cold-load on first visit.
-- **Fix:** set up cron-job.org (free) to hit `/api/revalidate` + `/api/warm` every 4h — bypasses Vercel limit, fully automates all 5 editions.
-- If GitHub webhook breaks again: use `vercel --prod` from PowerShell at C:\dev\daily-signal
-- Empty-body cache protection in `getFullArticle` — bad blobs are skipped and regenerated automatically
+## Key Files
+| File | Purpose |
+|------|---------|
+| `app/page.tsx` | Homepage |
+| `components/EditionView.tsx` | Bento grid, all visual components incl. FlightPathBorder, S1FlightPaths |
+| `app/article/[slug]/page.tsx` | Article detail |
+| `app/feature-creature/[slug]/page.tsx` | FC page |
+| `lib/stories.ts` | All data + generation logic |
+| `lib/palette.ts` | Design tokens, 5 rotating palettes |
+| `app/api/pre-warm/route.ts` | Primary cron entrypoint |
+| `app/api/warm/route.ts` | Manual regen entrypoint |
 
-## Next Steps
-- **Set up cron-job.org** for full 5-edition automation (highest priority)
-- Mobile layout tweaks (bento grid needs rethinking for small screens)
-- Custom domain (thedailysignal.com likely taken by Heritage Foundation — consider dailysignalai.com, signaldaily.co, thedailysignal.news)
+## Deployment
+Vercel auto-deploys on push to `main`. Check Vercel dashboard for build errors.
+
+## Open Items
+- Custom domain (still on daily-signal-omega.vercel.app)
+- Share button on articles
+- Mobile layout tweaks
+- Monitor Anthropic API spend limit
