@@ -963,7 +963,7 @@ export interface FeatureCreature {
 
 export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
-  const blobKey = `feature-creature/v19/${editionKey}.json`;
+  const blobKey = `feature-creature/v20/${editionKey}.json`;
 
   try {
     const existing = await head(blobKey);
@@ -1009,7 +1009,7 @@ Voice:
 
 Return JSON only, no markdown:
 {
-  "title": "6-10 words. Electrifying. Not clickbait — a real claim or provocation.",
+  "title": "5-9 words. A human journalist wrote this, not an AI. Strong verb, concrete nouns — put the actual argument or finding in the words themselves, don't gesture at it. FORBIDDEN: colons (almost never); 'X: When Y'; 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'/'Revolutionary'; 'Becomes [abstract noun]' (phenomenon, spectacle, currency). Writer voice: Rex=confrontational verdict, Eric=plain moral charge, Margot=cool disturbing observation, Finn=insider thriller hook, Cal=counter-intuitive reversal, Jack=sardonic sting, Ward=status-game exposure. GOOD: 'Hogwarts Runs on Indentured Labor' / 'The Matrix Already Lost Before Neo Woke Up' / 'Westeros Invented Feudalism Twice and Called It Progress'. BAD: 'Why Dune Reveals the Truth About Power' / 'The Hidden Science of Star Wars: A New Era'.",
   "synopsis": "1-2 sentences. Makes someone drop everything to read this.",
   "body": "180-220 words. Open with a sharp thesis — one irreversible claim. Then 2-3 specific supporting insights: real examples, surprising connections, observations that prove the thesis. End with a consequence or open question that lands. Every sentence earns its place.",
   "headers": ["2-3 words: the opening theme", "2-3 words: the turn or escalation"],
