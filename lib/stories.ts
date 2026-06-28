@@ -20,7 +20,7 @@ export interface Story {
   title: string; ownedTitle?: string; source: string; section: string; link: string; pubDate: string;
   imageUrl?: string; summary?: string; bullets?: string[];
   pullquote?: string; cta?: { header: string; body: string }; hasKeyFacts?: boolean; cardStyle: "full" | "pullquote" | "brief";
-  imageQuery?: string; content?: string;
+  imageQuery?: string; content?: string; generationError?: string;
 }
 
 export interface Synthesis {
@@ -500,6 +500,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   ]);
 
   const arts = articleResults.map(r => r.status === "fulfilled" ? r.value : null);
+  const artErrors = articleResults.map(r => r.status === "rejected" ? String(r.reason) : undefined);
   const rawWithQuery = raw.map((r, i) => ({ ...r, imageQuery: arts[i]?.imageQuery }));
   const images = await getUniqueImages(rawWithQuery);
 
@@ -514,6 +515,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     imageQuery: arts[i]?.imageQuery,
     cta: arts[i]?.cta,
     hasKeyFacts: arts[i]?.hasKeyFacts,
+    generationError: artErrors[i],
   }));
 
   // Promote successful stories into s1/s2 if they failed; push failed to end as placeholders

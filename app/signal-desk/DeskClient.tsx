@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-type Row = { title: string; ownedTitle: string; source: string; section: string; link: string; slug: string; writerIdx: number; cardType: "story" | "synthesis" | "fc" };
+type Row = { title: string; ownedTitle: string; source: string; section: string; link: string; slug: string; writerIdx: number; cardType: "story" | "synthesis" | "fc"; generationError?: string };
 type Edition = { key: string; label: string; theme: string; isCurrent: boolean; rows: Row[] };
 type Writer = { id: number; name: string; inspiration: string; personality: string };
 type Palette = { pageBg: string; cardBg: string; ink: string; inkMid: string; inkLight: string; accent: string; tint: string; fontBody: string; fontHeading: string };
@@ -88,6 +88,11 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                             ) : (
                               <span style={{ color: P.inkMid, fontWeight: 600, lineHeight: 1.35, display: "block" }}>{row.title || na}</span>
                             )
+                          ) : row.generationError ? (
+                            <div>
+                              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#e05c5c", display: "block", marginBottom: 3 }}>⚠ Pre-warm failed</span>
+                              <span style={{ fontSize: 11, color: "#e05c5c", opacity: 0.75, fontFamily: "monospace", lineHeight: 1.4, display: "block", wordBreak: "break-all" as const }}>{row.generationError}</span>
+                            </div>
                           ) : (
                             <a href={`/article/${row.slug}`} style={{ color: P.accent, textDecoration: "none", fontWeight: 600, lineHeight: 1.35, display: "block" }}>
                               {row.ownedTitle || na}

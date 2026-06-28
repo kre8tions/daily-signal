@@ -30,7 +30,7 @@ const writers = WRITERS.map((w, i) => ({
   personality: WRITER_STYLE[w.name] ?? "",
 }));
 
-type StoryLike = { title: string; ownedTitle?: string; source: string; section: string; link: string };
+type StoryLike = { title: string; ownedTitle?: string; source: string; section: string; link: string; generationError?: string };
 type FCData = { title?: string; universe?: string; angleLabel?: string; editionKey?: string } | null | undefined;
 
 function buildRows(stories: StoryLike[], editionKey: string, fc: FCData, synthTheme?: string) {
@@ -38,6 +38,7 @@ function buildRows(stories: StoryLike[], editionKey: string, fc: FCData, synthTh
   const storyRows = stories.map((s, i) => ({
     title: s.title, ownedTitle: s.ownedTitle ?? "", source: s.source, section: s.section,
     link: s.link, slug: urlToSlug(s.link), writerIdx: writerSlots[i] ?? 0, cardType: "story" as const,
+    generationError: s.generationError,
   }));
   const synthRow = {
     title: synthTheme ?? "", ownedTitle: "", source: "", section: "Synthesis",
