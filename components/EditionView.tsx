@@ -65,14 +65,19 @@ function SpaceInvaderSVG({ color }: { color: string }) {
   );
 }
 
-function RulerBorder({ color }: { color: string }) {
+function RulerBorder({ color, seed = 0, squiggle = 1 }: { color: string; seed?: number; squiggle?: number }) {
   const W = 1000; const H = 600;
   const STEP = 6; const BASE = 5;
+  // Vary phase offsets and spike threshold per edition seed
+  const p1 = (seed * 0.37) % (Math.PI * 2);
+  const p2 = (seed * 0.71) % (Math.PI * 2);
+  const p3 = (seed * 1.13) % (Math.PI * 2);
+  const spikeThresh = 0.45 + (seed % 7) * 0.04; // 0.45–0.69, varies per edition
   const noise = (i: number): number => {
     const t = i * 0.18;
-    const tremor = Math.sin(t * 4.1 + 0.3) * 2.25 + Math.sin(t * 9.7 + 1.8) * 1.08 + Math.sin(t * 17.3 + 3.1) * 0.54;
+    const tremor = Math.sin(t * 4.1 + p1) * 2.25 * squiggle + Math.sin(t * 9.7 + p2) * 1.08 * squiggle + Math.sin(t * 17.3 + p3) * 0.54;
     const spikeSeed = Math.sin(t * 2.3 + 0.9) * Math.sin(t * 3.7 + 2.1);
-    const spike = spikeSeed > 0.6 ? spikeSeed * 19.8 : spikeSeed < -0.6 ? spikeSeed * 16.2 : 0;
+    const spike = spikeSeed > spikeThresh ? spikeSeed * 19.8 * squiggle : spikeSeed < -spikeThresh ? spikeSeed * 16.2 * squiggle : 0;
     return tremor + spike;
   };
   const pts: string[] = [];
@@ -366,9 +371,12 @@ export async function EditionView({
           const color = angleColors[fc.angleKey] ?? P.accent;
           const emoji = angleEmoji[fc.angleKey] ?? "🪄";
           const slug = fc.editionKey ?? editionKey;
+          const borderSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 3), 0);
+          const borderColor = seededRandom(borderSeed) > 0.5 ? P.accent2 : color;
+          const squiggle = 0.6 + seededRandom(borderSeed + 1) * 1.2; // 0.6–1.8
           return (
             <div style={{ gridColumn: "1 / 7", gridRow: "2 / 4", position: "relative" }}>
-              <RulerBorder color={color} />
+              <RulerBorder color={borderColor} seed={borderSeed} squiggle={squiggle} />
               <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none", color: "inherit", display: "flex", height: "100%" }}>
                 <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, display: "flex", flexDirection: "column", flex: 1 }}>
                   {fc.imageUrl && (

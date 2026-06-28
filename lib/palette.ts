@@ -1,12 +1,12 @@
 export type Palette = {
-  pageBg: string; articleBg: string; cardBg: string; tint: string; accent: string;
+  pageBg: string; articleBg: string; cardBg: string; tint: string; accent: string; accent2: string;
   ink: string; inkMid: string; inkLight: string; shadow: string;
   gradFrom: string; gradTo: string; fontHeading: string; fontBody: string; dark: boolean;
 };
 
 export const PALETTES: Palette[] = [
   // 0 — Dark Purple / Pink
-  { pageBg: "#150D26", articleBg: "#1C1230", cardBg: "#2A1B3D", tint: "#44318D", accent: "#D83F87",
+  { pageBg: "#150D26", articleBg: "#1C1230", cardBg: "#2A1B3D", tint: "#44318D", accent: "#D83F87", accent2: "#7B2FBE",
     ink: "#F5F0FF", inkMid: "#C8B8E8",
     inkLight: "#B0A0D0", // was #7060A0 (~2.8:1) → now ~5.2:1 on cardBg
     shadow: "0 2px 8px rgba(0,0,0,0.4), 0 8px 24px rgba(216,63,135,0.15)",
@@ -14,7 +14,7 @@ export const PALETTES: Palette[] = [
     fontHeading: "'Bebas Neue', Impact, 'Arial Black', sans-serif",
     fontBody: "'Raleway', 'Helvetica Neue', Arial, sans-serif", dark: true },
   // 1 — Teal (pageBg lightened from #88BDBC to reduce eye strain)
-  { pageBg: "#C8E4E3", articleBg: "#F2FAFA", cardBg: "#DCEEED", tint: "#9FCFCE", accent: "#254E58",
+  { pageBg: "#C8E4E3", articleBg: "#F2FAFA", cardBg: "#DCEEED", tint: "#9FCFCE", accent: "#254E58", accent2: "#C0533A",
     ink: "#112D32", inkMid: "#254E58",
     inkLight: "#2E4E58", // was #4F6870 (~3.1:1) → now ~5.8:1 on cardBg
     shadow: "0 1px 4px rgba(17,45,50,0.08), 0 4px 20px rgba(17,45,50,0.10)",
@@ -22,7 +22,7 @@ export const PALETTES: Palette[] = [
     fontHeading: "'Raleway', 'Helvetica Neue', Arial, sans-serif",
     fontBody: "'Raleway', 'Helvetica Neue', Arial, sans-serif", dark: false },
   // 2 — Military Green (fontBody changed from condensed to readable sans)
-  { pageBg: "#222629", articleBg: "#1A1E22", cardBg: "#2E3236", tint: "#474B4F", accent: "#86C232",
+  { pageBg: "#222629", articleBg: "#1A1E22", cardBg: "#2E3236", tint: "#474B4F", accent: "#86C232", accent2: "#E8A020",
     ink: "#F0F4F0", inkMid: "#A8B8A0",
     inkLight: "#9CA4A0", // was #6B6E70 (~2.7:1) → now ~4.6:1 on cardBg
     shadow: "0 2px 8px rgba(0,0,0,0.5), 0 8px 24px rgba(134,194,50,0.12)",
@@ -30,7 +30,7 @@ export const PALETTES: Palette[] = [
     fontHeading: "'Barlow Condensed', Impact, 'Arial Narrow', sans-serif",
     fontBody: "'Inter', 'Helvetica Neue', Arial, sans-serif", dark: true },
   // 3 — Light Editorial (best palette — minor inkLight fix)
-  { pageBg: "#EDEAE5", articleBg: "#FEFDF8", cardBg: "#FEFDF8", tint: "#9FEDD7", accent: "#026670",
+  { pageBg: "#EDEAE5", articleBg: "#FEFDF8", cardBg: "#FEFDF8", tint: "#9FEDD7", accent: "#026670", accent2: "#C0392B",
     ink: "#0A1A1A", inkMid: "#2A5050",
     inkLight: "#456060", // was #7A9898 (~4.2:1) → now ~5.5:1 on cardBg
     shadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(2,102,112,0.08)",
@@ -38,7 +38,7 @@ export const PALETTES: Palette[] = [
     fontHeading: "'Playfair Display', Georgia, serif",
     fontBody: "'Raleway', 'Helvetica Neue', Arial, sans-serif", dark: false },
   // 4 — Dark Purple / Yellow (fontBody changed from condensed to readable sans)
-  { pageBg: "#46344E", articleBg: "#2E2038", cardBg: "#382840", tint: "#5A5560", accent: "#FAED26",
+  { pageBg: "#46344E", articleBg: "#2E2038", cardBg: "#382840", tint: "#5A5560", accent: "#FAED26", accent2: "#F4845F",
     ink: "#FFFFFF", inkMid: "#C8C0D0",
     inkLight: "#A89AB0", // was #807888 (~2.5:1) → now ~4.8:1 on cardBg
     shadow: "0 2px 8px rgba(0,0,0,0.5), 0 8px 24px rgba(250,237,38,0.10)",

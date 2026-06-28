@@ -262,7 +262,10 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
       if (!res.ok) continue;
       const data = await res.json();
       const results = data?.results ?? [];
-      const url = (results[results.length - 1] ?? results[0])?.urls?.regular;
+      const photo = results[results.length - 1] ?? results[0];
+      const url = photo?.urls?.regular
+        ? (photo.urls.regular as string).replace(/&w=\d+/, "&w=1600")
+        : undefined;
       if (url) return url as string;
     } catch { continue; }
   }
