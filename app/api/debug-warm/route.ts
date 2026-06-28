@@ -28,7 +28,6 @@ export async function GET(req: Request) {
       theme: pageData.synthesis.theme,
       hasFC: !!pageData.featureCreature,
       blobUrl: blobResult.url,
-      blobSize: blobResult.size,
     });
   } catch (e) {
     return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });
