@@ -195,6 +195,68 @@ function PixelEdgeTop({ color, seed = 0, height = 32 }: { color: string; seed?: 
   );
 }
 
+// ── S1 image flight paths overlay ────────────────────────────────────────────
+
+function S1FlightPaths({ seed, color }: { seed: number; color: string }) {
+  const W = 800, H = 500;
+  const sr = (n: number) => { const x = Math.sin(seed * 9301 + n * 49297 + 233995) * 10000; return x - Math.floor(x); };
+  const pt = (nx: number, ny: number) => ({ x: nx * W, y: ny * H });
+
+  // Generate 3-4 flight paths, each with random start/end + 1-2 control point loops
+  const numPaths = 3 + Math.floor(sr(0) * 2);
+  const paths: { d: string; planeX: number; planeY: number; angle: number }[] = [];
+
+  for (let p = 0; p < numPaths; p++) {
+    const base = p * 17;
+    const start = pt(sr(base + 1), sr(base + 2));
+    const end = pt(sr(base + 3), sr(base + 4));
+
+    // 1-2 loop control points in between
+    const numLoops = 1 + Math.floor(sr(base + 5) * 2);
+    let d = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`;
+    let prev = start;
+
+    for (let l = 0; l < numLoops; l++) {
+      const lb = base + 6 + l * 4;
+      const mid = pt(sr(lb) * 0.6 + 0.2, sr(lb + 1) * 0.6 + 0.2);
+      const cp1 = { x: prev.x + (sr(lb + 2) - 0.5) * W * 0.8, y: prev.y + (sr(lb + 3) - 0.5) * H * 0.8 };
+      const cp2 = { x: mid.x + (sr(lb + 4) - 0.5) * W * 0.5, y: mid.y + (sr(lb + 5) - 0.5) * H * 0.5 };
+      d += ` C ${cp1.x.toFixed(1)} ${cp1.y.toFixed(1)}, ${cp2.x.toFixed(1)} ${cp2.y.toFixed(1)}, ${mid.x.toFixed(1)} ${mid.y.toFixed(1)}`;
+      prev = mid;
+    }
+
+    // Final curve to end
+    const fcp1 = { x: prev.x + (sr(base + 13) - 0.5) * W * 0.6, y: prev.y + (sr(base + 14) - 0.5) * H * 0.6 };
+    const fcp2 = { x: end.x + (sr(base + 15) - 0.5) * W * 0.3, y: end.y + (sr(base + 16) - 0.5) * H * 0.3 };
+    d += ` C ${fcp1.x.toFixed(1)} ${fcp1.y.toFixed(1)}, ${fcp2.x.toFixed(1)} ${fcp2.y.toFixed(1)}, ${end.x.toFixed(1)} ${end.y.toFixed(1)}`;
+
+    // Angle at end for plane rotation (approximate tangent)
+    const angle = Math.atan2(end.y - fcp2.y, end.x - fcp2.x) * 180 / Math.PI;
+    paths.push({ d, planeX: end.x, planeY: end.y, angle });
+  }
+
+  return (
+    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", inset: 0 }}>
+        <defs>
+          <style>{`@keyframes dash-march{to{stroke-dashoffset:-60}}`}</style>
+        </defs>
+        {paths.map((path, i) => (
+          <path key={i} d={path.d} fill="none" stroke={color} strokeWidth="2" strokeDasharray="8 10" opacity="0.55"
+            style={{ animation: `dash-march ${3 + i * 0.7}s linear infinite` }} />
+        ))}
+      </svg>
+      {paths.map((path, i) => (
+        <div key={i} style={{ position: "absolute", left: `${(path.planeX / W * 100).toFixed(2)}%`, top: `${(path.planeY / H * 100).toFixed(2)}%`, transform: `translate(-50%,-50%) rotate(${path.angle}deg)`, zIndex: 3, pointerEvents: "none" }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill={color} opacity={0.85} xmlns="http://www.w3.org/2000/svg">
+            <path d="M21,16l-9-5V3.5C12,2.67,11.33,2,10.5,2S9,2.67,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" />
+          </svg>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Synthesis section ─────────────────────────────────────────────────────────
 
 function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synthesis; stories: Story[]; writerIndex: number }) {
@@ -433,7 +495,7 @@ export async function EditionView({
         {s1 && (
           <a href={`/article/${urlToSlug(s1.link)}`} style={{ ...imgCard, gridColumn: "6 / 13", gridRow: "1", textDecoration: "none" }}>
             {s1.imageUrl ? <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.gradFrom}, ${P.gradTo})` }} />}
-            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to top, ${P.accent}44 0%, transparent 60%)` }} />
+            <S1FlightPaths seed={editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 7), 0)} color={P.accent} />
           </a>
         )}
 
