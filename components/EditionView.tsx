@@ -66,32 +66,62 @@ function SpaceInvaderSVG({ color }: { color: string }) {
 }
 
 function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number }) {
-  const W = 1000; const H = 600; const R = 20; const PAD = 6;
+  const W = 1000; const H = 600; const PAD = 8; const CR = 30; // corner radius in SVG units
   const sr = (n: number) => { const s = Math.sin(seed * 9301 + n * 49297 + 233995); return s - Math.floor(s); };
+  const PI = Math.PI;
 
-  // Perimeter as points: top→right→bottom→left corners smoothed
-  // Total perimeter length (approx)
-  const perim = 2 * (W + H);
-  const closure = 0.50 + sr(0) * 0.45; // 50–95% of perimeter
-  const startFrac = sr(1); // where on perimeter the pin starts
-  const startDist = startFrac * perim;
-  const endDist = startDist + closure * perim;
+  // Build rounded-rect perimeter as dense sample points
+  const pts: { x: number; y: number }[] = [];
+  const addArc = (cx: number, cy: number, a0: number, a1: number) => {
+    for (let i = 0; i <= 10; i++) {
+      const a = a0 + (a1 - a0) * i / 10;
+      pts.push({ x: cx + CR * Math.cos(a), y: cy + CR * Math.sin(a) });
+    }
+  };
+  // top edge + corners
+  pts.push({ x: PAD + CR, y: PAD });
+  pts.push({ x: W - PAD - CR, y: PAD });
+  addArc(W - PAD - CR, PAD + CR, -PI / 2, 0);
+  pts.push({ x: W - PAD, y: PAD + CR });
+  pts.push({ x: W - PAD, y: H - PAD - CR });
+  addArc(W - PAD - CR, H - PAD - CR, 0, PI / 2);
+  pts.push({ x: W - PAD - CR, y: H - PAD });
+  pts.push({ x: PAD + CR, y: H - PAD });
+  addArc(PAD + CR, H - PAD - CR, PI / 2, PI);
+  pts.push({ x: PAD, y: H - PAD - CR });
+  pts.push({ x: PAD, y: PAD + CR });
+  addArc(PAD + CR, PAD + CR, PI, 3 * PI / 2);
 
-  // Given a distance along the perimeter, return {x, y, angle}
-  const sides = [
-    { len: W, x: (d: number) => PAD + d, y: () => PAD, a: 90 },            // top L→R
-    { len: H, x: () => W - PAD, y: (d: number) => PAD + d, a: 180 },       // right T→B
-    { len: W, x: (d: number) => W - PAD - d, y: () => H - PAD, a: 270 },   // bottom R→L
-    { len: H, x: () => PAD, y: (d: number) => H - PAD - d, a: 0 },         // left B→T
-  ];
+  // Compute cumulative lengths
+  const segLens: number[] = [];
+  let totalLen = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const j = (i + 1) % pts.length;
+    const len = Math.hypot(pts[j].x - pts[i].x, pts[j].y - pts[i].y);
+    segLens.push(len); totalLen += len;
+  }
+
   const ptAt = (dist: number) => {
-    let d = ((dist % perim) + perim) % perim;
-    for (const s of sides) { if (d <= s.len) return { x: s.x(d), y: s.y(d), a: s.a }; d -= s.len; }
-    return { x: PAD, y: PAD, a: 90 };
+    let d = ((dist % totalLen) + totalLen) % totalLen;
+    for (let i = 0; i < pts.length; i++) {
+      if (d <= segLens[i]) {
+        const t = segLens[i] > 0 ? d / segLens[i] : 0;
+        const j = (i + 1) % pts.length;
+        const x = pts[i].x + t * (pts[j].x - pts[i].x);
+        const y = pts[i].y + t * (pts[j].y - pts[i].y);
+        const angle = Math.atan2(pts[j].y - pts[i].y, pts[j].x - pts[i].x) * 180 / PI + 90;
+        return { x, y, angle };
+      }
+      d -= segLens[i];
+    }
+    return { x: pts[0].x, y: pts[0].y, angle: 0 };
   };
 
-  // Build dot positions along the path
-  const DOT_SPACING = 14;
+  const closure = 0.50 + sr(0) * 0.45;
+  const startDist = sr(1) * totalLen;
+  const endDist = startDist + closure * totalLen;
+
+  const DOT_SPACING = 13;
   const dots: { x: number; y: number }[] = [];
   for (let d = startDist + DOT_SPACING; d < endDist - DOT_SPACING * 2; d += DOT_SPACING) {
     const p = ptAt(d); dots.push({ x: p.x, y: p.y });
@@ -99,27 +129,37 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
 
   const start = ptAt(startDist);
   const end = ptAt(endDist);
-  const planeAngle = end.a;
+
+  // Convert to % for HTML icons (undistorted)
+  const sPx = `${(start.x / W * 100).toFixed(2)}%`;
+  const sPy = `${(start.y / H * 100).toFixed(2)}%`;
+  const ePx = `${(end.x / W * 100).toFixed(2)}%`;
+  const ePy = `${(end.y / H * 100).toFixed(2)}%`;
+  const planeAngle = end.angle;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
-      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 }}
-      xmlns="http://www.w3.org/2000/svg">
-      {/* Dots */}
-      {dots.map((d, i) => <circle key={i} cx={d.x} cy={d.y} r={3.5} fill={color} opacity={0.7} />)}
-      {/* Pin at start */}
-      <g transform={`translate(${start.x},${start.y})`}>
-        <circle cx={0} cy={-13} r={9} fill={color} opacity={0.9} />
-        <circle cx={0} cy={-13} r={4} fill="#fff" opacity={0.9} />
-        <path d="M0,0 L-6,-8 Q0,-22 6,-8 Z" fill={color} opacity={0.9} />
-      </g>
-      {/* Airplane at end */}
-      <g transform={`translate(${end.x},${end.y}) rotate(${planeAngle})`}>
-        <path d="M0,-14 L5,6 L0,3 L-5,6 Z" fill={color} opacity={0.95} />
-        <path d="M-12,0 L12,0 L10,3 L-10,3 Z" fill={color} opacity={0.95} />
-        <path d="M-5,5 L5,5 L4,8 L-4,8 Z" fill={color} opacity={0.95} />
-      </g>
-    </svg>
+    <>
+      {/* Dots only — stretching is fine for small circles */}
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10 }}
+        xmlns="http://www.w3.org/2000/svg">
+        {dots.map((d, i) => <circle key={i} cx={d.x} cy={d.y} r={3.5} fill={color} opacity={0.75} />)}
+      </svg>
+      {/* Pin — HTML so it's never distorted */}
+      <div style={{ position: "absolute", left: sPx, top: sPy, transform: "translate(-50%, -100%)", zIndex: 11, pointerEvents: "none" }}>
+        <svg width="20" height="28" viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="10" cy="10" r="10" fill={color} opacity={0.9} />
+          <circle cx="10" cy="10" r="4.5" fill="#fff" opacity={0.9} />
+          <path d="M10,28 L4,14 Q10,2 16,14 Z" fill={color} opacity={0.9} />
+        </svg>
+      </div>
+      {/* Airplane — HTML so it's never distorted */}
+      <div style={{ position: "absolute", left: ePx, top: ePy, transform: `translate(-50%, -50%) rotate(${planeAngle}deg)`, zIndex: 11, pointerEvents: "none" }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21,16l-9-5V3.5C12,2.7,11.3,2,10.5,2S9,2.7,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" fill={color} opacity={0.95} />
+        </svg>
+      </div>
+    </>
   );
 }
 
