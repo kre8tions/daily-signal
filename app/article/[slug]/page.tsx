@@ -85,7 +85,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         {/* Hero image */}
         {story.imageUrl && (
           <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 36, aspectRatio: "16/7", position: "relative" }}>
-            <img src={story.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
+            <img src={story.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
             <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to top, ${P.accent}22 0%, transparent 60%)` }} />
           </div>
         )}
@@ -112,7 +112,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 {i === (fullArticle.pullQuoteAfterPara ?? 4) - 1 && (
                   fullArticle.imageUrl2 ? (
                     <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 32, marginTop: 8, aspectRatio: "16/9", maxWidth: 720 }}>
-                      <img src={fullArticle.imageUrl2} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
+                      <img src={fullArticle.imageUrl2} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
                     </div>
                   ) : fullArticle.pullQuote ? (
                     <blockquote style={{ borderLeft: `4px solid ${sectionColor}`, paddingLeft: 24, marginLeft: 0, marginRight: 0, marginBottom: 28, marginTop: 4 }}>
@@ -179,7 +179,7 @@ function RelatedCard({ story }: { story: Story }) {
     <a href={`/article/${slug}`} style={{ display: "flex", gap: 16, paddingTop: 16, paddingBottom: 16, borderBottom: `1px solid ${P.tint}44`, textDecoration: "none", alignItems: "flex-start" }}>
       {story.imageUrl && (
         <div style={{ width: 72, height: 52, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: P.tint }}>
-          <img src={story.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
+          <img src={story.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
         </div>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>

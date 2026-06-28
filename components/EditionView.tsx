@@ -359,7 +359,7 @@ export async function EditionView({
 
         {s1 && (
           <a href={`/article/${urlToSlug(s1.link)}`} style={{ ...imgCard, gridColumn: "6 / 13", gridRow: "1", textDecoration: "none" }}>
-            {s1.imageUrl ? <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.gradFrom}, ${P.gradTo})` }} />}
+            {s1.imageUrl ? <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.gradFrom}, ${P.gradTo})` }} />}
             <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to top, ${P.accent}44 0%, transparent 60%)` }} />
           </a>
         )}
@@ -381,7 +381,7 @@ export async function EditionView({
                 <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, display: "flex", flexDirection: "column", flex: 1 }}>
                   {fc.imageUrl && (
                     <div style={{ position: "relative", flex: 1, minHeight: 200 }}>
-                      <img src={fc.imageUrl} alt={fc.universe} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block", position: "absolute", inset: 0 }} />
+                      <img src={fc.imageUrl} alt={fc.universe} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block", position: "absolute", inset: 0 }} />
                       <PixelEdge color={P.cardBg} seed={0} height={52} />
                       <div style={{ position: "absolute", top: 12, left: 14, background: color + "ee", color: "#fff", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 4, paddingBottom: 4, paddingLeft: 10, paddingRight: 10, borderRadius: 20, display: "flex", alignItems: "center", gap: 6 }}><span>{emoji}</span> Feature Creature</div>
                       <div style={{ position: "absolute", top: 12, right: 14, fontSize: 10, color: "rgba(255,255,255,0.7)", fontFamily: P.fontBody }}>{fc.universe}</div>
@@ -415,7 +415,7 @@ export async function EditionView({
 
         {s2 && (
           <a href={`/article/${urlToSlug(s2.link)}`} className="ds-s2-img" style={{ ...imgCard, gridColumn: "7 / 13", gridRow: "2", textDecoration: "none" }}>
-            {s2.imageUrl ? <img src={s2.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.tint}, ${P.accent}66)` }} />}
+            {s2.imageUrl ? <img src={s2.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.tint}, ${P.accent}66)` }} />}
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.90) 0%, rgba(0,0,0,0.05) 55%, transparent 100%)" }} />
             <div style={{ position: "absolute", bottom: 20, left: 20, right: 100 }}>
               <div style={{ marginBottom: 6 }}><Pill section={s2.section} /></div>
@@ -459,7 +459,7 @@ export async function EditionView({
                   <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
                     {s.imageUrl && (
                       <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
-                        <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
+                        <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
                         <PixelEdge color={P.cardBg} seed={i + 2} height={52} />
                         <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
                       </div>

@@ -70,7 +70,7 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
         {/* Hero image */}
         {fc.imageUrl && (
           <div style={{ borderRadius: 20, overflow: "hidden", marginBottom: 36, aspectRatio: "16/9" }}>
-            <img src={fc.imageUrl} alt={fc.universe} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
+            <img src={fc.imageUrl} alt={fc.universe} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
           </div>
         )}
 
@@ -89,7 +89,7 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
               {i === 2 && (
                 fc.imageUrl2 ? (
                   <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 32, marginTop: 8, aspectRatio: "16/9" }}>
-                    <img src={fc.imageUrl2} alt={`${fc.universe} — ${fc.angleLabel}`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
+                    <img src={fc.imageUrl2} alt={`${fc.universe} — ${fc.angleLabel}`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
                   </div>
                 ) : fc.pullQuote ? (
                   <div style={{ borderLeft: `4px solid ${color}`, paddingLeft: 28, paddingTop: 8, paddingBottom: 8, marginBottom: 32, marginTop: 16 }}>

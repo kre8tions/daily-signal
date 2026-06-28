@@ -36,7 +36,7 @@ export default async function ArchivePage() {
                 <a key={e.key} href={`/archive/${e.key}`} style={{ textDecoration: "none", display: "flex", flexDirection: "column", borderRadius: 16, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow }}>
                   <div style={{ position: "relative", height: 160, background: P.tint + "44", flexShrink: 0 }}>
                     {e.imageUrl
-                      ? <img src={e.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }} />
+                      ? <img src={e.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
                       : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.tint}, ${P.accent}44)` }} />
                     }
                     <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)" }} />

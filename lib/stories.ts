@@ -924,7 +924,7 @@ Return JSON only:
   const commentary: ArticleCommentary = {
     ownedTitle: pass1.ownedTitle ?? "",
     summary: pass1.summary ?? undefined,
-    bullets: pass1.bullets?.length ? pass1.bullets : undefined,
+    bullets: pass1.bullets?.length ? pass1.bullets.slice(0, 3) : undefined,
     imageQuery: pass1.imageQuery ?? undefined,
     header: pass1.header ?? "",
     header2: pass1Header2,
