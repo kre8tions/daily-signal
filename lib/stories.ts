@@ -456,8 +456,9 @@ Return JSON only, no markdown:
   ]
 }`,
     }],
-  });
+  }).catch(() => null);
 
+  if (!msg) return { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] };
   const rawText = msg.content[0].type === "text" ? msg.content[0].text : "{}";
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   try {
@@ -519,10 +520,17 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
 
 export async function getPageData(): Promise<PageData> {
   const { label: editionLabel, key: editionKey } = getEdition();
-  // unstable_cache keys by [editionKey] — same edition window always returns the same data
-  // and Next.js persists this in .next/cache across serverless invocations
   return unstable_cache(
-    () => buildPageData(editionKey, editionLabel),
+    async () => {
+      try {
+        return await buildPageData(editionKey, editionLabel);
+      } catch {
+        // Claude unavailable — serve last successful generation from archive blob
+        const archived = await getArchivedPageData(editionKey);
+        if (archived) return archived;
+        return { stories: [], synthesis: { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] }, editionLabel };
+      }
+    },
     [editionKey],
     { revalidate: 28800, tags: [`edition-${editionKey}`] }
   )();
