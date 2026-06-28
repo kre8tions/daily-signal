@@ -19,7 +19,7 @@ export interface RawItem {
 export interface Story {
   title: string; ownedTitle?: string; source: string; section: string; link: string; pubDate: string;
   imageUrl?: string; summary?: string; bullets?: string[];
-  pullquote?: string; cta?: { header: string; body: string }; cardStyle: "full" | "pullquote" | "brief";
+  pullquote?: string; cta?: { header: string; body: string }; hasKeyFacts?: boolean; cardStyle: "full" | "pullquote" | "brief";
   imageQuery?: string; content?: string;
 }
 
@@ -502,6 +502,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     pullquote: arts[i]?.pullQuote,
     imageQuery: arts[i]?.imageQuery,
     cta: arts[i]?.cta,
+    hasKeyFacts: arts[i]?.hasKeyFacts,
   }));
 
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
@@ -703,6 +704,7 @@ export interface ArticleCommentary {
   bullets?: string[];
   imageQuery?: string;
   cta?: { header: string; body: string };
+  hasKeyFacts?: boolean;
 }
 
 function breakLongSentences(text: string): string {
@@ -731,6 +733,8 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
+  const hasImg2 = seededRandom(refSeed + 7) < 0.2;
+  const hasKeyFacts = !hasCta && seededRandom(refSeed + 19) < 0.33;
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
 
   // Check Blob cache first
@@ -873,9 +877,11 @@ Return JSON only:
     } catch { /* pass2 failed — use pass1 body as-is */ }
   }
 
-  const imageUrl2 = pass1ImageQuery2
-    ? await fetchUnsplash(pass1ImageQuery2, story.section, 1)
-    : await fetchUnsplash(story.title, story.section, 2);
+  const imageUrl2 = hasImg2
+    ? (pass1ImageQuery2
+        ? await fetchUnsplash(pass1ImageQuery2, story.section, 1)
+        : await fetchUnsplash(story.title, story.section, 2))
+    : undefined;
 
   const commentary: ArticleCommentary = {
     ownedTitle: pass1.ownedTitle ?? "",
@@ -889,6 +895,7 @@ Return JSON only:
     body: breakLongSentences(body),
     writer: writer?.name ?? "",
     cta: pass1.cta ?? undefined,
+    hasKeyFacts,
   };
 
   // Save to Blob for this edition

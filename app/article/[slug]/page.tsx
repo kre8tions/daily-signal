@@ -140,8 +140,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
         )}
 
-        {/* Key Facts */}
-        {story.bullets?.length ? (
+        {/* Key Facts — shown on ~33% of articles that don't have a CTA */}
+        {fullArticle?.hasKeyFacts && story.bullets?.length ? (
           <div style={{ background: P.cardBg, borderRadius: 16, paddingTop: 22, paddingBottom: 22, paddingLeft: 28, paddingRight: 28, marginBottom: 28, boxShadow: P.shadow }}>
             <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 14, fontFamily: P.fontBody }}>Key Facts</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -152,7 +152,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               ))}
             </div>
           </div>
-        ) : null}
+        ) : null }
+
 
 
         {/* Related Stories */}
