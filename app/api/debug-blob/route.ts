@@ -52,10 +52,20 @@ export async function GET(req: Request) {
       : "returned null";
   } catch (e) { archivedResult = String(e); }
 
-  // Check individual article blobs
-  const { list } = await import("@vercel/blob");
+  // Check individual article blobs + fetch small ones to see content
+  const { list, head: blobHead } = await import("@vercel/blob");
   const articleBlobs = await list({ prefix: `articles/v17/${key}/` });
-  const articleBlobSummary = articleBlobs.blobs.map(b => ({ path: b.pathname, size: b.size }));
+  const articleBlobSummary = await Promise.all(articleBlobs.blobs.map(async b => {
+    const entry: Record<string, unknown> = { path: b.pathname, size: b.size };
+    if (b.size < 200) {
+      try {
+        const info = await blobHead(b.pathname);
+        const res = await fetch(info.url);
+        entry.content = await res.text();
+      } catch { entry.content = "fetch failed"; }
+    }
+    return entry;
+  }));
 
   // Test getPageData (goes through unstable_cache)
   let pageDataResult: unknown = null;
