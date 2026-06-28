@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { head } from "@vercel/blob";
-import { getEdition } from "@/lib/stories";
+import { getEdition, getArchivedPageData } from "@/lib/stories";
 
 export const dynamic = "force-dynamic";
 
@@ -43,5 +43,14 @@ export async function GET(req: Request) {
     }
   } catch { archiveContent = "fetch failed"; }
 
-  return NextResponse.json({ editionKey: key, blobs: checks, archiveContent });
+  // Test getArchivedPageData directly
+  let archivedResult: unknown = null;
+  try {
+    const archived = await getArchivedPageData(key);
+    archivedResult = archived
+      ? { storyCount: archived.stories.length, firstTitle: archived.stories[0]?.title, theme: archived.synthesis.theme }
+      : "returned null";
+  } catch (e) { archivedResult = String(e); }
+
+  return NextResponse.json({ editionKey: key, blobs: checks, archiveContent, archivedResult });
 }
