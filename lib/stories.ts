@@ -910,6 +910,7 @@ interface SourceAnalysis {
   source_position: string; // what the source claims/argues, or "neutral"
   tension: string;         // what's unresolved or contested
   missed: string;          // angle the source didn't pursue
+  subject?: { name: string; type: "film" | "tv_show" | "book" | "album" | "game" | "person" | "other"; year?: string };
 }
 
 async function analyzeSource(client: Anthropic, story: Story): Promise<SourceAnalysis | null> {
@@ -930,7 +931,7 @@ SECTION: ${story.section}
 ${content}
 
 Return JSON only:
-{"genre":"news_report|science_discovery|cultural_criticism|profile|policy_politics|entertainment|opinion|explainer","source_position":"what claim or stance the source takes, or neutral if wire copy","tension":"what is unresolved contested or glossed over","missed":"the angle or implication the source did not pursue"}`,
+{"genre":"news_report|science_discovery|cultural_criticism|profile|policy_politics|entertainment|opinion|explainer","source_position":"what claim or stance the source takes, or neutral if wire copy","tension":"what is unresolved contested or glossed over","missed":"the angle or implication the source did not pursue","subject":{"name":"exact title or person name if the article is primarily about a specific named film/TV show/book/album/video game/person — omit this field entirely if the article is not about a specific named work or person","type":"film|tv_show|book|album|game|person|other","year":"release or birth year if known, otherwise omit"}}`,
       }],
     });
     const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
@@ -1125,7 +1126,7 @@ Return JSON only, no markdown:
   "ownedTitle": "5-9 words. A human journalist wrote this, not an AI. Strong verb, concrete nouns, no abstraction. Put the actual tension or finding in the words themselves — don't gesture at it. For Science: name the specific discovery or finding, not just that one happened. MUST BE FACTUALLY ACCURATE — never assert a claim the article doesn't support; if the article says Mars has tectonic recycling, don't imply Earth doesn't. FORBIDDEN PATTERNS — never use these: colons (almost never — 1 in 200 headlines earns one); 'X: When Y'; 'X as [abstract noun]'; 'Becomes [Cultural Noun]' (phenomenon, spectacle, currency, commodity); 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'/'Revolutionary'. Writer voice: Rex=confrontational verdict, Eric=plain moral charge, Margot=cool disturbing observation, Finn=insider thriller hook, Cal=counter-intuitive reversal, Jack=sardonic sting, Ward=status-game exposure. GOOD: 'Four Chameleons Named, Zero Habitats Protected' / 'Mathematicians Crack the 80-Year Randomness Problem' / 'Jackass Ends Because Bodies Run Out of Luck'. BAD: 'The Cheerleader Trap: When Visibility Becomes the Cage' / 'Optimism as Commodity, Resistance as Product'. Must differ from source headline.",
   "summary": "2 punchy sentences — what happened and why it matters. Be specific.",
   "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
-  "imageQuery": "4-6 words for Unsplash hero image. Rules: (1) If the article is about a named TV show, film, book, video game, or cultural work, START with the exact title followed by the medium — e.g. 'The Bear TV show', 'Dune film', 'Succession HBO series', 'Elden Ring game'. This is the ONE case where proper nouns are required. (2) For real people, use their role or setting, not their name — e.g. 'chef kitchen fire' not 'Gordon Ramsay'. (3) For everything else: concrete scene, no brand names, no text, no logos. Examples: 'courtroom judge gavel law', 'electric car charging station night', 'military drone desert surveillance'.",
+  "imageQuery": "${analysis?.subject ? `This article is about ${analysis.subject.type === "person" ? `the person "${analysis.subject.name}"` : `the ${analysis.subject.type.replace("_", " ")} "${analysis.subject.name}"${analysis.subject.year ? ` (${analysis.subject.year})` : ""}`}. Use that as your search — e.g. "${analysis.subject.name}${analysis.subject.type !== "person" ? " " + analysis.subject.type.replace("_", " ") : " portrait"}". 4-6 words max.` : `4-6 words for Unsplash hero image. Named film/show/game/book → start with exact title + medium (e.g. 'Dune film', 'The Bear TV show'). Real person → role/setting not name. Everything else: concrete scene, no brand names, no text, no logos.`}",
   "header": "...",
   "pullQuote": "1 sentence. Your sharpest, most arresting framing of the central tension — a paraphrase, not a direct quote from the source. Something a reader would screenshot.",
   "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n. FORBIDDEN: throat-clearing openers ('Here's the thing', 'Here's the structure', 'The truth is', 'What's interesting is', 'Let's be clear', 'Make no mistake', 'The reality is', 'Here's what', 'Here's why' — any setup phrase before the real point); colons used to split a sentence into setup + payoff ('X: Y'); semicolons (rewrite as two sentences instead)."${hasCta ? `,
