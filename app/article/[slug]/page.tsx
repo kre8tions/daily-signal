@@ -94,6 +94,19 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
           </div>
         )}
 
+        {/* Fallback: summary + bullets when fullArticle not yet cached */}
+        {!fullArticle?.body && (story.summary || story.bullets?.length) && (
+          <div style={{ marginBottom: 36 }}>
+            {story.summary && (
+              <p style={{ fontSize: 19, lineHeight: 1.9, color: P.ink, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720 }}>{story.summary}</p>
+            )}
+            {story.bullets?.map((b, i) => (
+              <p key={i} style={{ fontSize: 19, lineHeight: 1.9, color: P.ink, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720 }}>{b}</p>
+            ))}
+            <div style={{ height: 1, background: `${P.tint}66`, marginTop: 8, marginBottom: 36 }} />
+          </div>
+        )}
+
         {/* Editorial commentary */}
         {fullArticle?.body && (
           <div style={{ marginBottom: 36 }}>
