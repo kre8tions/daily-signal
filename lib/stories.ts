@@ -755,7 +755,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v19"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v20"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
@@ -842,7 +842,7 @@ Return JSON only, no markdown:
   "imageQuery": "4-6 words for Unsplash hero image. Rules: (1) If the article is about a named TV show, film, book, video game, or cultural work, START with the exact title followed by the medium — e.g. 'The Bear TV show', 'Dune film', 'Succession HBO series', 'Elden Ring game'. This is the ONE case where proper nouns are required. (2) For real people, use their role or setting, not their name — e.g. 'chef kitchen fire' not 'Gordon Ramsay'. (3) For everything else: concrete scene, no brand names, no text, no logos. Examples: 'courtroom judge gavel law', 'electric car charging station night', 'military drone desert surveillance'.",
   "header": "...",
   "pullQuote": "1 sentence. Your sharpest, most arresting framing of the central tension — a paraphrase, not a direct quote from the source. Something a reader would screenshot.",
-  "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."${hasCta ? `,
+  "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n. FORBIDDEN: throat-clearing openers ('Here's the thing', 'Here's the structure', 'The truth is', 'What's interesting is', 'Let's be clear', 'Make no mistake', 'The reality is', 'Here's what', 'Here's why' — any setup phrase before the real point); colons used to split a sentence into setup + payoff ('X: Y'); semicolons (rewrite as two sentences instead)."${hasCta ? `,
   "cta": {
     "header": "2-4 words. Active verb phrase. E.g. 'Try This Tonight', 'Start Here', 'Read This Next'.",
     "body": "1 sentence. A specific thing to DO, WATCH, READ, or TRY that connects directly to this story. Name the exact thing. Beginner-friendly, low-commitment. Not a genre — a specific title, tool, experiment, or action."
@@ -878,9 +878,10 @@ Return JSON only, no markdown:
           role: "user",
           content: `Restructure this article body into exactly 4-5 paragraphs. Preserve ALL ideas and the original voice word-for-word where possible. Do not add new ideas.
 
-Two jobs only:
+Three jobs only:
 1. Enforce the paragraph structure below
 2. Break any sentence over 20 words at a natural clause boundary — em-dash, "and", "but", "because", "which", "so". Keep both halves punchy. NEVER break at a semicolon — rewrite to remove it entirely.
+3. Remove throat-clearing openers ("Here's the thing", "Here's the structure", "The truth is", "What's interesting is", "Let's be clear", "Make no mistake" — any setup phrase before the real point). Remove colons used as setup-payoff splits ("X: Y") — rewrite as a direct statement.
 
 Structure:
 - para1: EXACTLY 1 sentence — the hook. Irreversible opener. No exceptions.
