@@ -735,7 +735,7 @@ export async function getHowTo(action: string, slug: string): Promise<HowTo | nu
       const res = await fetch(existing.url);
       if (res.ok) return await res.json() as HowTo;
     }
-  } catch { /* not cached */ }
+  } catch (e) { console.warn("[getHowTo] blob lookup failed", blobKey, e); }
 
   return null;
 }
