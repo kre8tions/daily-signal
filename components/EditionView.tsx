@@ -440,12 +440,12 @@ export async function EditionView({
             <>
               {prevEdition && (
                 <a href={`/archive/${prevEdition.key}`} style={{ textDecoration: "none" }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>Previous</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", fontSize: 15, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 8, paddingBottom: 8, paddingLeft: 20, paddingRight: 20, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>Previous Edition</span>
                 </a>
               )}
               {nextEdition && (
                 <a href={`/archive/${nextEdition.key}`} style={{ textDecoration: "none" }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>Next</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", fontSize: 15, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 8, paddingBottom: 8, paddingLeft: 20, paddingRight: 20, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>Next Edition</span>
                 </a>
               )}
             </>
@@ -453,7 +453,7 @@ export async function EditionView({
             <>
               {prevEdition && (
                 <a href={`/archive/${prevEdition.key}`} style={{ textDecoration: "none" }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>Previous Edition</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", fontSize: 15, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 8, paddingBottom: 8, paddingLeft: 20, paddingRight: 20, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>Previous Edition</span>
                 </a>
               )}
             </>
