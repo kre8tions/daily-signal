@@ -924,7 +924,24 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
     }
   } catch { /* not found — generate fresh */ }
 
-  if (readOnly) throw new Error("Article not in cache — generation blocked on user request");
+  // In read-only mode, try older PROMPT_V versions before giving up
+  if (readOnly) {
+    for (const oldV of ["v21", "v20", "v19", "v18"]) {
+      for (const key of [`articles/${oldV}/by-slug/${slug}.json`, `articles/${oldV}/${editionKey}/${slug}.json`]) {
+        try {
+          const existing = await head(key);
+          if (existing) {
+            const res = await fetch(existing.url, { cache: "no-store" });
+            if (res.ok) {
+              const cached = await res.json() as ArticleCommentary;
+              if (cached.body) return cached;
+            }
+          }
+        } catch { /* not found */ }
+      }
+    }
+    throw new Error("Article not in cache — generation blocked on user request");
+  }
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const related = relatedStories.filter((s) => s.link !== story.link).slice(0, 5);
