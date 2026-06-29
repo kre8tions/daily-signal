@@ -288,7 +288,7 @@ function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synt
                 <p key={i} style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: i < synthesis.observation.split("\n\n").length - 1 ? 14 : 0, fontFamily: P.fontBody }}>{para}</p>
               ))}
               {synthesis.imageUrl && (
-                <div style={{ position: "absolute", top: 20, right: 20 }}>
+                <div style={{ position: "absolute", top: 20, right: 80 }}>
                   <div style={{ position: "relative", width: 200, height: 200 }}>
                     <div style={{ width: 200, height: 200, borderRadius: "50%", overflow: "hidden" }}>
                       <img src={synthesis.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
