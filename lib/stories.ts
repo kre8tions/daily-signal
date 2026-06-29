@@ -103,6 +103,12 @@ function dedupeByTopic(items: RawItem[]): RawItem[] {
 
 // ── Feeds (expanded) ──────────────────────────────────────────────────────────
 export const FEEDS = [
+  // Psychology / Self-Improvement — behavior, habits, overcoming fear, human potential
+  { url: "https://greatergood.berkeley.edu/feeds/greatergood",                source: "Greater Good",        section: "Psychology"    },
+  { url: "https://behavioralscientist.org/feed/",                             source: "Behavioral Scientist", section: "Psychology"   },
+  { url: "https://www.psychologytoday.com/us/front-page/feed",                source: "Psychology Today",    section: "Psychology"    },
+  { url: "https://elemental.medium.com/feed",                                 source: "Elemental",           section: "Psychology"    },
+  { url: "https://www.vox.com/future-perfect/rss",                            source: "Vox Future Perfect",  section: "Psychology"    },
   // Technology — emerging tech, innovation, futurism (no policy)
   { url: "https://www.theverge.com/rss/index.xml",                          source: "The Verge",           section: "Technology"    },
   { url: "https://feeds.arstechnica.com/arstechnica/index",                 source: "Ars Technica",        section: "Technology"    },
@@ -445,21 +451,23 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
 
   const all = dedupeByTopic(results.flatMap((r) => r.status === "fulfilled" ? r.value : []));
   const CREATIVE = ["Entertainment", "Arts", "Culture", "Film", "Faith"];
-  const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [], food: RawItem[] = [], sports: RawItem[] = [], comics: RawItem[] = [], anime: RawItem[] = [];
+  const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [], psychology: RawItem[] = [], food: RawItem[] = [], sports: RawItem[] = [], comics: RawItem[] = [], anime: RawItem[] = [];
   for (const item of all) {
     if (item.section === "Technology") tech.push(item);
     else if (item.section === "Science") science.push(item);
+    else if (item.section === "Psychology") psychology.push(item);
     else if (item.section === "Food") food.push(item);
     else if (item.section === "Sports") sports.push(item);
     else if (item.section === "Comics") comics.push(item);
     else if (item.section === "Anime") anime.push(item);
     else if (CREATIVE.includes(item.section)) creative.push(item);
   }
-  // Build core 11-slot pool; slot extras REPLACE random s2-s11 slots (never s1, never append)
-  // so total stays ≤ 11 — each story needs 3-4 Claude calls and pre-warm maxDuration=300s
-  const sci = science.slice(0, 3), cre = creative.slice(0, 5), tec = tech.slice(0, 3);
+  // Build core 11-slot pool; Psychology leads S1 — self-improvement is the highest-engagement slot
+  // slot extras REPLACE random s2-s11 slots (never s1, never append)
+  const psy = psychology.slice(0, 2), sci = science.slice(0, 2), cre = creative.slice(0, 4), tec = tech.slice(0, 3);
   const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1), ...comics.slice(0, 1), ...anime.slice(0, 1)];
-  const corePool = [sci[0], cre[0], sci[1], cre[1], cre[2], sci[2], cre[3], cre[4], tec[0], tec[1], tec[2]].filter(Boolean);
+  // S1 = best psychology story (or science if none); S2 = second psychology or science; rest fill out
+  const corePool = [psy[0] ?? sci[0], sci[0] ?? psy[0], psy[1] ?? sci[1], cre[0], sci[1] ?? psy[1], cre[1], cre[2], cre[3], tec[0], tec[1], tec[2]].filter(Boolean);
   // Seeded Fisher-Yates shuffle of s2-s11 indices to pick replacement positions
   const poolSeed = editionKey.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const srPool = (n: number) => { const x = Math.sin(poolSeed * 127 + n * 311) * 10000; return x - Math.floor(x); };
