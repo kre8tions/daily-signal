@@ -31,8 +31,8 @@ UTC boundaries: Early 5–9, Morning 9–13, Afternoon 13–17, Evening 17–21,
 ## Blob Cache Keys
 | Key | Content |
 |-----|---------|
-| `articles/v18/{editionKey}/{slug}.json` | ArticleCommentary (edition-scoped) |
-| `articles/v18/by-slug/{slug}.json` | ArticleCommentary (global reuse — checked first) |
+| `articles/v19/{editionKey}/{slug}.json` | ArticleCommentary (edition-scoped) |
+| `articles/v19/by-slug/{slug}.json` | ArticleCommentary (global reuse — checked first) |
 | `feature-creature/v20/{editionKey}.json` | FeatureCreature JSON |
 | `synthesis/v1/{editionKey}.json` | Synthesis JSON (includes `imageUrl`) |
 | `archive/editions/{key}.json` | Full PageData for edition |

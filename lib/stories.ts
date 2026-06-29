@@ -204,26 +204,6 @@ export function extractRssImage(item: any): string | undefined {
 }
 
 // ── OG scrape (3s timeout) ────────────────────────────────────────────────────
-async function scrapeOgImage(url: string): Promise<string | undefined> {
-  try {
-    const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; DailySignalBot/1.0)" },
-    });
-    clearTimeout(tid);
-    if (!res.ok) return undefined;
-    const html = await res.text();
-    const m = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-           ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-    const imgUrl = m?.[1];
-    if (!imgUrl) return undefined;
-    // Reject known-bad image patterns: logos, placeholders, and site-wide default social images
-    if (/bbci\.co\.uk|placeholder|logo|icon|favicon|\/og\.|\/og-|og_image|og-image|social[-_]share|share[-_]image|default[-_]image|fallback|\/share\.|\/social\./i.test(imgUrl)) return undefined;
-    return imgUrl;
-  } catch { return undefined; }
-}
 
 // ── Unsplash fallback ─────────────────────────────────────────────────────────
 // Common first names that alone produce irrelevant image searches
@@ -296,17 +276,11 @@ function imgCacheKey(link: string) {
   return `artimg_v4_${createHash("md5").update(link).digest("hex")}`;
 }
 
-async function getArticleImage(article: { link: string; title: string; section?: string; rssImageUrl?: string; imageQuery?: string }): Promise<string | undefined> {
+async function getArticleImage(article: { link: string; title: string; section?: string; imageQuery?: string }): Promise<string | undefined> {
   const cKey = imgCacheKey(article.link);
   const hit = cacheGet<string>(cKey);
   if (hit) return hit === "__none__" ? undefined : hit;
 
-  if (article.rssImageUrl && !/placeholder|logo|icon|watermark|bbci\.co\.uk/i.test(article.rssImageUrl)) {
-    cacheSet(cKey, article.rssImageUrl, THREE_DAYS);
-    return article.rssImageUrl;
-  }
-  const og = await scrapeOgImage(article.link);
-  if (og) { cacheSet(cKey, og, THREE_DAYS); return og; }
   const unsplash = await fetchUnsplash(article.title, article.section, 1, article.imageQuery);
   if (unsplash) { cacheSet(cKey, unsplash, THREE_DAYS); return unsplash; }
   cacheSet(cKey, "__none__", ONE_HOUR);
@@ -785,7 +759,7 @@ function breakLongSentences(text: string): string {
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v18"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v19"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
@@ -869,7 +843,7 @@ Return JSON only, no markdown:
   "ownedTitle": "5-9 words. A human journalist wrote this, not an AI. Strong verb, concrete nouns, no abstraction. Put the actual tension or finding in the words themselves — don't gesture at it. For Science: name the specific discovery or finding, not just that one happened. MUST BE FACTUALLY ACCURATE — never assert a claim the article doesn't support; if the article says Mars has tectonic recycling, don't imply Earth doesn't. FORBIDDEN PATTERNS — never use these: colons (almost never — 1 in 200 headlines earns one); 'X: When Y'; 'X as [abstract noun]'; 'Becomes [Cultural Noun]' (phenomenon, spectacle, currency, commodity); 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'/'Revolutionary'. Writer voice: Rex=confrontational verdict, Eric=plain moral charge, Margot=cool disturbing observation, Finn=insider thriller hook, Cal=counter-intuitive reversal, Jack=sardonic sting, Ward=status-game exposure. GOOD: 'Four Chameleons Named, Zero Habitats Protected' / 'Mathematicians Crack the 80-Year Randomness Problem' / 'Jackass Ends Because Bodies Run Out of Luck'. BAD: 'The Cheerleader Trap: When Visibility Becomes the Cage' / 'Optimism as Commodity, Resistance as Product'. Must differ from source headline.",
   "summary": "2 punchy sentences — what happened and why it matters. Be specific.",
   "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
-  "imageQuery": "4-6 words for Unsplash hero image. Include the main subject, industry, or setting so the image is specific to this story. No proper nouns, no brand names, no text, no logos. Examples: 'courtroom judge gavel law', 'electric car charging station night', 'military drone desert surveillance', 'cheerleaders stadium performance crowd'.",
+  "imageQuery": "4-6 words for Unsplash hero image. Rules: (1) If the article is about a named TV show, film, book, video game, or cultural work, START with the exact title followed by the medium — e.g. 'The Bear TV show', 'Dune film', 'Succession HBO series', 'Elden Ring game'. This is the ONE case where proper nouns are required. (2) For real people, use their role or setting, not their name — e.g. 'chef kitchen fire' not 'Gordon Ramsay'. (3) For everything else: concrete scene, no brand names, no text, no logos. Examples: 'courtroom judge gavel law', 'electric car charging station night', 'military drone desert surveillance'.",
   "header": "...",
   "pullQuote": "1 sentence. Your sharpest, most arresting framing of the central tension — a paraphrase, not a direct quote from the source. Something a reader would screenshot.",
   "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n."${hasCta ? `,
