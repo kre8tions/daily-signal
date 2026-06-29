@@ -19,19 +19,19 @@ function Pill({ section }: { section: string }) {
   );
 }
 
-function ArticleLink({ story, children }: { story: Story; children: React.ReactNode }) {
+function ArticleLink({ story, editionKey, children }: { story: Story; editionKey: string; children: React.ReactNode }) {
   const slug = urlToSlug(story.link);
   return (
-    <a href={`/article/${slug}`} style={{ color: "inherit", textDecoration: "none" }}>
+    <a href={`/article/${slug}?e=${editionKey}`} style={{ color: "inherit", textDecoration: "none" }}>
       {children}
     </a>
   );
 }
 
-function MorePill({ story }: { story: Story }) {
+function MorePill({ story, editionKey }: { story: Story; editionKey: string }) {
   const slug = urlToSlug(story.link);
   return (
-    <a href={`/article/${slug}`} style={{ textDecoration: "none", position: "absolute", bottom: 18, right: 18 }}>
+    <a href={`/article/${slug}?e=${editionKey}`} style={{ textDecoration: "none", position: "absolute", bottom: 18, right: 18 }}>
       <span style={{ display: "inline-block", fontSize: 15, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 8, paddingBottom: 8, paddingLeft: 20, paddingRight: 20, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
     </a>
   );
@@ -468,7 +468,7 @@ export async function EditionView({
       <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(320px, auto) minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
 
         {s1 && (
-          <a href={`/article/${urlToSlug(s1.link)}`} style={{ gridColumn: "1 / 6", gridRow: "1", textDecoration: "none", color: "inherit" }}>
+          <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ gridColumn: "1 / 6", gridRow: "1", textDecoration: "none", color: "inherit" }}>
             <div style={{ ...card, height: "100%", paddingTop: 28, paddingBottom: 32, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
               <Pill section={s1.section} />
               <h1 className="ds-card-h" style={hStyle}>{s1.ownedTitle || s1.title}</h1>
@@ -482,13 +482,13 @@ export async function EditionView({
                   ))}
                 </div>
               ) : null}
-              <MorePill story={s1} />
+              <MorePill story={s1} editionKey={editionKey} />
             </div>
           </a>
         )}
 
         {s1 && (
-          <a href={`/article/${urlToSlug(s1.link)}`} style={{ ...imgCard, gridColumn: "6 / 13", gridRow: "1", textDecoration: "none" }}>
+          <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ ...imgCard, gridColumn: "6 / 13", gridRow: "1", textDecoration: "none" }}>
             {s1.imageUrl ? <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.gradFrom}, ${P.gradTo})` }} />}
             <S1FlightPaths seed={editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 7), 0)} color={P.accent} imageColor={s1.imageColor} />
           </a>
@@ -543,7 +543,7 @@ export async function EditionView({
         )}
 
         {s2 && (
-          <a href={`/article/${urlToSlug(s2.link)}`} style={{ gridColumn: "7 / 13", gridRow: "2", textDecoration: "none", color: "inherit", display: "flex" }}>
+          <a href={`/article/${urlToSlug(s2.link)}?e=${editionKey}`} style={{ gridColumn: "7 / 13", gridRow: "2", textDecoration: "none", color: "inherit", display: "flex" }}>
             <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
               {s2.imageUrl && (
                 <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
@@ -563,7 +563,7 @@ export async function EditionView({
         )}
 
         {s2 && (
-          <a href={`/article/${urlToSlug(s2.link)}`} style={{ ...card, gridColumn: "7 / 13", gridRow: "3", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 28, gap: 18, textDecoration: "none", color: "inherit" }}>
+          <a href={`/article/${urlToSlug(s2.link)}?e=${editionKey}`} style={{ ...card, gridColumn: "7 / 13", gridRow: "3", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 28, gap: 18, textDecoration: "none", color: "inherit" }}>
             <div style={{ fontSize: 52, color: P.accent, fontFamily: P.fontHeading, flexShrink: 0, lineHeight: 0.8, opacity: 0.35, marginTop: 6 }}>"</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 17, fontStyle: "italic", color: P.ink, lineHeight: 1.5, fontFamily: P.fontBody, fontWeight: 500 }}>{s2.pullquote || s2.summary || s2.title}</div>
@@ -588,7 +588,7 @@ export async function EditionView({
                 ? s.summary!
                 : (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
               return (
-                <a key={i} href={`/article/${urlToSlug(s.link)}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
+                <a key={i} href={`/article/${urlToSlug(s.link)}?e=${editionKey}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
                   <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
                     {s.imageUrl && (
                       <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>

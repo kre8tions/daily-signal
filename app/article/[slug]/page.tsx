@@ -33,9 +33,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ArticlePage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ e?: string }> }) {
   const { slug } = await params;
-  const story = await getStoryBySlug(slug);
+  const { e: editionHint } = await searchParams;
+  const story = await getStoryBySlug(slug, editionHint);
   if (!story) notFound();
 
   const { stories } = await getPageData();
