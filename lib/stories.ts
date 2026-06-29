@@ -541,22 +541,16 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
 export async function getPageData(edition?: { key: string; label: string }): Promise<PageData> {
   const utcEdition = getEdition();
   const { label: editionLabel, key: editionKey } = edition ?? utcEdition;
-  return unstable_cache(
-    async () => {
-      // Never generate live — pre-warm owns all generation.
-      // Read from in-memory cache or archive blob only.
-      const archived = await getArchivedPageData(editionKey);
-      if (archived) return archived;
-      // Local-slot blob not built yet — fall back to current UTC edition silently.
-      if (edition && editionKey !== utcEdition.key) {
-        const utcArchived = await getArchivedPageData(utcEdition.key);
-        if (utcArchived) return utcArchived;
-      }
-      return { stories: [], synthesis: { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] }, editionLabel };
-    },
-    [editionKey],
-    { revalidate: 28800, tags: [`edition-${editionKey}`] }
-  )();
+  // No unstable_cache — page is force-dynamic, blob reads are fast, and caching
+  // empty results caused stale blank pages when local-slot and UTC+14 slot diverge.
+  const archived = await getArchivedPageData(editionKey);
+  if (archived) return archived;
+  // Local-slot blob not built yet — fall back to current UTC+14 edition silently.
+  if (edition && editionKey !== utcEdition.key) {
+    const utcArchived = await getArchivedPageData(utcEdition.key);
+    if (utcArchived) return utcArchived;
+  }
+  return { stories: [], synthesis: { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] }, editionLabel };
 }
 
 // ── Single story for article detail page ─────────────────────────────────────
