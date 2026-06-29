@@ -25,12 +25,22 @@ Edition labels: early="First Light", morning="The Brief", afternoon="Midday", ev
 ## Generation Flow
 - **`buildPageData`** is the ONLY generation entrypoint
 - **`getPageData` is READ-ONLY** — only reads blobs, never generates. No `unstable_cache`.
-- **User visits never trigger generation**
+- **`getFullArticle` called with `readOnly=true` from article page** — never generates on user click
+- **`getHowTo` returns null if not cached** — never generates on user click
+- **User visits NEVER trigger generation — enforce this always**
 - `/api/pre-warm` fires 16 min before each UTC+14 boundary via Vercel cron
 - `/api/warm` is manual/fallback — calls `buildPageData` directly
 - All endpoints require `?secret=CRON_SECRET`
 - `getNextEdition()` looks 16 min ahead in UTC+14 time
 - All `put()` calls MUST include `allowOverwrite: true`
+
+## Article Click Flow
+1. User clicks → `/article/{slug}?e={editionKey}`
+2. Page reads `?e=` → exact edition known
+3. Story from `archive/editions/{editionKey}.json`
+4. Full article from `articles/{editionKey}/{slug}.json` → `articles/by-slug/{slug}.json` → legacy v18-v22 paths
+5. Fallback: summary + bullets from story object
+6. No Claude called. No generation.
 
 ## Article Generation Pipeline
 - **Pass 0**: `analyzeSource()` — detects genre, source position, tension, missed angle
