@@ -202,28 +202,48 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
   const W = 800, H = 500;
   const sr = (n: number) => { const x = Math.sin(seed * 9301 + n * 49297 + 233995) * 10000; return x - Math.floor(x); };
 
-  // 1–3 planes, each confined to its own horizontal band so paths never cross
+  // 1–3 planes, each in its own horizontal band so paths never cross each other
   const numPlanes = 1 + Math.floor(sr(99) * 3);
-  const TENSION = 0.22; // low tension = wide gentle arcs
+  const TENSION = 0.28;
 
+  type Pt = { x: number; y: number };
   type PlaneData = { d: string; planeX: number; planeY: number; planeAngle: number; endX: number; endY: number };
 
   const planes: PlaneData[] = Array.from({ length: numPlanes }, (_, pi) => {
     const bandH = H / numPlanes;
-    const bandTop = pi * bandH + bandH * 0.08;
-    const bandBot = (pi + 1) * bandH - bandH * 0.08;
-    const bandMid = (bandTop + bandBot) / 2;
+    const bandTop = pi * bandH + 18;
+    const bandBot = (pi + 1) * bandH - 18;
+    const br = bandBot - bandTop; // usable band height
 
-    // 4 waypoints spread evenly left-to-right, Y gently oscillates around band center
-    const numPts = 4;
-    const pts: { x: number; y: number }[] = [];
-    for (let i = 0; i < numPts; i++) {
-      const tx = i / (numPts - 1);
-      const x = W * 0.06 + tx * W * 0.88 + (sr(pi * 30 + i * 3) - 0.5) * W * 0.06;
-      // Alternate above/below band mid for gentle wave; sr controls magnitude
-      const wave = (i % 2 === 0 ? 1 : -1) * (0.3 + sr(pi * 30 + i * 3 + 1) * 0.4);
-      const y = bandMid + wave * (bandBot - bandTop) * 0.42;
+    // Start and end anywhere in the band (not forced left-to-right)
+    const pts: Pt[] = [];
+    pts.push({ x: W * (0.04 + sr(pi * 60) * 0.35),      y: bandTop + sr(pi * 60 + 1) * br });
+    // 3–5 middle waypoints freely placed — X loosely progresses but can vary widely
+    const numMid = 3 + Math.floor(sr(pi * 60 + 2) * 3);
+    for (let i = 0; i < numMid; i++) {
+      const prog = (i + 1) / (numMid + 1);
+      const x = W * (0.08 + prog * 0.78) + (sr(pi * 60 + i * 7 + 3) - 0.5) * W * 0.22;
+      const y = bandTop + sr(pi * 60 + i * 7 + 4) * br;
       pts.push({ x: Math.max(W * 0.03, Math.min(W * 0.97, x)), y: Math.max(bandTop, Math.min(bandBot, y)) });
+    }
+    pts.push({ x: W * (0.62 + sr(pi * 60 + 20) * 0.34), y: bandTop + sr(pi * 60 + 21) * br });
+
+    // 40% chance of inserting a tight loop somewhere mid-path
+    if (sr(pi * 60 + 30) < 0.4 && pts.length >= 3) {
+      const li = 1 + Math.floor(sr(pi * 60 + 31) * (pts.length - 2));
+      const lx = pts[li].x, ly = pts[li].y;
+      const r = 28 + sr(pi * 60 + 32) * 28; // loop radius 28–56px
+      const dir = sr(pi * 60 + 33) < 0.5 ? 1 : -1;
+      // Four points tracing a rough circle: E → S → W → N (clockwise or CCW)
+      const loop: Pt[] = [
+        { x: lx + r,       y: ly + dir * r * 0.4 },
+        { x: lx + r * 0.2, y: ly + dir * r },
+        { x: lx - r * 0.6, y: ly + dir * r * 0.6 },
+        { x: lx - r * 0.2, y: ly - dir * r * 0.2 },
+      ];
+      // Clamp loop points to band
+      const clamped = loop.map(p => ({ x: Math.max(W * 0.02, Math.min(W * 0.98, p.x)), y: Math.max(bandTop, Math.min(bandBot, p.y)) }));
+      pts.splice(li + 1, 0, ...clamped);
     }
 
     // Catmull-Rom → cubic bezier
@@ -235,8 +255,7 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
       d += ` C ${cp1.x.toFixed(1)} ${cp1.y.toFixed(1)}, ${cp2.x.toFixed(1)} ${cp2.y.toFixed(1)}, ${p[i+1].x.toFixed(1)} ${p[i+1].y.toFixed(1)}`;
     }
 
-    const start = pts[0];
-    const end   = pts[pts.length - 1];
+    const start = pts[0], end = pts[pts.length - 1];
     const firstCp = { x: p[1].x + (p[2].x - p[0].x) * TENSION / 3, y: p[1].y + (p[2].y - p[0].y) * TENSION / 3 };
     const dAngle = Math.atan2(firstCp.y - start.y, firstCp.x - start.x);
     const OFFSET = 44;
