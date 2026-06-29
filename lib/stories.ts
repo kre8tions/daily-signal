@@ -25,8 +25,8 @@ export interface Story {
 }
 
 export interface Synthesis {
-  theme: string; observation: string; takeaways: string[]; conclusion: string; actions: string[];
-  imageUrl?: string;
+  theme: string; hook: string; observation: string; takeaways: string[]; conclusion: string; actions: string[];
+  imageUrl?: string; imageQuery?: string;
 }
 
 export interface PageData {
@@ -514,54 +514,57 @@ export async function getSynthesis(items: RawItem[], editionKey: string): Promis
 
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1500,
+    max_tokens: 1800,
     messages: [{
       role: "user",
-      content: `${synthWriter.style}
+      content: `You are the editorial voice of The Signal — a news digest that finds the load-bearing beam, not the surface pattern. Your job: look at today's stories and find what connects them underneath — not the obvious shared topic, but the shared mechanism, the shared anxiety, the shared structural shift.
 
-You are writing the cross-story synthesis for a news digest. Find the hidden connective tissue between these stories.
+Writer instinct for this edition: ${synthWriter.style}
 
-RULES:
-- Never restate the headline. Be specific, find non-obvious angles.
-- NEVER open with "Today's", "This collection", "These stories". Jump straight into the insight.
-- Write in first-person editorial voice — opinions, interpretations, predictions.
-- Do not frame stories through an ideological lens.
+Voice rules:
+- First-person editorial: opinions, interpretations, predictions — not reportage.
+- Never restate a headline. Name the mechanism, not the event.
+- Never open with "Today's", "This collection", "These stories", "Across today's".
+- No ideological framing. No culture-war lens.
+- Specific beats abstract. Name the story, the company, the person, the decision.
 
 ${storyList}
 
 Return JSON only, no markdown:
 {
-  "theme": "One evocative noun phrase naming the underlying force or tension",
-  "observation": "STRUCTURE REQUIRED: Write the first sentence as a standalone hook. Then insert \\n\\n. Then 1-2 follow-up sentences that deepen it. Never count or reference how many stories are covered.",
+  "theme": "2-4 words. An evocative noun phrase naming the underlying force or tension — not a topic, a dynamic. E.g. 'The Permission Economy' / 'Controlled Disintegration' / 'Institutional Overcorrection'. Not 'Technology and Society'.",
+  "hook": "1 sentence only. The irreversible claim — the thing that cannot be unsaid once you read it. This is the first thing the reader sees. No setup, no throat-clearing. Start with the tension, not the context.",
+  "observation": "1-2 sentences that deepen the hook. Don't summarize stories — name what they collectively reveal. End somewhere that makes the reader want to read the takeaways.",
   "takeaways": [
-    "Non-obvious connection between at least two stories — name the mechanism. 1 sentence, 2 max.",
-    "The deeper structural tension or irony. 1 sentence, 2 max.",
-    "Concrete prediction or implication — where this leads, who benefits, what breaks. 1 sentence, 2 max."
+    "Name the non-obvious connection between at least two specific stories (name them by source or subject). One sentence on the shared mechanism — not the shared topic.",
+    "The structural tension or irony that runs through today's stories. Cite at least one specific story. 1-2 sentences.",
+    "A forward-looking implication: who is positioned to win, what breaks next, what pattern this repeats. Ground it in today's specific stories. 1-2 sentences."
   ],
-  "conclusion": "One sharp opinionated sentence. Do not start with 'Today'.",
+  "conclusion": "The most screenshot-worthy sentence in the entire card. A provocation, not a summary. Should make someone want to share it. Sharp enough to stand alone without context. Do not start with 'Today' or 'Ultimately' or 'In the end'.",
   "actions": [
-    "One sharp sentence. A beginner-friendly action a first-time creator or early achiever can do today — specific, doable, no experience needed. Max 20 words.",
-    "One sharp sentence. A different angle — something small and low-risk a newcomer can try this week. Max 20 words.",
-    "One sharp sentence. The simplest possible first step someone just starting out would actually take. Max 20 words."
-  ]
+    "Grounded in today's theme: the single most useful first move for someone just starting out — no experience, no audience, no budget needed. Specific to what today's stories revealed, not generic advice. Max 20 words.",
+    "A low-risk experiment a beginner can run this week that directly connects to the theme or tension in today's stories. Different angle from the first. Max 20 words.",
+    "The smallest possible concrete step — something that takes under 10 minutes, costs nothing, and proves the insight from today's stories in their own life or work. Max 20 words."
+  ],
+  "imageQuery": "4-6 concrete visual words for Unsplash that match the mood and texture of today's theme — a real scene or object, not an abstraction. E.g. for 'institutional friction': 'empty government hallway fluorescent light'; for 'surveillance creep': 'security camera corner urban shadow'. No abstract nouns. No brand names."
 }`,
     }],
   }).catch(() => null);
 
-  if (!msg) return { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] };
+  if (!msg) return { theme: "", hook: "", observation: "", takeaways: [], conclusion: "", actions: [] };
   const rawText = msg.content[0].type === "text" ? msg.content[0].text : "{}";
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   try {
     const parsed = JSON.parse(cleaned) as Synthesis;
-    // Fetch a Unsplash image using the most evocative words from the theme
-    const themeQuery = (parsed.theme || "").replace(/[^a-zA-Z\s]/g, "").trim();
-    if (themeQuery) {
-      parsed.imageUrl = await fetchUnsplash(themeQuery, undefined, 1, themeQuery).then(r => r?.url).catch(() => undefined);
+    // Use article-derived imageQuery for the synthesis image; fall back to theme words
+    const imgQuery = (parsed.imageQuery || parsed.theme || "").replace(/[^a-zA-Z\s]/g, "").trim();
+    if (imgQuery) {
+      parsed.imageUrl = await fetchUnsplash(imgQuery, undefined, 1, imgQuery).then(r => r?.url).catch(() => undefined);
     }
     put(blobKey, JSON.stringify(parsed), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
     return parsed;
   } catch {
-    return { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] };
+    return { theme: "", hook: "", observation: "", takeaways: [], conclusion: "", actions: [] };
   }
 }
 
@@ -666,7 +669,7 @@ export async function getPageData(edition?: { key: string; label: string }): Pro
     const utcArchived = await getArchivedPageData(utcEdition.key);
     if (utcArchived) return utcArchived;
   }
-  return { stories: [], synthesis: { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] }, editionLabel };
+  return { stories: [], synthesis: { theme: "", hook: "", observation: "", takeaways: [], conclusion: "", actions: [] }, editionLabel };
 }
 
 // ── Single story for article detail page ─────────────────────────────────────

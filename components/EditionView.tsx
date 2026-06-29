@@ -315,11 +315,14 @@ function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synt
               <line x1="0" y1="6" x2="100%" y2="6" stroke={P.accent} strokeWidth="2.5" filter="url(#sketchy-line)" />
             </svg>
           </div>
-          {synthesis.observation && (
+          {(synthesis.hook || synthesis.observation) && (
             <div className="ds-synthesis-obs" style={{ position: "relative", paddingTop: 20, paddingBottom: 14, paddingLeft: 28, paddingRight: synthesis.imageUrl ? 320 : 28, borderBottom: `1px solid ${P.tint}44` }}>
               <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Observation</div>
-              {synthesis.observation.split("\n\n").filter(Boolean).map((para, i) => (
-                <p key={i} style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: i < synthesis.observation.split("\n\n").length - 1 ? 14 : 0, fontFamily: P.fontBody }}>{para}</p>
+              {synthesis.hook && (
+                <p style={{ fontSize: 19, lineHeight: 1.6, fontWeight: 600, color: P.ink, marginTop: 0, marginBottom: synthesis.observation ? 14 : 0, fontFamily: P.fontBody }}>{synthesis.hook}</p>
+              )}
+              {synthesis.observation && synthesis.observation.split("\n\n").filter(Boolean).map((para, i, arr) => (
+                <p key={i} style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: i < arr.length - 1 ? 14 : 0, fontFamily: P.fontBody }}>{para}</p>
               ))}
               {synthesis.imageUrl && (
                 <div className="ds-synthesis-img" style={{ position: "absolute", top: 20, right: 80 }}>
