@@ -440,11 +440,13 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
     else if (item.section === "Anime") anime.push(item);
     else if (CREATIVE.includes(item.section)) creative.push(item);
   }
-  // Interleave science and creative so s1/s2 are never the same section; tech fills the tail
-  // Slot-capped extras (Food, Sports, Comics, Anime — max 1 each) fill after the core 11
+  // Build core 11-slot pool; slot extras REPLACE the last tech slots (never append)
+  // so total never exceeds 11 — each story needs 3-4 Claude calls and pre-warm maxDuration=300s
   const sci = science.slice(0, 3), cre = creative.slice(0, 5), tec = tech.slice(0, 3);
   const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1), ...comics.slice(0, 1), ...anime.slice(0, 1)];
-  const pool = [sci[0], cre[0], sci[1], cre[1], cre[2], sci[2], cre[3], cre[4], tec[0], tec[1], tec[2], ...slotExtras].filter(Boolean);
+  const corePool = [sci[0], cre[0], sci[1], cre[1], cre[2], sci[2], cre[3], cre[4], tec[0], tec[1], tec[2]].filter(Boolean);
+  // Replace tail slots with slot-specific content when available, keeping total ≤ 11
+  const pool = [...corePool.slice(0, 11 - slotExtras.length), ...slotExtras].filter(Boolean).slice(0, 11);
   // Deals and negative/dark stories must never appear in S1–S3; push them toward the end
   const isNeg = (s: RawItem) => NEGATIVE_RE.test(s.title) || DEAL_RE.test(s.title) || DEAL_RE.test(s.content);
   const negative = pool.filter(isNeg);
@@ -574,7 +576,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
 
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
-  put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
+  await put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
     access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true,
   }).catch(() => {});
   saveToArchive({
