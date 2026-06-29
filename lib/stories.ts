@@ -655,12 +655,12 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl,
   }).catch(() => {});
 
-  // Pre-generate how-to pages last — after archive is written, so no contention with article batching
+  // Pre-generate how-to pages — awaited so they complete before waitUntil exits
   if (synthesis.actions?.length) {
     const context = { theme: synthesis.theme, hook: synthesis.hook };
-    Promise.allSettled(
+    await Promise.allSettled(
       synthesis.actions.map(action => generateHowTo(action, actionSlug(action), context))
-    ).catch(() => {});
+    );
   }
 
   return pageData;
