@@ -440,13 +440,26 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
     else if (item.section === "Anime") anime.push(item);
     else if (CREATIVE.includes(item.section)) creative.push(item);
   }
-  // Build core 11-slot pool; slot extras REPLACE the last tech slots (never append)
-  // so total never exceeds 11 — each story needs 3-4 Claude calls and pre-warm maxDuration=300s
+  // Build core 11-slot pool; slot extras REPLACE random s2-s11 slots (never s1, never append)
+  // so total stays ≤ 11 — each story needs 3-4 Claude calls and pre-warm maxDuration=300s
   const sci = science.slice(0, 3), cre = creative.slice(0, 5), tec = tech.slice(0, 3);
   const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1), ...comics.slice(0, 1), ...anime.slice(0, 1)];
   const corePool = [sci[0], cre[0], sci[1], cre[1], cre[2], sci[2], cre[3], cre[4], tec[0], tec[1], tec[2]].filter(Boolean);
-  // Replace tail slots with slot-specific content when available, keeping total ≤ 11
-  const pool = [...corePool.slice(0, 11 - slotExtras.length), ...slotExtras].filter(Boolean).slice(0, 11);
+  // Seeded Fisher-Yates shuffle of s2-s11 indices to pick replacement positions
+  const poolSeed = editionKey.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const srPool = (n: number) => { const x = Math.sin(poolSeed * 127 + n * 311) * 10000; return x - Math.floor(x); };
+  const candidates = Array.from({ length: corePool.length - 1 }, (_, i) => i + 1); // indices 1..N (s2-s11)
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(srPool(i) * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  const replaceAt = new Set(candidates.slice(0, slotExtras.length));
+  const mutablePool = [...corePool];
+  let ei = 0;
+  for (const pos of Array.from(replaceAt).sort((a, b) => a - b)) {
+    if (ei < slotExtras.length) mutablePool[pos] = slotExtras[ei++];
+  }
+  const pool = mutablePool.filter(Boolean).slice(0, 11);
   // Deals and negative/dark stories must never appear in S1–S3; push them toward the end
   const isNeg = (s: RawItem) => NEGATIVE_RE.test(s.title) || DEAL_RE.test(s.title) || DEAL_RE.test(s.content);
   const negative = pool.filter(isNeg);
