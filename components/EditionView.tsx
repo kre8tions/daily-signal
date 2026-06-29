@@ -490,6 +490,12 @@ export async function EditionView({
     <div className="ds-page" style={{ minHeight: "100vh", background: P.pageBg, fontFamily: P.fontBody, paddingTop: 24, paddingBottom: 60, paddingLeft: 20, paddingRight: 20, color: P.ink }}>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href={CURSIVE_FONT_URL} />
+      <style>{`
+        @media (max-width: 700px) {
+          .ds-bento-fc { grid-template-columns: 1fr !important; grid-template-rows: auto !important; }
+          .ds-bento-fc > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
+        }
+      `}</style>
 
       {/* Masthead */}
       <div className="ds-masthead" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1200, marginTop: 0, marginBottom: 20, marginLeft: "auto", marginRight: "auto" }}>
