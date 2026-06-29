@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache";
 import { cacheGet, cacheSet } from "@/lib/cache";
 import { put, head, list } from "@vercel/blob";
 import { createHash } from "crypto";
+import { getLens } from "./palette";
 
 const parser = new Parser({
   customFields: { item: ["media:content", "media:thumbnail", "enclosure"] },
@@ -1105,6 +1106,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   // ── Pass 0.5: mode selection — writer chooses engagement mode based on subject knowledge ──
   const writer = writerIndex !== undefined ? WRITERS[writerIndex % WRITERS.length] : null;
   const writerName = writer?.name ?? "The Signal editor";
+  const lens = getLens(story.section, refSeed);
   const modeSelection = analysis ? await selectMode(client, story, analysis, writerName) : null;
 
   const editorialBrief = (analysis || modeSelection) ? [
@@ -1116,8 +1118,8 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
 
   // ── Pass 1: voice — write freely, pure quality, no structural constraints ──
   const voiceInstruction = writer
-    ? writer.style
-    : `You write "The Signal Take" — a short, sharp editorial for a news digest. Your voice: the smartest person in the room who happens to be your friend. Direct. A little irreverent. Never preachy. You find the non-obvious angle and follow it somewhere unexpected.`;
+    ? `${writer.style}${lens ? `\n\n${lens.prompt}` : ""}`
+    : `You write "The Signal Take" — a short, sharp editorial for a news digest. Your voice: the smartest person in the room who happens to be your friend. Direct. A little irreverent. Never preachy. You find the non-obvious angle and follow it somewhere unexpected.${lens ? `\n\n${lens.prompt}` : ""}`;
 
   const pass1msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",

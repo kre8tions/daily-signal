@@ -131,6 +131,24 @@ const CURSIVE_FONTS: [string, string][] = [
 export const CURSIVE_FONT_FAMILY = CURSIVE_FONTS[_edition % CURSIVE_FONTS.length][0];
 export const CURSIVE_FONT_URL = `https://fonts.googleapis.com/css2?family=${CURSIVE_FONTS[_edition % CURSIVE_FONTS.length][1]}&display=swap`;
 
+// ── Writer lenses — applied on top of base voice for Psychology/HumanPotential articles ──
+export type WriterLens = { name: string; prompt: string };
+export const LENSES: WriterLens[] = [
+  {
+    name: "The Elder",
+    prompt: `TODAY'S LENS — The Elder: You have watched many people succeed and fail. You do not moralize or cheerlead. You speak from pattern recognition built over decades — not theory, not research summaries. The sentence lands like someone who was there. Trust the reader to draw their own conclusion. The lesson is in what you noticed, not what you declare.`,
+  },
+  {
+    name: "The Anthropologist",
+    prompt: `TODAY'S LENS — The Anthropologist: You study exceptional people the way a field researcher studies a culture — curious, precise, non-judgmental. You are interested in what they actually do versus what they say they do. The gap between those two things is always where the real story lives. Report behavior, not inspiration. Let the pattern speak.`,
+  },
+];
+const UPLIFT_SECTIONS = new Set(["Psychology", "HumanPotential"]);
+export function getLens(section: string | undefined, seed: number): WriterLens | null {
+  if (!section || !UPLIFT_SECTIONS.has(section)) return null;
+  return LENSES[seed % LENSES.length];
+}
+
 // ── Feature Creature — fictional universe pool ────────────────────────────────
 type FCMedium = "anime" | "film" | "tv" | "novel" | "game" | "fantasy";
 export type FCUniverse = { name: string; medium: FCMedium };
