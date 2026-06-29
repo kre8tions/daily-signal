@@ -44,8 +44,9 @@ Edition labels: early="First Light", morning="The Brief", afternoon="Midday", ev
 ## Blob Cache Keys
 | Key | Content |
 |-----|---------|
-| `articles/v19/{editionKey}/{slug}.json` | ArticleCommentary (edition-scoped) |
-| `articles/v19/by-slug/{slug}.json` | ArticleCommentary (global reuse — checked first) |
+| `articles/{editionKey}/{slug}.json` | ArticleCommentary (edition-scoped, no version prefix) |
+| `articles/by-slug/{slug}.json` | ArticleCommentary (global reuse — checked first) |
+| `articles/v18-v22/{editionKey}/{slug}.json` | Legacy versioned blobs (read fallback only) |
 | `feature-creature/v20/{editionKey}.json` | FeatureCreature JSON |
 | `synthesis/v1/{editionKey}.json` | Synthesis JSON (includes `imageUrl`) |
 | `archive/editions/{key}.json` | Full PageData for edition |

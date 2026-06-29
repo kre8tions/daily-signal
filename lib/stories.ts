@@ -891,14 +891,13 @@ Return JSON only:
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number, readOnly = false): Promise<ArticleCommentary> {
-  const PROMPT_V = "v22"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
   const hasImg2 = seededRandom(refSeed + 7) < 0.2;
   const hasKeyFacts = !hasCta && seededRandom(refSeed + 19) < 0.33;
-  const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
-  const globalKey = `articles/${PROMPT_V}/by-slug/${slug}.json`;
+  const blobKey = `articles/${editionKey}/${slug}.json`;
+  const globalKey = `articles/by-slug/${slug}.json`;
 
   // Check global slug cache first (reuse content if this link was ever processed)
   try {
@@ -922,11 +921,11 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
         if (cached.body) return cached;
       }
     }
-  } catch { /* not found — generate fresh */ }
+  } catch { /* not found */ }
 
-  // In read-only mode, try older PROMPT_V versions before giving up
+  // In read-only mode, try old versioned paths before giving up
   if (readOnly) {
-    for (const oldV of ["v21", "v20", "v19", "v18"]) {
+    for (const oldV of ["v22", "v21", "v20", "v19", "v18"]) {
       for (const key of [`articles/${oldV}/by-slug/${slug}.json`, `articles/${oldV}/${editionKey}/${slug}.json`]) {
         try {
           const existing = await head(key);
