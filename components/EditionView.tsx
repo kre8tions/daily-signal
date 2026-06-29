@@ -448,7 +448,7 @@ export async function EditionView({
   const [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11] = allStories;
   // Flip row 1 (S1) and row 2 (FC) on morning + evening editions for layout variety
   const _slot = editionKey.split("_")[1];
-  const flipRows = _slot === "morning" || _slot === "evening";
+  const synthFlip = seededRandom(editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 41), 0)) < 0.4;
 
   const card: React.CSSProperties = { background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, position: "relative" };
   const imgCard: React.CSSProperties = { ...card, position: "relative", background: P.tint + "44" };
@@ -539,7 +539,7 @@ export async function EditionView({
       </div>
 
       {/* Synthesis — flipped editions: appears between S1 hero and FC+S2 */}
-      {flipRows && synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />}
+      {synthFlip && synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />}
 
       {/* Bento row 2: FC + S2 */}
       <div className="ds-bento-fc" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
@@ -623,7 +623,7 @@ export async function EditionView({
       </div>
 
       {/* Synthesis — normal editions: appears after FC+S2 */}
-      {!flipRows && synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />}
+      {!synthFlip && synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />}
 
       {/* Row 2: s3–s11 */}
       {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).length > 0 && (() => {
