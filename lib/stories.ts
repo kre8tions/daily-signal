@@ -1282,41 +1282,75 @@ export async function getFeatureCreature(editionKey: string): Promise<FeatureCre
   const voiceId = fcWriterIndex + 1;
 
   try {
-    // ── Pass 1: free-write — Claude focuses purely on quality, voice, insight ──
+    // Medium-aware framing question — what angle is most generative for this type of work
+    const mediumFrame: Record<string, string> = {
+      film:    `What did this film understand about the era it was made that most people are only seeing now? What did it get wrong that turned out to be more revealing than what it got right?`,
+      tv:      `What does the show's structure — its pacing, its season arcs, its refusal to resolve certain things — argue about how we want to experience its central theme?`,
+      anime:   `What do the production design, worldbuilding physics, or visual grammar reveal about the anxieties of the culture and moment that made it?`,
+      novel:   `What did this book predict — and why is the shape of the prediction more interesting than whether it came true?`,
+      game:    `What does this game's core mechanic or system argue — not its story or lore, but the logic baked into how it asks you to play?`,
+      fantasy: `What real-world social, political, or psychological structure does this world make visible by exaggerating or inverting it?`,
+    };
+    const frameQuestion = mediumFrame[FC_UNIVERSE.medium] ?? mediumFrame.film;
+
+    // ── Pass 0: pre-flight claim — commit to a specific, falsifiable take before writing ──
+    const claimMsg = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 120,
+      messages: [{
+        role: "user",
+        content: `You are writing a sharp editorial about ${FC_UNIVERSE.name} (${FC_UNIVERSE.medium}).
+
+Angle you've been assigned: ${FC_ANGLE.label} — ${FC_ANGLE.prompt}
+
+Framing question: ${frameQuestion}
+
+Before writing, state your core claim in ONE sentence. Requirements:
+- Specific and falsifiable — a dedicated fan should be able to argue against it
+- Names something concrete from the actual work (a scene, a system, a character decision, a design choice)
+- Goes somewhere the work's own creators probably didn't intend
+- Not a summary. Not "X shows us that Y matters." A real claim.
+
+Reply with the claim sentence only. No preamble.`,
+      }],
+    });
+    const coreClaim = claimMsg.content[0].type === "text" ? claimMsg.content[0].text.trim() : "";
+
+    // ── Pass 1: free-write — write from the committed claim ──
     const pass1msg = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 1200,
+        max_tokens: 1400,
         messages: [{
           role: "user",
-          content: `You are the "Feature Creature" — a sharp editorial voice that finds the real-world science, culture, or design hiding inside fictional universes. You write like the smartest friend texting you something mind-blowing at 11pm. Not a professor. Not a recap. A genuine "holy shit, I never thought of it that way" take.
+          content: `You are the Feature Creature — a sharp editorial voice that finds what iconic films, shows, anime, novels, and games understood before everyone else did. You have a genuine critical opinion about this work. You write with authority, not enthusiasm.
 
 Your instinct for this piece: ${fcWriter.style}
 
-But keep the late-night energy — casual, direct, genuinely excited about the idea.
-
-Universe: ${FC_UNIVERSE.name}
+Universe: ${FC_UNIVERSE.name} (${FC_UNIVERSE.medium})
 Angle: ${FC_ANGLE.label}
-Task: ${FC_ANGLE.prompt}
+Framing question: ${frameQuestion}
+Your committed claim: ${coreClaim}
 
-Forget structure — just write the best possible take. Find ONE surprising idea and follow it somewhere unexpected. Make a real argument, not a list of observations.
+Start from that claim. Don't restate it — weaponize it. Follow it somewhere the work's own creators probably didn't intend. Make a real argument with specific evidence from the actual work: scenes, mechanics, design choices, lines of dialogue, production decisions. Not vibes. Not "it resonates." The specific thing.
 
-Voice:
-- Vary sentence length. Short punches. Then one that earns it. Then short again.
-- Vivid and specific — name the actual thing, don't describe it abstractly.
-- No hedging: never "one might argue", "it is worth noting", "this suggests that".
-- No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...", "No one is saying out loud...".
+Voice rules — non-negotiable:
+- Vary sentence length. Short punches. Then one long one that earns it. Then short again.
+- Name the actual thing. Never describe it abstractly.
+- No hedging: never "one might argue", "it is worth noting", "this suggests that", "in many ways".
+- No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...", "What makes [X] so compelling is...".
+- Write like you've seen this a dozen times and noticed something on the ninth watch.
 
 Return JSON only, no markdown:
 {
-  "title": "5-9 words. A human journalist wrote this, not an AI. Strong verb, concrete nouns — put the actual argument or finding in the words themselves, don't gesture at it. FORBIDDEN: colons (almost never); 'X: When Y'; 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'/'Revolutionary'; 'Becomes [abstract noun]' (phenomenon, spectacle, currency). Writer voice: Rex=confrontational verdict, Eric=plain moral charge, Margot=cool disturbing observation, Finn=insider thriller hook, Cal=counter-intuitive reversal, Jack=sardonic sting, Ward=status-game exposure. GOOD: 'Hogwarts Runs on Indentured Labor' / 'The Matrix Already Lost Before Neo Woke Up' / 'Westeros Invented Feudalism Twice and Called It Progress'. BAD: 'Why Dune Reveals the Truth About Power' / 'The Hidden Science of Star Wars: A New Era'.",
-  "synopsis": "1-2 sentences. Makes someone drop everything to read this.",
-  "body": "180-220 words. Open with a sharp thesis — one irreversible claim. Then 2-3 specific supporting insights: real examples, surprising connections, observations that prove the thesis. End with a consequence or open question that lands. Every sentence earns its place.",
-  "headers": ["2-3 words: the opening theme", "2-3 words: the turn or escalation"],
-  "ctaHeader": "2-4 words. Active verb phrase. E.g. 'Try This Now', 'Make It Real', 'Start Here'.",
-  "callToAction": "1 sentence. Specific imperative — a real thing to DO, WATCH, BUILD, or READ today. Not 'explore this topic'. Name the exact thing.",
-  "digDeeper": "1 sentence. One specific book, film, essay, paper, or rabbit hole — with enough detail to find it. Not a genre. Not a Wikipedia article.",
+  "title": "5-9 words. Put the actual argument in the words — don't gesture at it. FORBIDDEN: colons; 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'. Writer voice: Rex=confrontational verdict, Eric=plain moral charge, Margot=cool disturbing observation, Finn=insider thriller hook, Cal=counter-intuitive reversal, Jack=sardonic sting, Ward=status-game exposure. GOOD: 'Hogwarts Runs on Indentured Labor' / 'The Matrix Already Lost Before Neo Woke Up' / 'Disco Elysium Proves Failure Is the Only Honest Mechanic'. BAD: 'Why Dune Reveals the Truth About Power'.",
+  "synopsis": "1-2 sentences. The claim and why it matters. Makes someone stop scrolling.",
+  "body": "240-280 words. Open with your committed claim stated as fact — no setup, no context. Then 3-4 specific supporting insights grounded in the actual work. End with a consequence or open question that changes how the reader sees something outside the work. Every sentence earns its place.",
+  "headers": ["2-3 words: names the opening argument", "2-3 words: names the turn or escalation"],
+  "ctaHeader": "2-4 words. Active verb phrase.",
+  "callToAction": "1 sentence. A specific thing to DO, WATCH, READ, or PLAY that connects to the argument — not just 'watch the film'. Name something adjacent: a documentary, a book about the making-of, a scene timestamp, a related work that answers the question this one left open.",
+  "digDeeper": "1 sentence. One specific piece of criticism, making-of documentary, essay, interview, or adjacent work that changes how you see this universe — something a dedicated fan might not have found. Name it precisely enough to be searchable. Not Wikipedia. Not 'read the source material'.",
   "pullQuote": "Copy one sentence verbatim from your body — the most arresting one. Word-for-word identical.",
-  "imageQuery": "4-6 concrete visual nouns for Unsplash. Describe a real-world scene or object related to the article's central idea — NOT the fictional universe itself. CRITICAL: match the mood and tone of the source. Dark/thriller source = dark moody image. Hopeful source = bright open image. E.g. for a Blade Runner/rain article: 'rain slicked city street neon reflection'. For Ex Machina/isolation: 'empty modernist room glass walls solitude'. For a hopeful space film: 'astronaut sunrise orbit earth'."
+  "imageQuery": "4-6 concrete visual nouns for Unsplash. A real-world scene or object that carries the mood of the article's central argument — NOT the fictional universe name. Dark source = dark moody image. E.g. 'rain slicked city street neon reflection' / 'empty modernist room glass walls solitude' / 'astronaut sunrise orbit earth'."
 }`
         }],
       });
@@ -1335,7 +1369,7 @@ Return JSON only, no markdown:
     // ── Pass 2: scaffold — restructure the free-write into the para cadence ──
     const scaffoldMsg = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 700,
+      max_tokens: 900,
       messages: [{
         role: "user",
         content: `Restructure this article body into 4-5 paragraphs. Preserve ALL ideas and the original voice word-for-word where possible. Do not add new ideas.
