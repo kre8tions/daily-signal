@@ -1,4 +1,4 @@
-import { getHowTo } from "@/lib/stories";
+import { getHowTo, generateHowTo } from "@/lib/stories";
 import { P, contrastColor, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL } from "@/lib/palette";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -28,7 +28,7 @@ export default async function HowToPage({ params, searchParams }: {
 
   const articleTitle = articleTitleB64 ? decodeURIComponent(articleTitleB64) : null;
 
-  const howto = await getHowTo(action, slug);
+  const howto = await getHowTo(action, slug) ?? await generateHowTo(action, slug);
   if (!howto) notFound();
 
   return (
