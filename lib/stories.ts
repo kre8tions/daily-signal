@@ -279,9 +279,24 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
     ? "portrait tribute memorial flowers"
     : (section && sectionFallback[section]) ?? "news media editorial";
 
+  // Detect named cultural works in the headline (film, show, book, game) — e.g. "Contact Made Us Afraid…"
+  // Pattern: 1-3 Title Case words at the start of the headline before a verb or connector
+  const culturalSections = new Set(["Film", "Entertainment", "Arts", "Culture", "Comics", "Anime"]);
+  let namedWorkQuery: string | undefined;
+  if (culturalSections.has(section ?? "")) {
+    const titleMatch = headline.match(/^((?:[A-Z][a-zA-Z']+(?:\s+|$)){1,4})/);
+    const candidate = titleMatch?.[1]?.trim();
+    // Only use if it's not just the same as a generic word and appears to be a proper title (≥1 capitalized word, ≤4 words)
+    if (candidate && candidate.split(" ").length <= 4 && /[A-Z]/.test(candidate[0])) {
+      const sectionHint = section === "Film" ? "film" : section === "Comics" ? "comic" : section === "Anime" ? "anime" : "series";
+      namedWorkQuery = `${candidate} ${sectionHint}`;
+    }
+  }
+
   const queries = [
     ...(personQuery ? [personQuery, `${personQuery} portrait`] : []),
     ...(imageQuery ? [imageQuery] : []),
+    ...(namedWorkQuery && !imageQuery ? [namedWorkQuery] : []),
     words.slice(0, 3).join(" "),
     words.slice(0, 2).join(" "),
     fallback,
@@ -997,7 +1012,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const hasImg2 = seededRandom(refSeed + 7) < 0.2;
   const hasKeyFacts = !hasCta && seededRandom(refSeed + 19) < 0.33;
   const blobKey = `articles/${editionKey}/${slug}.json`;
-  const globalKey = `articles/by-slug/${slug}.json`;
+  const globalKey = `articles/by-slug-v2/${slug}.json`;
 
   // Check global slug cache first (reuse content if this link was ever processed)
   try {
@@ -1025,8 +1040,11 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
 
   // In read-only mode, try old versioned paths before giving up
   if (readOnly) {
-    for (const oldV of ["v22", "v21", "v20", "v19", "v18"]) {
-      for (const key of [`articles/${oldV}/by-slug/${slug}.json`, `articles/${oldV}/${editionKey}/${slug}.json`]) {
+    for (const oldV of ["by-slug", "v22", "v21", "v20", "v19", "v18"]) {
+      for (const key of [
+        oldV === "by-slug" ? `articles/by-slug/${slug}.json` : `articles/${oldV}/by-slug/${slug}.json`,
+        `articles/${oldV}/${editionKey}/${slug}.json`,
+      ]) {
         try {
           const existing = await head(key);
           if (existing) {
