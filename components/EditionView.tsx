@@ -282,7 +282,7 @@ function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synt
             </svg>
           </div>
           {synthesis.observation && (
-            <div style={{ position: "relative", paddingTop: 20, paddingBottom: 14, paddingLeft: 28, paddingRight: synthesis.imageUrl ? 252 : 28, borderBottom: `1px solid ${P.tint}44` }}>
+            <div style={{ position: "relative", paddingTop: 20, paddingBottom: 14, paddingLeft: 28, paddingRight: synthesis.imageUrl ? 320 : 28, borderBottom: `1px solid ${P.tint}44` }}>
               <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Observation</div>
               {synthesis.observation.split("\n\n").filter(Boolean).map((para, i) => (
                 <p key={i} style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: i < synthesis.observation.split("\n\n").length - 1 ? 14 : 0, fontFamily: P.fontBody }}>{para}</p>
