@@ -129,6 +129,23 @@ Rex (Hitchens), Eric (Orwell), Margot (Didion), Finn (M. Lewis), Cal (Gladwell),
 ## Deployment
 Vercel auto-deploys on push to `main`. Check Vercel dashboard for build errors.
 
+## Feed System (lib/stories.ts — FEEDS array)
+Optional fields on feed objects: `preferRssImage?: boolean`, `slotOnly?: string`.
+- `preferRssImage: true` → `getArticleImage` uses `rssImageUrl` directly, skips Unsplash
+- `slotOnly: "afternoon"` / `"evening"` → feed filtered out before fetch on other slots
+- Slot-capped sections (max 1 per edition in pool): Food, Sports, Comics, Anime
+- Core pool: 3 Science + 5 Creative + 3 Tech = 11 slots; slot-capped extras appended after
+
+| Section | Notes |
+|---------|-------|
+| Technology, Science, Culture, Film, Entertainment, Arts | Core — always active |
+| Faith | Sunday early morning only |
+| Food (Eater, Bon Appétit) | afternoon only, max 1 |
+| Sports (Bleacher Report, The Athletic) | evening only, max 1 |
+| Comics (The Beat, CBR, Previews World) | max 1, preferRssImage |
+| Anime (ANN, Crunchyroll, MyAnimeList) | max 1, preferRssImage |
+| Entertainment K-pop (allkpop, Soompi, Koreaboo) | preferRssImage |
+
 ## Open Items
 - Custom domain (still on daily-signal-omega.vercel.app)
 - Share button on articles
