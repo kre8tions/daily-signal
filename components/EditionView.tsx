@@ -296,9 +296,10 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
 
 // ── Synthesis section ─────────────────────────────────────────────────────────
 
-function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synthesis; stories: Story[]; writerIndex: number }) {
-  return (
-    <>
+function SynthesisSection({ synthesis, stories, writerIndex, editionKey }: { synthesis: Synthesis; stories: Story[]; writerIndex: number; editionKey: string }) {
+  const synthSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 17), 0);
+  const flipSynthRows = synthSeed % 2 === 1;
+  const insightsBlock = (
       <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
         <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
           <div style={{ position: "absolute", top: 12, right: 16, fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: P.accent, opacity: 0.45, letterSpacing: 1, userSelect: "none" as const }}>W{writerIndex}</div>
@@ -364,8 +365,8 @@ function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synt
           <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border)" />
         </svg>
       </div>
-
-      {synthesis.actions?.length > 0 && (
+  );
+  const actionsBlock = synthesis.actions?.length > 0 ? (
         <div style={{ maxWidth: 1200, marginTop: 16, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
           <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 28, paddingBottom: 32, paddingLeft: 32, paddingRight: 32 }}>
             <style>{`@keyframes action-pop{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}.action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:700px){.action-grid{grid-template-columns:1fr}}`}</style>
@@ -404,7 +405,10 @@ function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synt
             <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-action)" />
           </svg>
         </div>
-      )}
+  ) : null;
+  return (
+    <>
+      {flipSynthRows ? <>{actionsBlock}{insightsBlock}</> : <>{insightsBlock}{actionsBlock}</>}
     </>
   );
 }
@@ -617,7 +621,7 @@ export async function EditionView({
       </div>
 
       {/* Synthesis */}
-      {synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />}
+      {synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} editionKey={editionKey} />}
 
       {/* Row 2: s3–s11 */}
       {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).length > 0 && (() => {
