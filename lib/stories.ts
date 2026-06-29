@@ -645,14 +645,6 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     ...failed.map(s => ({ ...s, cardStyle: "brief" as const })),
   ];
 
-  // Pre-generate how-to pages for all 3 action steps so "How?" pills resolve
-  if (synthesis.actions?.length) {
-    const context = { theme: synthesis.theme, hook: synthesis.hook };
-    Promise.allSettled(
-      synthesis.actions.map(action => generateHowTo(action, actionSlug(action), context))
-    ).catch(() => {});
-  }
-
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
   await put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
@@ -662,6 +654,15 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     key: editionKey, label: editionLabel,
     date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl,
   }).catch(() => {});
+
+  // Pre-generate how-to pages last — after archive is written, so no contention with article batching
+  if (synthesis.actions?.length) {
+    const context = { theme: synthesis.theme, hook: synthesis.hook };
+    Promise.allSettled(
+      synthesis.actions.map(action => generateHowTo(action, actionSlug(action), context))
+    ).catch(() => {});
+  }
+
   return pageData;
 }
 
