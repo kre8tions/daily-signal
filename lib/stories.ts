@@ -741,6 +741,7 @@ export async function getHowTo(action: string, slug: string): Promise<HowTo | nu
 }
 
 export async function generateHowTo(action: string, slug: string, context?: { theme?: string; hook?: string }): Promise<HowTo | null> {
+  console.log("[generateHowTo] called", slug, "action length:", action?.length);
   const blobKey = `howto/${slug}.json`;
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const contextLine = context?.theme || context?.hook
