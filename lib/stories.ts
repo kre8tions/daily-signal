@@ -1283,8 +1283,7 @@ export async function getFeatureCreature(editionKey: string): Promise<FeatureCre
 
   try {
     // ── Pass 1: free-write — Claude focuses purely on quality, voice, insight ──
-    const [pass1msg, imageUrl] = await Promise.all([
-      client.messages.create({
+    const pass1msg = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1200,
         messages: [{
@@ -1320,13 +1319,15 @@ Return JSON only, no markdown:
   "imageQuery": "4-6 concrete visual nouns for Unsplash. Describe a real-world scene or object related to the article's central idea — NOT the fictional universe itself. CRITICAL: match the mood and tone of the source. Dark/thriller source = dark moody image. Hopeful source = bright open image. E.g. for a Blade Runner/rain article: 'rain slicked city street neon reflection'. For Ex Machina/isolation: 'empty modernist room glass walls solitude'. For a hopeful space film: 'astronaut sunrise orbit earth'."
 }`
         }],
-      }),
-      fetchUnsplash(`${FC_UNIVERSE} ${FC_ANGLE.key}`, "Culture").then(r => r?.url),
-    ]);
+      });
 
     const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
     const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const pass1 = JSON.parse(text1);
+
+    // Fetch image using the imageQuery Claude wrote from the article body — falls back to universe+angle
+    const fcImageQuery = (pass1.imageQuery as string | undefined)?.trim() || `${FC_UNIVERSE} ${FC_ANGLE.key}`;
+    const imageUrl = await fetchUnsplash(fcImageQuery, "Culture").then(r => r?.url);
 
     // ── Pass 2: scaffold — restructure the free-write into the para cadence ──
     const scaffoldMsg = await client.messages.create({
