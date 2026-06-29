@@ -380,7 +380,11 @@ function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synt
                 const relStory = stories[i] ?? stories[0];
                 const relSlug = relStory ? urlToSlug(relStory.link) : "";
                 const relTitle = relStory ? encodeURIComponent(relStory.title) : "";
-                const href = `/how/${slug}?a=${encoded}&as=${relSlug}&at=${relTitle}`;
+                const synthCtx = [
+                  synthesis.theme ? `st=${encodeURIComponent(synthesis.theme)}` : "",
+                  synthesis.hook ? `sh=${encodeURIComponent(synthesis.hook)}` : "",
+                ].filter(Boolean).join("&");
+                const href = `/how/${slug}?a=${encoded}&as=${relSlug}&at=${relTitle}${synthCtx ? "&" + synthCtx : ""}`;
                 return (
                   <a key={i} href={href} style={{ textDecoration: "none", background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 16, paddingBottom: 16, paddingLeft: 18, paddingRight: 18, display: "flex", flexDirection: "column", gap: 12, minHeight: 120 }}>
                     <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>

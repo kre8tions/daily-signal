@@ -645,6 +645,14 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     ...failed.map(s => ({ ...s, cardStyle: "brief" as const })),
   ];
 
+  // Pre-generate how-to pages for all 3 action steps so "How?" pills resolve
+  if (synthesis.actions?.length) {
+    const context = { theme: synthesis.theme, hook: synthesis.hook };
+    Promise.allSettled(
+      synthesis.actions.map(action => generateHowTo(action, actionSlug(action), context))
+    ).catch(() => {});
+  }
+
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
   await put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
@@ -731,31 +739,37 @@ export async function getHowTo(action: string, slug: string): Promise<HowTo | nu
   return null;
 }
 
-export async function generateHowTo(action: string, slug: string): Promise<HowTo | null> {
+export async function generateHowTo(action: string, slug: string, context?: { theme?: string; hook?: string }): Promise<HowTo | null> {
   const blobKey = `howto/${slug}.json`;
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const contextLine = context?.theme || context?.hook
+    ? `\nEDITION CONTEXT (use this to make steps specific and relevant, but don't mention it explicitly):\nTheme: ${context.theme ?? ""}\nInsight: ${context.hook ?? ""}\n`
+    : "";
   try {
     const msg = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 400,
       messages: [{
         role: "user",
-        content: `You are a practical, encouraging coach for beginners and early creators. Someone just read this action step and wants to know how to actually do it:
-
+        content: `You are a practical coach for beginners and early creators. Someone just read this action step and wants to know how to do it in 3 concrete moves.
+${contextLine}
 ACTION: "${action}"
 
-Return JSON with this exact shape:
-{
-  "title": "The action step, rewritten as a clear imperative title (max 10 words)",
-  "steps": [
-    { "heading": "Step 1 label (3-5 words)", "instruction": "One concrete sentence telling them exactly what to do. Simple, specific, no jargon." },
-    { "heading": "Step 2 label (3-5 words)", "instruction": "One concrete sentence. The next logical move." },
-    { "heading": "Step 3 label (3-5 words)", "instruction": "One concrete sentence. How to finish or follow through." }
-  ],
-  "why": "One sentence explaining why this action matters — the real payoff. Motivating, not preachy."
-}
+Rules:
+- Steps should feel specific to the action's topic, not generic productivity advice.
+- Each instruction is one sentence. Simple language, no jargon, no fluff.
+- "why" is motivating and specific — name the real payoff, not "it will help you grow."
 
-Return only valid JSON.`,
+Return JSON only:
+{
+  "title": "The action rewritten as a clear imperative title (max 10 words)",
+  "steps": [
+    { "heading": "3-5 word label", "instruction": "Exactly what to do first. One sentence." },
+    { "heading": "3-5 word label", "instruction": "The next move. One sentence." },
+    { "heading": "3-5 word label", "instruction": "How to finish or follow through. One sentence." }
+  ],
+  "why": "One sentence. The specific real-world payoff of doing this."
+}`,
       }],
     });
 
