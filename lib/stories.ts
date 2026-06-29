@@ -542,9 +542,9 @@ Return JSON only, no markdown:
   ],
   "conclusion": "The most screenshot-worthy sentence in the entire card. A provocation, not a summary. Should make someone want to share it. Sharp enough to stand alone without context. Do not start with 'Today' or 'Ultimately' or 'In the end'.",
   "actions": [
-    "Grounded in today's theme: the single most useful first move for someone just starting out — no experience, no audience, no budget needed. Specific to what today's stories revealed, not generic advice. Max 20 words.",
-    "A low-risk experiment a beginner can run this week that directly connects to the theme or tension in today's stories. Different angle from the first. Max 20 words.",
-    "The smallest possible concrete step — something that takes under 10 minutes, costs nothing, and proves the insight from today's stories in their own life or work. Max 20 words."
+    "Imperative sentence. Start with a strong verb: Go, Make, Start, Write, Pick, Find, Ask, Build, Try, Post. No preamble, no 'given that', no 'based on today'. Reader already knows the context. Beginner-friendly, specific, zero experience needed. Max 15 words.",
+    "Imperative sentence. Different verb, different angle. Low-risk, this-week doable. Same rules: no setup, just the action. Max 15 words.",
+    "Imperative sentence. The smallest possible move — under 10 minutes, costs nothing. Starts with a verb. Max 15 words."
   ],
   "imageQuery": "4-6 concrete visual words for Unsplash that match the mood and texture of today's theme — a real scene or object, not an abstraction. E.g. for 'institutional friction': 'empty government hallway fluorescent light'; for 'surveillance creep': 'security camera corner urban shadow'. No abstract nouns. No brand names."
 }`,
