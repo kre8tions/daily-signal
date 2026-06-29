@@ -222,28 +222,37 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
   });
 
   const planes: PlaneData[] = Array.from({ length: numPlanes }, (_, pi) => {
-    // Start and end freely anywhere (not left→right biased)
+    // Each plane owns a horizontal band — paths stay in their band so they never cross
+    const bandH = H / numPlanes;
+    const bandTop = pi * bandH + H * PT_MARGIN;
+    const bandBot = (pi + 1) * bandH - H * PT_MARGIN;
+    const clampBand = (x: number, y: number): Pt => ({
+      x: Math.max(W * PT_MARGIN, Math.min(W * (1 - PT_MARGIN), x)),
+      y: Math.max(bandTop, Math.min(bandBot, y)),
+    });
+
+    // Start and end freely anywhere horizontally within the band
     const pts: Pt[] = [];
-    pts.push(clampPt(
+    pts.push(clampBand(
       W * (PT_MARGIN + sr(pi * 60) * (1 - 2 * PT_MARGIN)),
-      H * (PT_MARGIN + sr(pi * 60 + 1) * (1 - 2 * PT_MARGIN)),
+      bandTop + sr(pi * 60 + 1) * (bandBot - bandTop),
     ));
 
-    // 4–6 middle waypoints scattered across the whole image
+    // 4–6 middle waypoints — x free, y stays in band
     const numMid = 4 + Math.floor(sr(pi * 60 + 2) * 3);
     for (let i = 0; i < numMid; i++) {
-      pts.push(clampPt(
+      pts.push(clampBand(
         W * (PT_MARGIN + sr(pi * 60 + i * 7 + 3) * (1 - 2 * PT_MARGIN)),
-        H * (PT_MARGIN + sr(pi * 60 + i * 7 + 4) * (1 - 2 * PT_MARGIN)),
+        bandTop + sr(pi * 60 + i * 7 + 4) * (bandBot - bandTop),
       ));
     }
 
-    pts.push(clampPt(
+    pts.push(clampBand(
       W * (PT_MARGIN + sr(pi * 60 + 20) * (1 - 2 * PT_MARGIN)),
-      H * (PT_MARGIN + sr(pi * 60 + 21) * (1 - 2 * PT_MARGIN)),
+      bandTop + sr(pi * 60 + 21) * (bandBot - bandTop),
     ));
 
-    // 55% chance of a smooth loop mid-path
+    // 55% chance of a smooth loop mid-path (clamped to band)
     if (sr(pi * 60 + 30) < 0.55 && pts.length >= 3) {
       const li = 1 + Math.floor(sr(pi * 60 + 31) * (pts.length - 2));
       const lx = pts[li].x, ly = pts[li].y;
@@ -254,7 +263,7 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
         { x: lx + r * 0.25, y: ly + dir * r },
         { x: lx - r * 0.65, y: ly + dir * r * 0.55 },
         { x: lx - r * 0.2,  y: ly - dir * r * 0.25 },
-      ].map(p => clampPt(p.x, p.y));
+      ].map(p => clampBand(p.x, p.y));
       pts.splice(li + 1, 0, ...loop);
     }
 
