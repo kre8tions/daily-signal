@@ -296,10 +296,9 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
 
 // ── Synthesis section ─────────────────────────────────────────────────────────
 
-function SynthesisSection({ synthesis, stories, writerIndex, editionKey }: { synthesis: Synthesis; stories: Story[]; writerIndex: number; editionKey: string }) {
-  const synthSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 17), 0);
-  const flipSynthRows = synthSeed % 2 === 1;
-  const insightsBlock = (
+function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synthesis; stories: Story[]; writerIndex: number }) {
+  return (
+    <>
       <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
         <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
           <div style={{ position: "absolute", top: 12, right: 16, fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: P.accent, opacity: 0.45, letterSpacing: 1, userSelect: "none" as const }}>W{writerIndex}</div>
@@ -365,8 +364,7 @@ function SynthesisSection({ synthesis, stories, writerIndex, editionKey }: { syn
           <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border)" />
         </svg>
       </div>
-  );
-  const actionsBlock = synthesis.actions?.length > 0 ? (
+      {synthesis.actions?.length > 0 && (
         <div style={{ maxWidth: 1200, marginTop: 16, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
           <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 28, paddingBottom: 32, paddingLeft: 32, paddingRight: 32 }}>
             <style>{`@keyframes action-pop{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}.action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:700px){.action-grid{grid-template-columns:1fr}}`}</style>
@@ -405,10 +403,7 @@ function SynthesisSection({ synthesis, stories, writerIndex, editionKey }: { syn
             <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-action)" />
           </svg>
         </div>
-  ) : null;
-  return (
-    <>
-      {flipSynthRows ? <>{actionsBlock}{insightsBlock}</> : <>{insightsBlock}{actionsBlock}</>}
+      )}
     </>
   );
 }
@@ -512,11 +507,11 @@ export async function EditionView({
         {!isArchive && <EmailCapture accent={P.accent} ink={P.ink} cardBg={P.cardBg} fontBody={P.fontBody} pillHeight={36} />}
       </div>
 
-      {/* Bento grid */}
-      <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(320px, auto) minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
+      {/* Bento row 1: S1 hero */}
+      <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(320px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
 
         {s1 && (
-          <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ gridColumn: "1 / 6", gridRow: flipRows ? "3" : "1", textDecoration: "none", color: "inherit" }}>
+          <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ gridColumn: "1 / 6", gridRow: "1", textDecoration: "none", color: "inherit" }}>
             <div style={{ ...card, height: "100%", paddingTop: 28, paddingBottom: 32, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
               <Pill section={s1.section} />
               <h1 className="ds-card-h" style={hStyle}>{s1.ownedTitle || s1.title}</h1>
@@ -536,11 +531,18 @@ export async function EditionView({
         )}
 
         {s1 && (
-          <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ ...imgCard, gridColumn: "6 / 13", gridRow: flipRows ? "3" : "1", textDecoration: "none" }}>
+          <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ ...imgCard, gridColumn: "6 / 13", gridRow: "1", textDecoration: "none" }}>
             {s1.imageUrl ? <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.gradFrom}, ${P.gradTo})` }} />}
             <S1FlightPaths seed={editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 7), 0)} color={P.accent} imageColor={s1.imageColor} />
           </a>
         )}
+      </div>
+
+      {/* Synthesis — flipped editions: appears between S1 hero and FC+S2 */}
+      {flipRows && synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />}
+
+      {/* Bento row 2: FC + S2 */}
+      <div className="ds-bento-fc" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
 
         {featureCreature && (() => {
           const fc = featureCreature;
@@ -552,7 +554,7 @@ export async function EditionView({
           const borderSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 3), 0);
           const borderColor = color;
           return (
-            <div style={{ gridColumn: "1 / 7", gridRow: flipRows ? "1 / 3" : "2 / 4", position: "relative" }}>
+            <div style={{ gridColumn: "1 / 7", gridRow: "1 / 3", position: "relative" }}>
               <FlightPathBorder color={borderColor} seed={borderSeed} />
               <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none", color: "inherit", display: "flex", height: "100%" }}>
                 <div style={{ background: P.ink, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, display: "flex", flexDirection: "column", flex: 1 }}>
@@ -580,7 +582,7 @@ export async function EditionView({
         })()}
 
         {!featureCreature && (
-          <div style={{ gridColumn: "1 / 7", gridRow: flipRows ? "1 / 3" : "2 / 4", position: "relative" }}>
+          <div style={{ gridColumn: "1 / 7", gridRow: "1 / 3", position: "relative" }}>
             <FlightPathBorder color={P.inkLight} seed={0} />
             <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "40px 32px" }}>
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.inkLight, fontFamily: P.fontBody, opacity: 0.5 }}>Feature Creature</div>
@@ -591,7 +593,7 @@ export async function EditionView({
         )}
 
         {s2 && (
-          <a href={`/article/${urlToSlug(s2.link)}?e=${editionKey}`} style={{ gridColumn: "7 / 13", gridRow: flipRows ? "1" : "2", textDecoration: "none", color: "inherit", display: "flex" }}>
+          <a href={`/article/${urlToSlug(s2.link)}?e=${editionKey}`} style={{ gridColumn: "7 / 13", gridRow: "1", textDecoration: "none", color: "inherit", display: "flex" }}>
             <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
               {s2.imageUrl && (
                 <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
@@ -611,7 +613,7 @@ export async function EditionView({
         )}
 
         {s2 && (
-          <a href={`/article/${urlToSlug(s2.link)}?e=${editionKey}`} style={{ ...card, gridColumn: "7 / 13", gridRow: flipRows ? "2" : "3", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 28, gap: 18, textDecoration: "none", color: "inherit" }}>
+          <a href={`/article/${urlToSlug(s2.link)}?e=${editionKey}`} style={{ ...card, gridColumn: "7 / 13", gridRow: "2", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 28, gap: 18, textDecoration: "none", color: "inherit" }}>
             <div style={{ fontSize: 52, color: P.accent, fontFamily: P.fontHeading, flexShrink: 0, lineHeight: 0.8, opacity: 0.35, marginTop: 6 }}>"</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 17, fontStyle: "italic", color: P.ink, lineHeight: 1.5, fontFamily: P.fontBody, fontWeight: 500 }}>{s2.pullquote || s2.summary || s2.title}</div>
@@ -620,8 +622,8 @@ export async function EditionView({
         )}
       </div>
 
-      {/* Synthesis */}
-      {synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} editionKey={editionKey} />}
+      {/* Synthesis — normal editions: appears after FC+S2 */}
+      {!flipRows && synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />}
 
       {/* Row 2: s3–s11 */}
       {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).length > 0 && (() => {
