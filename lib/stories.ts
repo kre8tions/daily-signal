@@ -161,6 +161,14 @@ export const FEEDS = [
   // Sports — evening slot only
   { url: "https://bleacherreport.com/articles/feed",                        source: "Bleacher Report",     section: "Sports",        slotOnly: "evening"  },
   { url: "https://theathletic.com/rss/news/",                               source: "The Athletic",        section: "Sports",        slotOnly: "evening"  },
+  // Graphic Novels / Comics — max 1 per edition, prefer RSS images
+  { url: "https://www.comicsbeat.com/feed/",                                source: "The Beat",            section: "Comics",        preferRssImage: true },
+  { url: "https://www.cbr.com/feed/",                                       source: "CBR",                 section: "Comics",        preferRssImage: true },
+  { url: "https://www.previewsworld.com/Article/RSSFeed",                   source: "Previews World",      section: "Comics",        preferRssImage: true },
+  // Anime — max 1 per edition, prefer RSS images
+  { url: "https://www.animenewsnetwork.com/news/rss.xml?ann-edition=w",     source: "Anime News Network",  section: "Anime",         preferRssImage: true },
+  { url: "https://www.crunchyroll.com/news/rss.xml",                        source: "Crunchyroll News",    section: "Anime",         preferRssImage: true },
+  { url: "https://myanimelist.net/rss/news.xml",                            source: "MyAnimeList",         section: "Anime",         preferRssImage: true },
 ];
 
 const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
@@ -422,18 +430,20 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
 
   const all = dedupeByTopic(results.flatMap((r) => r.status === "fulfilled" ? r.value : []));
   const CREATIVE = ["Entertainment", "Arts", "Culture", "Film", "Faith"];
-  const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [], food: RawItem[] = [], sports: RawItem[] = [];
+  const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [], food: RawItem[] = [], sports: RawItem[] = [], comics: RawItem[] = [], anime: RawItem[] = [];
   for (const item of all) {
     if (item.section === "Technology") tech.push(item);
     else if (item.section === "Science") science.push(item);
     else if (item.section === "Food") food.push(item);
     else if (item.section === "Sports") sports.push(item);
+    else if (item.section === "Comics") comics.push(item);
+    else if (item.section === "Anime") anime.push(item);
     else if (CREATIVE.includes(item.section)) creative.push(item);
   }
   // Interleave science and creative so s1/s2 are never the same section; tech fills the tail
-  // Food (max 1) and Sports (max 1) slot-in at the end when available
+  // Slot-capped extras (Food, Sports, Comics, Anime — max 1 each) fill after the core 11
   const sci = science.slice(0, 3), cre = creative.slice(0, 5), tec = tech.slice(0, 3);
-  const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1)];
+  const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1), ...comics.slice(0, 1), ...anime.slice(0, 1)];
   const pool = [sci[0], cre[0], sci[1], cre[1], cre[2], sci[2], cre[3], cre[4], tec[0], tec[1], tec[2], ...slotExtras].filter(Boolean);
   // Deals and negative/dark stories must never appear in S1–S3; push them toward the end
   const isNeg = (s: RawItem) => NEGATIVE_RE.test(s.title) || DEAL_RE.test(s.title) || DEAL_RE.test(s.content);
