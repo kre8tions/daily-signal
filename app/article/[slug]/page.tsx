@@ -160,7 +160,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
             <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>More From Today&apos;s Edition</div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               {related.slice(0, 5).map((s) => (
-                <RelatedCard key={s.link} story={s} />
+                <RelatedCard key={s.link} story={s} editionKey={editionKey} />
               ))}
             </div>
           </div>
@@ -176,11 +176,11 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
   );
 }
 
-function RelatedCard({ story }: { story: Story }) {
+function RelatedCard({ story, editionKey }: { story: Story; editionKey: string }) {
   const slug = urlToSlug(story.link);
   const sectionColor = SECTION_COLORS[story.section] ?? "#888";
   return (
-    <a href={`/article/${slug}`} style={{ display: "flex", gap: 16, paddingTop: 16, paddingBottom: 16, borderBottom: `1px solid ${P.tint}44`, textDecoration: "none", alignItems: "flex-start" }}>
+    <a href={`/article/${slug}?e=${editionKey}`} style={{ display: "flex", gap: 16, paddingTop: 16, paddingBottom: 16, borderBottom: `1px solid ${P.tint}44`, textDecoration: "none", alignItems: "flex-start" }}>
       {story.imageUrl && (
         <div style={{ width: 72, height: 52, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: P.tint }}>
           <img src={story.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
