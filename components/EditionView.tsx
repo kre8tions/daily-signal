@@ -202,60 +202,75 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
   const W = 800, H = 500;
   const sr = (n: number) => { const x = Math.sin(seed * 9301 + n * 49297 + 233995) * 10000; return x - Math.floor(x); };
 
-  // Generate 5-7 waypoints spread across the image, then use Catmull-Rom → cubic bezier
-  // Catmull-Rom guarantees smooth passage through every point with no cusps
-  const numWaypoints = 5 + Math.floor(sr(0) * 3);
-  const pts: { x: number; y: number }[] = [];
-  for (let i = 0; i < numWaypoints; i++) {
-    pts.push({ x: sr(i * 2 + 1) * W * 0.85 + W * 0.07, y: sr(i * 2 + 2) * H * 0.75 + H * 0.12 });
-  }
+  // 1–3 planes, each confined to its own horizontal band so paths never cross
+  const numPlanes = 1 + Math.floor(sr(99) * 3);
+  const TENSION = 0.22; // low tension = wide gentle arcs
 
-  // Convert Catmull-Rom to cubic bezier segments (tension = 0.5)
-  const tension = 0.35;
-  // Duplicate first and last for phantom endpoints
-  const p = [pts[0], ...pts, pts[pts.length - 1]];
-  let d = `M ${p[1].x.toFixed(1)} ${p[1].y.toFixed(1)}`;
-  let lastCp2 = p[1];
+  type PlaneData = { d: string; planeX: number; planeY: number; planeAngle: number; endX: number; endY: number };
 
-  for (let i = 1; i < p.length - 2; i++) {
-    const cp1 = { x: p[i].x + (p[i + 1].x - p[i - 1].x) * tension / 3, y: p[i].y + (p[i + 1].y - p[i - 1].y) * tension / 3 };
-    const cp2 = { x: p[i + 1].x - (p[i + 2].x - p[i].x) * tension / 3, y: p[i + 1].y - (p[i + 2].y - p[i].y) * tension / 3 };
-    d += ` C ${cp1.x.toFixed(1)} ${cp1.y.toFixed(1)}, ${cp2.x.toFixed(1)} ${cp2.y.toFixed(1)}, ${p[i + 1].x.toFixed(1)} ${p[i + 1].y.toFixed(1)}`;
-    lastCp2 = cp2;
-  }
+  const planes: PlaneData[] = Array.from({ length: numPlanes }, (_, pi) => {
+    const bandH = H / numPlanes;
+    const bandTop = pi * bandH + bandH * 0.08;
+    const bandBot = (pi + 1) * bandH - bandH * 0.08;
+    const bandMid = (bandTop + bandBot) / 2;
 
-  const start = pts[0];
-  const end = pts[pts.length - 1];
-  // Plane just before start — offset backward along departure direction
-  const firstCp1 = { x: p[1].x + (p[2].x - p[0].x) * tension / 3, y: p[1].y + (p[2].y - p[0].y) * tension / 3 };
-  const dAngle = Math.atan2(firstCp1.y - start.y, firstCp1.x - start.x);
-  const planeAngle = dAngle * 180 / Math.PI + 90;
-  const OFFSET = 48; // px before start in viewBox units
-  const plane = { x: start.x - Math.cos(dAngle) * OFFSET, y: start.y - Math.sin(dAngle) * OFFSET };
+    // 4 waypoints spread evenly left-to-right, Y gently oscillates around band center
+    const numPts = 4;
+    const pts: { x: number; y: number }[] = [];
+    for (let i = 0; i < numPts; i++) {
+      const tx = i / (numPts - 1);
+      const x = W * 0.06 + tx * W * 0.88 + (sr(pi * 30 + i * 3) - 0.5) * W * 0.06;
+      // Alternate above/below band mid for gentle wave; sr controls magnitude
+      const wave = (i % 2 === 0 ? 1 : -1) * (0.3 + sr(pi * 30 + i * 3 + 1) * 0.4);
+      const y = bandMid + wave * (bandBot - bandTop) * 0.42;
+      pts.push({ x: Math.max(W * 0.03, Math.min(W * 0.97, x)), y: Math.max(bandTop, Math.min(bandBot, y)) });
+    }
 
-  const planePx = `${(plane.x / W * 100).toFixed(2)}%`;
-  const planePy = `${(plane.y / H * 100).toFixed(2)}%`;
-  const endPx   = `${(end.x   / W * 100).toFixed(2)}%`;
-  const endPy   = `${(end.y   / H * 100).toFixed(2)}%`;
+    // Catmull-Rom → cubic bezier
+    const p = [pts[0], ...pts, pts[pts.length - 1]];
+    let d = `M ${p[1].x.toFixed(1)} ${p[1].y.toFixed(1)}`;
+    for (let i = 1; i < p.length - 2; i++) {
+      const cp1 = { x: p[i].x + (p[i+1].x - p[i-1].x) * TENSION / 3, y: p[i].y + (p[i+1].y - p[i-1].y) * TENSION / 3 };
+      const cp2 = { x: p[i+1].x - (p[i+2].x - p[i].x) * TENSION / 3, y: p[i+1].y - (p[i+2].y - p[i].y) * TENSION / 3 };
+      d += ` C ${cp1.x.toFixed(1)} ${cp1.y.toFixed(1)}, ${cp2.x.toFixed(1)} ${cp2.y.toFixed(1)}, ${p[i+1].x.toFixed(1)} ${p[i+1].y.toFixed(1)}`;
+    }
+
+    const start = pts[0];
+    const end   = pts[pts.length - 1];
+    const firstCp = { x: p[1].x + (p[2].x - p[0].x) * TENSION / 3, y: p[1].y + (p[2].y - p[0].y) * TENSION / 3 };
+    const dAngle = Math.atan2(firstCp.y - start.y, firstCp.x - start.x);
+    const OFFSET = 44;
+    return {
+      d,
+      planeX: start.x - Math.cos(dAngle) * OFFSET,
+      planeY: start.y - Math.sin(dAngle) * OFFSET,
+      planeAngle: dAngle * 180 / Math.PI + 90,
+      endX: end.x, endY: end.y,
+    };
+  });
 
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}>
       <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", inset: 0 }}>
-        <path d={d} fill="none" stroke={color} strokeWidth="2.5" strokeDasharray="4 9" strokeLinecap="round" opacity="0.65" />
+        {planes.map((pl, i) => (
+          <path key={i} d={pl.d} fill="none" stroke={color} strokeWidth="2.5" strokeDasharray="4 9" strokeLinecap="round" opacity="0.65" />
+        ))}
       </svg>
-      {/* Plane just before start, facing direction of departure */}
-      <div style={{ position: "absolute", left: planePx, top: planePy, transform: `translate(-50%,-50%) rotate(${planeAngle}deg)`, zIndex: 3, pointerEvents: "none" }}>
-        <svg width="42" height="42" viewBox="0 0 24 24" fill={color} opacity={0.9} xmlns="http://www.w3.org/2000/svg">
-          <path d="M21,16l-9-5V3.5C12,2.67,11.33,2,10.5,2S9,2.67,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" />
-        </svg>
-      </div>
-      {/* Bold X at end */}
-      <div style={{ position: "absolute", left: endPx, top: endPy, transform: "translate(-50%,-50%)", zIndex: 3, pointerEvents: "none" }}>
-        <svg width="20" height="20" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
-          <line x1="3" y1="3" x2="25" y2="25" stroke={color} strokeWidth="5.5" strokeLinecap="round" opacity="0.92" />
-          <line x1="25" y1="3" x2="3" y2="25" stroke={color} strokeWidth="5.5" strokeLinecap="round" opacity="0.92" />
-        </svg>
-      </div>
+      {planes.map((pl, i) => (
+        <div key={`plane-${i}`} style={{ position: "absolute", left: `${(pl.planeX / W * 100).toFixed(2)}%`, top: `${(pl.planeY / H * 100).toFixed(2)}%`, transform: `translate(-50%,-50%) rotate(${pl.planeAngle}deg)`, zIndex: 3, pointerEvents: "none" }}>
+          <svg width="42" height="42" viewBox="0 0 24 24" fill={color} opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+            <path d="M21,16l-9-5V3.5C12,2.67,11.33,2,10.5,2S9,2.67,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" />
+          </svg>
+        </div>
+      ))}
+      {planes.map((pl, i) => (
+        <div key={`x-${i}`} style={{ position: "absolute", left: `${(pl.endX / W * 100).toFixed(2)}%`, top: `${(pl.endY / H * 100).toFixed(2)}%`, transform: "translate(-50%,-50%)", zIndex: 3, pointerEvents: "none" }}>
+          <svg width="20" height="20" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+            <line x1="3" y1="3" x2="25" y2="25" stroke={color} strokeWidth="5.5" strokeLinecap="round" opacity="0.92" />
+            <line x1="25" y1="3" x2="3" y2="25" stroke={color} strokeWidth="5.5" strokeLinecap="round" opacity="0.92" />
+          </svg>
+        </div>
+      ))}
     </div>
   );
 }
