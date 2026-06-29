@@ -52,7 +52,14 @@ export const SECTION_COLORS: Record<string, string> = {
   Film: "#E07B3C", Entertainment: "#D4517A", Arts: "#C87AC0", Faith: "#F5A623",
 };
 
-export const P = PALETTES[Math.floor(Date.now() / 14_400_000) % PALETTES.length];
+// Proxy so callers read P.foo normally but always get the live palette value,
+// even when the module is cached across requests in the same serverless instance.
+export const P: Palette = new Proxy({} as Palette, {
+  get(_, key) {
+    const current = PALETTES[Math.floor(Date.now() / 14_400_000) % PALETTES.length];
+    return current[key as keyof Palette];
+  },
+});
 
 // Daily-rotating quote fonts for The Bottom Line — expressive, editorial, distinct
 const QUOTE_FONTS = [
