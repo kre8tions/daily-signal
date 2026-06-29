@@ -39,15 +39,15 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
   const story = await getStoryBySlug(slug, editionHint);
   if (!story) notFound();
 
-  const { stories } = await getPageData();
-  const related = stories.filter((s) => s.link !== story.link);
-  const { key: editionKey } = getEdition();
-  const storyIndex = stories.findIndex((s) => s.link === story.link);
+  const editionKey = editionHint ?? getEdition().key;
+  const editionData = await getPageData(editionHint ? { key: editionKey, label: "" } : undefined);
+  const related = editionData.stories.filter((s) => s.link !== story.link);
+  const storyIndex = editionData.stories.findIndex((s) => s.link === story.link);
   const writerSlots = getWriterAssignments(editionKey);
   const writerIndex = storyIndex >= 0 ? writerSlots[storyIndex] : undefined;
   let fullArticle: ArticleCommentary | null = null;
   try {
-    fullArticle = await getFullArticle(story, related, editionKey, writerIndex);
+    fullArticle = await getFullArticle(story, related, editionKey, writerIndex, true);
   } catch { /* generation failed — render article without commentary */ }
 
   const sectionColor = SECTION_COLORS[story.section] ?? "#888";

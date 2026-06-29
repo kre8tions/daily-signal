@@ -885,7 +885,7 @@ Return JSON only:
   } catch { return null; }
 }
 
-export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
+export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number, readOnly = false): Promise<ArticleCommentary> {
   const PROMPT_V = "v22"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
@@ -918,6 +918,8 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
       }
     }
   } catch { /* not found — generate fresh */ }
+
+  if (readOnly) throw new Error("Article not in cache — generation blocked on user request");
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const related = relatedStories.filter((s) => s.link !== story.link).slice(0, 5);
