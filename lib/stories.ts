@@ -608,8 +608,13 @@ export async function getHowTo(action: string, slug: string): Promise<HowTo | nu
       const res = await fetch(existing.url);
       if (res.ok) return await res.json() as HowTo;
     }
-  } catch { /* generate fresh */ }
+  } catch { /* not cached */ }
 
+  return null;
+}
+
+export async function generateHowTo(action: string, slug: string): Promise<HowTo | null> {
+  const blobKey = `howto/${slug}.json`;
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   try {
     const msg = await client.messages.create({
