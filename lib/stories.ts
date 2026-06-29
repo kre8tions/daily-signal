@@ -977,7 +977,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
       const res = await fetch(global.url, { cache: "no-store" });
       if (res.ok) {
         const cached = await res.json() as ArticleCommentary;
-        if (cached.body) return cached;
+        if (cached.body && cached.summary) return cached;
       }
     }
   } catch { /* not found */ }
@@ -989,7 +989,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
       const res = await fetch(existing.url, { cache: "no-store" });
       if (res.ok) {
         const cached = await res.json() as ArticleCommentary;
-        if (cached.body) return cached;
+        if (cached.body && cached.summary) return cached;
       }
     }
   } catch { /* not found */ }

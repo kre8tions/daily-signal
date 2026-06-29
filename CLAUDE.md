@@ -108,6 +108,7 @@ Below:   Synthesis card → S3-S11 3-column grid
 ## Dedup Rules
 - `loadUsedLinks` walks back 150 editions (~30 days) — hard filter, NO fallback to used links
 - Global slug cache (`by-slug/`) — reuse generated content if link recurs
+- **Cache validation requires BOTH `cached.body && cached.summary`** — a blob missing `summary` (from a prior failed generation) is treated as a cache miss and regenerated
 
 ## Writer Personas (7 writers, seeded per edition)
 Rex (Hitchens), Eric (Orwell), Margot (Didion), Finn (M. Lewis), Cal (Gladwell), Jack (O'Rourke), Ward (Tom Wolfe)
