@@ -14,6 +14,7 @@ export interface RawItem {
   title: string; content: string; source: string;
   section: string; link: string; pubDate: string;
   rssImageUrl?: string;
+  preferRssImage?: boolean;
 }
 
 export interface Story {
@@ -137,6 +138,29 @@ export const FEEDS = [
   // Faith — Sunday early morning only (filtered below)
   { url: "https://feeds.feedburner.com/AeonIdeas",                          source: "Aeon",                section: "Faith"         },
   { url: "https://www.patheos.com/blogs/religionprof/feed",                 source: "Patheos",             section: "Faith"         },
+  // K-pop — prefer RSS images since editorial photos are better than Unsplash stock
+  { url: "https://www.allkpop.com/rss",                                     source: "allkpop",             section: "Entertainment", preferRssImage: true },
+  { url: "https://www.soompi.com/feed",                                     source: "Soompi",              section: "Entertainment", preferRssImage: true },
+  { url: "https://www.koreaboo.com/feed/",                                  source: "Koreaboo",            section: "Entertainment", preferRssImage: true },
+  // Viral / feel-good / weird
+  { url: "https://www.iflscience.com/rss.xml",                              source: "IFLScience",          section: "Science"       },
+  { url: "https://www.thecooldown.com/feed/",                               source: "The Cool Down",       section: "Culture"       },
+  { url: "https://www.boredpanda.com/feed/",                                source: "Bored Panda",         section: "Culture"       },
+  // True Crime / human interest
+  { url: "https://crimereads.com/feed/",                                    source: "Crime Reads",         section: "Culture"       },
+  { url: "https://www.mentalfloss.com/rss.xml",                             source: "Mental Floss",        section: "Culture"       },
+  // Weird / wondrous
+  { url: "https://www.odditycentral.com/feed",                              source: "Oddity Central",      section: "Culture"       },
+  { url: "https://www.atlasobscura.com/feeds/latest",                       source: "Atlas Obscura",       section: "Culture"       },
+  // Internet Culture / global tech
+  { url: "https://restofworld.org/feed/latest/",                            source: "Rest of World",       section: "Technology"    },
+  { url: "https://knowyourmeme.com/feed",                                   source: "Know Your Meme",      section: "Entertainment" },
+  // Food — afternoon slot only
+  { url: "https://www.eater.com/rss/index.xml",                             source: "Eater",               section: "Food",          slotOnly: "afternoon" },
+  { url: "https://www.bonappetit.com/feed/rss",                             source: "Bon Appétit",         section: "Food",          slotOnly: "afternoon" },
+  // Sports — evening slot only
+  { url: "https://bleacherreport.com/articles/feed",                        source: "Bleacher Report",     section: "Sports",        slotOnly: "evening"  },
+  { url: "https://theathletic.com/rss/news/",                               source: "The Athletic",        section: "Sports",        slotOnly: "evening"  },
 ];
 
 const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
@@ -278,7 +302,8 @@ function imgCacheKey(link: string) {
   return `artimg_v4_${createHash("md5").update(link).digest("hex")}`;
 }
 
-async function getArticleImage(article: { link: string; title: string; section?: string; imageQuery?: string }): Promise<{ url: string; color?: string } | undefined> {
+async function getArticleImage(article: { link: string; title: string; section?: string; imageQuery?: string; rssImageUrl?: string; preferRssImage?: boolean }): Promise<{ url: string; color?: string } | undefined> {
+  if (article.preferRssImage && article.rssImageUrl) return { url: article.rssImageUrl };
   const cKey = imgCacheKey(article.link);
   const hit = cacheGet<string>(cKey);
   if (hit) return hit === "__none__" ? undefined : { url: hit };
@@ -289,7 +314,7 @@ async function getArticleImage(article: { link: string; title: string; section?:
   return undefined;
 }
 
-export async function getUniqueImages(articles: (RawItem & { imageQuery?: string })[]): Promise<{ url?: string; color?: string }[]> {
+export async function getUniqueImages(articles: (RawItem & { imageQuery?: string; preferRssImage?: boolean })[]): Promise<{ url?: string; color?: string }[]> {
   const raw = await Promise.all(articles.map((a) => getArticleImage(a)));
   const seen = new Set<string>();
   const result: { url?: string; color?: string }[] = [];
@@ -358,7 +383,12 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   const hit = cacheGet<RawItem[]>(key);
   if (hit) return hit;
 
-  const activeFeeds = FEEDS.filter(f => f.section !== "Faith" || isSundayEarlyMorning());
+  const slot = editionKey.split("_").pop() ?? "";
+  const activeFeeds = FEEDS.filter(f => {
+    if (f.section === "Faith" && !isSundayEarlyMorning()) return false;
+    if ("slotOnly" in f && f.slotOnly && f.slotOnly !== slot) return false;
+    return true;
+  });
   const FRESH_MS = 10 * ONE_HOUR;
   const now = Date.now();
 
@@ -373,6 +403,7 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
           source: feed.source, section: feed.section,
           link: item.link ?? "", pubDate: item.pubDate ?? new Date().toISOString(),
           rssImageUrl: extractRssImage(item),
+          ...("preferRssImage" in feed && feed.preferRssImage ? { preferRssImage: true as const } : {}),
         }));
       })
     ),
@@ -391,15 +422,19 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
 
   const all = dedupeByTopic(results.flatMap((r) => r.status === "fulfilled" ? r.value : []));
   const CREATIVE = ["Entertainment", "Arts", "Culture", "Film", "Faith"];
-  const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [];
+  const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [], food: RawItem[] = [], sports: RawItem[] = [];
   for (const item of all) {
     if (item.section === "Technology") tech.push(item);
     else if (item.section === "Science") science.push(item);
+    else if (item.section === "Food") food.push(item);
+    else if (item.section === "Sports") sports.push(item);
     else if (CREATIVE.includes(item.section)) creative.push(item);
   }
   // Interleave science and creative so s1/s2 are never the same section; tech fills the tail
+  // Food (max 1) and Sports (max 1) slot-in at the end when available
   const sci = science.slice(0, 3), cre = creative.slice(0, 5), tec = tech.slice(0, 3);
-  const pool = [sci[0], cre[0], sci[1], cre[1], cre[2], sci[2], cre[3], cre[4], tec[0], tec[1], tec[2]].filter(Boolean);
+  const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1)];
+  const pool = [sci[0], cre[0], sci[1], cre[1], cre[2], sci[2], cre[3], cre[4], tec[0], tec[1], tec[2], ...slotExtras].filter(Boolean);
   // Deals and negative/dark stories must never appear in S1–S3; push them toward the end
   const isNeg = (s: RawItem) => NEGATIVE_RE.test(s.title) || DEAL_RE.test(s.title) || DEAL_RE.test(s.content);
   const negative = pool.filter(isNeg);
