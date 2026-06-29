@@ -281,16 +281,22 @@ function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synt
             </svg>
           </div>
           {synthesis.observation && (
-            <div style={{ paddingTop: 16, paddingBottom: 14, paddingLeft: 28, paddingRight: 28, borderBottom: `1px solid ${P.tint}44`, display: "flex", alignItems: "flex-start", gap: 28 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Observation</div>
-                {synthesis.observation.split("\n\n").filter(Boolean).map((para, i) => (
-                  <p key={i} style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: i < synthesis.observation.split("\n\n").length - 1 ? 14 : 0, fontFamily: P.fontBody }}>{para}</p>
-                ))}
-              </div>
+            <div style={{ position: "relative", paddingTop: 20, paddingBottom: 14, paddingLeft: 28, paddingRight: synthesis.imageUrl ? 252 : 28, borderBottom: `1px solid ${P.tint}44` }}>
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Observation</div>
+              {synthesis.observation.split("\n\n").filter(Boolean).map((para, i) => (
+                <p key={i} style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: i < synthesis.observation.split("\n\n").length - 1 ? 14 : 0, fontFamily: P.fontBody }}>{para}</p>
+              ))}
               {synthesis.imageUrl && (
-                <div style={{ flexShrink: 0, width: 200, height: 200, borderRadius: "50%", overflow: "hidden", border: `3px solid ${P.accent}44`, boxShadow: `0 0 0 6px ${P.accent}18`, marginTop: 4 }}>
-                  <img src={synthesis.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
+                <div style={{ position: "absolute", top: 20, right: 20 }}>
+                  <div style={{ position: "relative", width: 200, height: 200 }}>
+                    <div style={{ width: 200, height: 200, borderRadius: "50%", overflow: "hidden" }}>
+                      <img src={synthesis.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
+                    </div>
+                    <svg style={{ position: "absolute", top: -5, left: -5, width: 210, height: 210, overflow: "visible", pointerEvents: "none" }} viewBox="0 0 210 210">
+                      <defs><filter id="sketchy-circle" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="5" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+                      <circle cx="105" cy="105" r="101" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#sketchy-circle)" />
+                    </svg>
+                  </div>
                 </div>
               )}
             </div>
