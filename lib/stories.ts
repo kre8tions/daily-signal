@@ -557,8 +557,27 @@ export async function getPageData(edition?: { key: string; label: string }): Pro
 // ── Single story for article detail page ─────────────────────────────────────
 export async function getStoryBySlug(slug: string): Promise<Story | null> {
   const url = slugToUrl(slug);
+
+  // Check current edition first
   const { stories } = await getPageData();
-  return stories.find((s) => s.link === url) ?? null;
+  const found = stories.find((s) => s.link === url);
+  if (found) return found;
+
+  // Fall back to recent archived editions (visitor timezone may lag UTC+14 by up to 28h)
+  try {
+    const { blobs } = await list({ prefix: "archive/editions/", limit: 15 });
+    const keys = blobs
+      .sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime())
+      .map(b => b.pathname.replace("archive/editions/", "").replace(".json", ""));
+    for (const key of keys) {
+      const archived = await getArchivedPageData(key);
+      if (!archived) continue;
+      const match = archived.stories.find((s) => s.link === url);
+      if (match) return match;
+    }
+  } catch { /* archive lookup failed — 404 is acceptable */ }
+
+  return null;
 }
 
 // ── How-to article generation ─────────────────────────────────────────────────
