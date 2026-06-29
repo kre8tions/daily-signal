@@ -778,7 +778,7 @@ Return JSON only:
     const json = JSON.parse(text.replace(/^```json\n?/, "").replace(/\n?```$/, "")) as HowTo;
     await put(blobKey, JSON.stringify(json), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
     return json;
-  } catch { return null; }
+  } catch (e) { console.error("[generateHowTo] failed", slug, e); return null; }
 }
 
 // ── Writer personas ───────────────────────────────────────────────────────────
