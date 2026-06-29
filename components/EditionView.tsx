@@ -452,9 +452,6 @@ export async function EditionView({
                   <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.accent}`, background: P.accent + "22", color: P.accent }}>Next →</span>
                 </a>
               )}
-              <a href="/archive" style={{ textDecoration: "none" }}>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>Archive</span>
-              </a>
             </>
           ) : (
             // Homepage nav: Today | Previous Edition | Archive
@@ -467,9 +464,6 @@ export async function EditionView({
                   <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>Previous Edition</span>
                 </a>
               )}
-              <a href="/archive" style={{ textDecoration: "none" }}>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 36, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingLeft: 18, paddingRight: 18, borderRadius: 20, border: `1px solid ${P.tint}88`, background: "transparent", color: P.inkLight }}>Archive</span>
-              </a>
             </>
           )}
           <span style={{ fontSize: 22, fontWeight: 700, fontStyle: "normal", fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, color: P.accent, marginLeft: 8 }}>{TAGLINE}</span>
