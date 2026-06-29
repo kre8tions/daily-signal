@@ -386,9 +386,9 @@ async function loadUsedLinks(editionKey: string): Promise<Set<string>> {
 }
 
 // ── RSS fetch with section quotas ─────────────────────────────────────────────
-export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
+export async function fetchTopStories(editionKey: string): Promise<{ primary: RawItem[]; bench: RawItem[] }> {
   const key = `raw2_${editionKey}`;
-  const hit = cacheGet<RawItem[]>(key);
+  const hit = cacheGet<{ primary: RawItem[]; bench: RawItem[] }>(key);
   if (hit) return hit;
 
   const slot = editionKey.split("_").pop() ?? "";
@@ -465,8 +465,18 @@ export async function fetchTopStories(editionKey: string): Promise<RawItem[]> {
   const negative = pool.filter(isNeg);
   const positive = pool.filter(s => !isNeg(s));
   const selected = [...positive, ...negative];
-  cacheSet(key, selected, 8 * ONE_HOUR);
-  return selected;
+
+  // Bench: next-best unused items from each category to backfill any primary failures
+  const primaryLinks = new Set(selected.map(s => s.link));
+  const bench = [
+    ...science.slice(3, 5),
+    ...creative.slice(5, 8),
+    ...tech.slice(3, 5),
+  ].filter(s => !primaryLinks.has(s.link)).slice(0, 5);
+
+  const result = { primary: selected, bench };
+  cacheSet(key, result, 8 * ONE_HOUR);
+  return result;
 }
 
 // ── Cross-story synthesis (blob-cached per edition) ───────────────────────────
@@ -544,7 +554,7 @@ Return JSON only, no markdown:
 const CARD_STYLES: Story["cardStyle"][] = ["full", "pullquote", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief"];
 
 export async function buildPageData(editionKey: string, editionLabel: string): Promise<PageData> {
-  const raw = await fetchTopStories(editionKey);
+  const { primary: raw, bench } = await fetchTopStories(editionKey);
   const writerSlots = getWriterAssignments(editionKey);
 
   // Synthesis and FC run in background while articles are batched
@@ -568,14 +578,33 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     if (b + BATCH < raw.length) await new Promise(r => setTimeout(r, 800));
   }
 
+  // Backfill: for each failed primary slot, try a bench story
+  const arts: (ArticleCommentary | null)[] = articleResults.map(r => r.status === "fulfilled" ? r.value : null);
+  const activeRaw = [...raw];
+  let benchIdx = 0;
+  const failedSlots = arts.map((a, i) => (!a?.summary ? i : -1)).filter(i => i >= 0);
+  if (failedSlots.length > 0 && bench.length > 0) {
+    await new Promise(r => setTimeout(r, 800));
+    for (const slot of failedSlots) {
+      if (benchIdx >= bench.length) break;
+      const benchItem = bench[benchIdx++];
+      const storyShell: Story = { ...benchItem, cardStyle: CARD_STYLES[slot] ?? "brief" };
+      const relatedShells = activeRaw.filter((_, j) => j !== slot).slice(0, 5).map(r2 => ({ ...r2, cardStyle: "brief" as const }));
+      try {
+        const result = await getFullArticle(storyShell, relatedShells, editionKey, writerSlots[slot]);
+        arts[slot] = result;
+        activeRaw[slot] = benchItem;
+      } catch { /* leave slot as failed */ }
+    }
+  }
+
   const [synthesis, featureCreature] = await Promise.all([synthesisPromise, fcPromise]);
 
-  const arts = articleResults.map(r => r.status === "fulfilled" ? r.value : null);
-  const artErrors = articleResults.map(r => r.status === "rejected" ? String(r.reason) : undefined);
-  const rawWithQuery = raw.map((r, i) => ({ ...r, imageQuery: arts[i]?.imageQuery }));
+  const artErrors = arts.map((a, i) => (!a && articleResults[i]?.status === "rejected") ? String((articleResults[i] as PromiseRejectedResult).reason) : undefined);
+  const rawWithQuery = activeRaw.map((r, i) => ({ ...r, imageQuery: arts[i]?.imageQuery }));
   const images = await getUniqueImages(rawWithQuery);
 
-  const allStories: Story[] = raw.map((r, i) => ({
+  const allStories: Story[] = activeRaw.map((r, i) => ({
     ...r,
     imageUrl: images[i]?.url,
     imageColor: images[i]?.color,
