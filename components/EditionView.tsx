@@ -1,5 +1,5 @@
 import { urlToSlug, actionSlug, getSynthWriterIndex, type Story, type Synthesis, type FeatureCreature } from "@/lib/stories";
-import { P, QUOTE_FONT, SECTION_COLORS, ACTION_LABEL, ACTION_EMOJI, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL, TAGLINE, contrastColor } from "@/lib/palette";
+import { P, QUOTE_FONT, SECTION_COLORS, ACTION_LABEL, ACTION_EMOJI, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL, TAGLINE, contrastColor, setEditionPaletteKey } from "@/lib/palette";
 import { EditionCountdown } from "@/app/EditionCountdown";
 import { EmailCapture } from "@/app/EmailCapture";
 
@@ -444,6 +444,7 @@ export async function EditionView({
   prevEdition?: AdjacentEdition | null;
   nextEdition?: AdjacentEdition | null;
 }) {
+  setEditionPaletteKey(editionKey);
   const synthWriterIndex = getSynthWriterIndex(editionKey);
   const [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11] = allStories;
   // Flip row 1 (S1) and row 2 (FC) on morning + evening editions for layout variety

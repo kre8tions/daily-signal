@@ -52,11 +52,17 @@ export const SECTION_COLORS: Record<string, string> = {
   Film: "#E07B3C", Entertainment: "#D4517A", Arts: "#C87AC0", Faith: "#F5A623",
 };
 
-// Proxy so callers read P.foo normally but always get the live palette value,
-// even when the module is cached across requests in the same serverless instance.
+// Per-request override: set from edition key so each edition has a stable palette
+// regardless of when the page is rendered. Falls back to time-based index if unset.
+let _editionKeyHash = 0;
+export function setEditionPaletteKey(editionKey: string) {
+  _editionKeyHash = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+}
+
 export const P: Palette = new Proxy({} as Palette, {
   get(_, key) {
-    const current = PALETTES[Math.floor(Date.now() / 14_400_000) % PALETTES.length];
+    const seed = _editionKeyHash > 0 ? _editionKeyHash : Math.floor(Date.now() / 14_400_000);
+    const current = PALETTES[seed % PALETTES.length];
     return current[key as keyof Palette];
   },
 });
