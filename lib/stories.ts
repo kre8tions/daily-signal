@@ -18,7 +18,7 @@ export interface RawItem {
 
 export interface Story {
   title: string; ownedTitle?: string; source: string; section: string; link: string; pubDate: string;
-  imageUrl?: string; summary?: string; bullets?: string[];
+  imageUrl?: string; imageColor?: string; summary?: string; bullets?: string[];
   pullquote?: string; cta?: { header: string; body: string }; hasKeyFacts?: boolean; cardStyle: "full" | "pullquote" | "brief";
   imageQuery?: string; content?: string; generationError?: string;
 }
@@ -215,7 +215,7 @@ const MORBID_RE = /^(dead|dies|died|death|killed|kill|murder|murdered|shooting|s
 // Detect obituary headlines
 const OBIT_RE = /\b(dead|dies|died|has died|passed away|obituary|obit|in memoriam)\b/i;
 
-export async function fetchUnsplash(headline: string, section?: string, page = 1, imageQuery?: string): Promise<string | undefined> {
+export async function fetchUnsplash(headline: string, section?: string, page = 1, imageQuery?: string): Promise<{ url: string; color?: string } | undefined> {
   const key = process.env.UNSPLASH_ACCESS_KEY;
   if (!key) return undefined;
 
@@ -268,7 +268,7 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
       const url = photo?.urls?.regular
         ? (photo.urls.regular as string).replace(/&w=\d+/, "&w=1600")
         : undefined;
-      if (url) return url as string;
+      if (url) return { url, color: photo.color as string | undefined };
     } catch { continue; }
   }
   return undefined;
@@ -278,36 +278,36 @@ function imgCacheKey(link: string) {
   return `artimg_v4_${createHash("md5").update(link).digest("hex")}`;
 }
 
-async function getArticleImage(article: { link: string; title: string; section?: string; imageQuery?: string }): Promise<string | undefined> {
+async function getArticleImage(article: { link: string; title: string; section?: string; imageQuery?: string }): Promise<{ url: string; color?: string } | undefined> {
   const cKey = imgCacheKey(article.link);
   const hit = cacheGet<string>(cKey);
-  if (hit) return hit === "__none__" ? undefined : hit;
+  if (hit) return hit === "__none__" ? undefined : { url: hit };
 
   const unsplash = await fetchUnsplash(article.title, article.section, 1, article.imageQuery);
-  if (unsplash) { cacheSet(cKey, unsplash, THREE_DAYS); return unsplash; }
+  if (unsplash) { cacheSet(cKey, unsplash.url, THREE_DAYS); return unsplash; }
   cacheSet(cKey, "__none__", ONE_HOUR);
   return undefined;
 }
 
-export async function getUniqueImages(articles: (RawItem & { imageQuery?: string })[]): Promise<(string | undefined)[]> {
+export async function getUniqueImages(articles: (RawItem & { imageQuery?: string })[]): Promise<{ url?: string; color?: string }[]> {
   const raw = await Promise.all(articles.map((a) => getArticleImage(a)));
   const seen = new Set<string>();
-  const result: (string | undefined)[] = [];
+  const result: { url?: string; color?: string }[] = [];
   for (let i = 0; i < raw.length; i++) {
-    const url = raw[i];
-    if (!url || !seen.has(url)) {
-      if (url) seen.add(url);
-      result.push(url);
+    const img = raw[i];
+    if (!img?.url || !seen.has(img.url)) {
+      if (img?.url) seen.add(img.url);
+      result.push(img ?? {});
     } else {
       const cKey = imgCacheKey(articles[i].link);
       cacheSet(cKey, "__none__", 1);
       const fresh = await fetchUnsplash(articles[i].title + " " + articles[i].section, undefined, 1, articles[i].imageQuery);
-      if (fresh && !seen.has(fresh)) {
-        seen.add(fresh);
-        cacheSet(cKey, fresh, THREE_DAYS);
+      if (fresh && !seen.has(fresh.url)) {
+        seen.add(fresh.url);
+        cacheSet(cKey, fresh.url, THREE_DAYS);
         result.push(fresh);
       } else {
-        result.push(undefined);
+        result.push({});
       }
     }
   }
@@ -471,7 +471,7 @@ Return JSON only, no markdown:
     // Fetch a Unsplash image using the most evocative words from the theme
     const themeQuery = (parsed.theme || "").replace(/[^a-zA-Z\s]/g, "").trim();
     if (themeQuery) {
-      parsed.imageUrl = await fetchUnsplash(themeQuery, undefined, 1, themeQuery).catch(() => undefined);
+      parsed.imageUrl = await fetchUnsplash(themeQuery, undefined, 1, themeQuery).then(r => r?.url).catch(() => undefined);
     }
     put(blobKey, JSON.stringify(parsed), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
     return parsed;
@@ -506,7 +506,8 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
 
   const allStories: Story[] = raw.map((r, i) => ({
     ...r,
-    imageUrl: images[i],
+    imageUrl: images[i]?.url,
+    imageColor: images[i]?.color,
     cardStyle: CARD_STYLES[i] ?? "brief",
     ownedTitle: arts[i]?.ownedTitle,
     summary: arts[i]?.summary,
@@ -1043,8 +1044,8 @@ Return JSON only:
 
   const imageUrl2 = (!isBrief && hasImg2)
     ? (pass1ImageQuery2
-        ? await fetchUnsplash(pass1ImageQuery2, story.section, 1)
-        : await fetchUnsplash(story.title, story.section, 2))
+        ? await fetchUnsplash(pass1ImageQuery2, story.section, 1).then(r => r?.url)
+        : await fetchUnsplash(story.title, story.section, 2).then(r => r?.url))
     : undefined;
 
   const commentary: ArticleCommentary = {
@@ -1151,7 +1152,7 @@ Return JSON only, no markdown:
 }`
         }],
       }),
-      fetchUnsplash(`${FC_UNIVERSE} ${FC_ANGLE.key}`, "Culture"),
+      fetchUnsplash(`${FC_UNIVERSE} ${FC_ANGLE.key}`, "Culture").then(r => r?.url),
     ]);
 
     const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
@@ -1209,7 +1210,8 @@ Return JSON only:
     let imageUrl2: string | undefined;
     if (imageQuery) {
       const candidate = await fetchUnsplash(imageQuery, "Arts", 2);
-      if (candidate && candidate !== imageUrl) {
+      const candidateUrl = candidate?.url;
+      if (candidateUrl && candidateUrl !== imageUrl) {
         // Vision review: score relevance 1-10; accept if >= 6
         try {
           const review = await client.messages.create({
@@ -1218,13 +1220,13 @@ Return JSON only:
             messages: [{
               role: "user",
               content: [
-                { type: "image", source: { type: "url", url: candidate } },
+                { type: "image", source: { type: "url", url: candidateUrl } },
                 { type: "text", text: `Article title: "${parsed.title}". Synopsis: "${parsed.synopsis}". Does this photo fit as a mid-article illustration? Reply with a single integer 1-10 (10 = perfect fit, 1 = totally unrelated).` },
               ],
             }],
           });
           const score = parseInt((review.content[0] as { type: string; text: string }).text.trim(), 10);
-          if (!isNaN(score) && score >= 6) imageUrl2 = candidate;
+          if (!isNaN(score) && score >= 6) imageUrl2 = candidateUrl;
         } catch { /* vision review failed — skip image2, use pull-quote */ }
       }
     }
