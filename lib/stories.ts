@@ -547,17 +547,28 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   const raw = await fetchTopStories(editionKey);
   const writerSlots = getWriterAssignments(editionKey);
 
-  const [articleResults, synthesis, featureCreature] = await Promise.all([
-    Promise.allSettled(
-      raw.map((item, i) => {
+  // Synthesis and FC run in background while articles are batched
+  const synthesisPromise = getSynthesis(raw, editionKey);
+  const fcPromise = getFeatureCreature(editionKey).catch(() => null);
+
+  // Generate articles in batches of 3 to avoid Claude rate-limit bursts.
+  // 11 simultaneous × 4 passes each = ~44 concurrent calls; batching keeps it to ~12 at a time.
+  const BATCH = 3;
+  const articleResults: PromiseSettledResult<ArticleCommentary>[] = [];
+  for (let b = 0; b < raw.length; b += BATCH) {
+    const batchResults = await Promise.allSettled(
+      raw.slice(b, b + BATCH).map((item, bi) => {
+        const i = b + bi;
         const storyShell: Story = { ...item, cardStyle: CARD_STYLES[i] ?? "brief" };
         const relatedShells = raw.filter((_, j) => j !== i).slice(0, 5).map(r => ({ ...r, cardStyle: "brief" as const }));
         return getFullArticle(storyShell, relatedShells, editionKey, writerSlots[i]);
       })
-    ),
-    getSynthesis(raw, editionKey),
-    getFeatureCreature(editionKey).catch(() => null),
-  ]);
+    );
+    articleResults.push(...batchResults);
+    if (b + BATCH < raw.length) await new Promise(r => setTimeout(r, 800));
+  }
+
+  const [synthesis, featureCreature] = await Promise.all([synthesisPromise, fcPromise]);
 
   const arts = articleResults.map(r => r.status === "fulfilled" ? r.value : null);
   const artErrors = articleResults.map(r => r.status === "rejected" ? String(r.reason) : undefined);
