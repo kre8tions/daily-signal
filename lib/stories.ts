@@ -754,8 +754,61 @@ function breakLongSentences(text: string): string {
   }).join("\n\n");
 }
 
+// ── Pass 0: source analysis ───────────────────────────────────────────────────
+type SourceGenre = "news_report" | "science_discovery" | "cultural_criticism" | "profile" | "policy_politics" | "entertainment" | "opinion" | "explainer";
+
+interface SourceAnalysis {
+  genre: SourceGenre;
+  source_position: string; // what the source claims/argues, or "neutral"
+  tension: string;         // what's unresolved or contested
+  missed: string;          // angle the source didn't pursue
+}
+
+async function analyzeSource(client: Anthropic, story: Story): Promise<SourceAnalysis | null> {
+  const content = story.content
+    ? `EXCERPT: ${story.content.slice(0, 500)}`
+    : [story.summary, story.bullets?.join(". ")].filter(Boolean).join("\n");
+  try {
+    const msg = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 220,
+      messages: [{
+        role: "user",
+        content: `Read this article and return a brief editorial analysis. Be specific — one tight sentence each.
+
+TITLE: ${story.title}
+SOURCE: ${story.source}
+SECTION: ${story.section}
+${content}
+
+Return JSON only:
+{"genre":"news_report|science_discovery|cultural_criticism|profile|policy_politics|entertainment|opinion|explainer","source_position":"what claim or stance the source takes, or neutral if wire copy","tension":"what is unresolved contested or glossed over","missed":"the angle or implication the source did not pursue"}`,
+      }],
+    });
+    const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
+    return JSON.parse(raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()) as SourceAnalysis;
+  } catch { return null; }
+}
+
+function genreInstruction(a: SourceAnalysis): string {
+  const pos = a.source_position;
+  const ten = a.tension;
+  const mis = a.missed;
+  const briefs: Record<SourceGenre, string> = {
+    news_report:        `This is a news report. Lead with what this means — not what happened. The event is the last thing that matters. The source says: ${pos}. The tension it buried: ${ten}. The angle it skipped: ${mis}. Go there.`,
+    science_discovery:  `This is a science story. Lead with what changes because of this finding — for ordinary people, for the field, for assumptions we held. The source says: ${pos}. What it missed: ${mis}. The real tension: ${ten}.`,
+    cultural_criticism: `This is cultural criticism. The source argues: ${pos}. Engage that argument directly — agree and push further, or find the flaw and name it. The real tension: ${ten}. The angle they didn't take: ${mis}.`,
+    profile:            `This is a profile. The source says: ${pos}. Find the one detail that unlocks this person and build outward from it. The tension underneath: ${ten}. What the source avoided: ${mis}.`,
+    policy_politics:    `This is a policy story. Strip the procedural language. What does this actually do to actual people? The source says: ${pos}. The real tension: ${ten}. What they glossed over: ${mis}.`,
+    entertainment:      `This is an entertainment story. Treat it as a cultural symptom — what does the audience's appetite for this reveal about us? The source says: ${pos}. The tension: ${ten}. The missed angle: ${mis}.`,
+    opinion:            `This is an opinion piece. The source argues: ${pos}. Have a direct conversation with it — where is it right, where does it fall short, what did it not dare say? The tension: ${ten}. The missed move: ${mis}.`,
+    explainer:          `This is an explainer. The source covers the what. Your job is the why-now and the so-what. The source claims: ${pos}. The real tension: ${ten}. The angle they didn't follow: ${mis}.`,
+  };
+  return briefs[a.genre] ?? briefs.news_report;
+}
+
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number): Promise<ArticleCommentary> {
-  const PROMPT_V = "v20"; // bump when prompt changes to invalidate old cached articles
+  const PROMPT_V = "v21"; // bump when prompt changes to invalidate old cached articles
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
@@ -791,6 +844,10 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const related = relatedStories.filter((s) => s.link !== story.link).slice(0, 5);
 
+  // ── Pass 0: source analysis — genre, position, tension, missed angle ──
+  const analysis = await analyzeSource(client, story);
+  const editorialBrief = analysis ? `EDITORIAL BRIEF:\n${genreInstruction(analysis)}\n\n---\n\n` : "";
+
   // ── Pass 1: voice — write freely, pure quality, no structural constraints ──
   const writer = writerIndex !== undefined ? WRITERS[writerIndex % WRITERS.length] : null;
   const voiceInstruction = writer
@@ -802,9 +859,9 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
     max_tokens: 950,
     messages: [{
       role: "user",
-      content: `${voiceInstruction}
+      content: `${editorialBrief}${voiceInstruction}
 
-Your job is NOT to summarise this story. Find the real tension underneath it. What assumption does it expose? What does it reveal about how power, incentives, or human nature actually work? Who benefits that nobody's talking about? What breaks if this keeps going?
+Your job is NOT to summarise this story. The editorial brief above tells you what the source said, what it missed, and where the real tension is. Write into that gap — respond to the source, don't just report it. What assumption does it expose? What does it reveal about how power, incentives, or human nature actually work? Who benefits that nobody's talking about? What breaks if this keeps going?
 
 Be equally sceptical of institutions, activists, and reactionaries. No ideological lean. No moralising. No virtue signalling.
 
