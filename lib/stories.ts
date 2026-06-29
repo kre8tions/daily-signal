@@ -1294,7 +1294,7 @@ Your instinct for this piece: ${fcWriter.style}
 
 But keep the late-night energy — casual, direct, genuinely excited about the idea.
 
-Universe: ${FC_UNIVERSE}
+Universe: ${FC_UNIVERSE.name}
 Angle: ${FC_ANGLE.label}
 Task: ${FC_ANGLE.prompt}
 
@@ -1325,9 +1325,12 @@ Return JSON only, no markdown:
     const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const pass1 = JSON.parse(text1);
 
-    // Fetch image using the imageQuery Claude wrote from the article body — falls back to universe+angle
-    const fcImageQuery = (pass1.imageQuery as string | undefined)?.trim() || `${FC_UNIVERSE} ${FC_ANGLE.key}`;
-    const imageUrl = await fetchUnsplash(fcImageQuery, "Culture").then(r => r?.url);
+    // Image search priority: (1) source material by name+medium, (2) article-derived mood query
+    const mediumLabel: Record<string, string> = { film: "film", tv: "TV series", anime: "anime", novel: "book cover", game: "video game", fantasy: "fantasy art" };
+    const sourceQuery = `${FC_UNIVERSE.name} ${mediumLabel[FC_UNIVERSE.medium] ?? ""}`.trim();
+    const moodQuery = (pass1.imageQuery as string | undefined)?.trim() || `${FC_UNIVERSE.name} ${FC_ANGLE.key}`;
+    const imageUrl = await fetchUnsplash(sourceQuery, "Culture").then(r => r?.url)
+      ?? await fetchUnsplash(moodQuery, "Culture").then(r => r?.url);
 
     // ── Pass 2: scaffold — restructure the free-write into the para cadence ──
     const scaffoldMsg = await client.messages.create({
@@ -1401,10 +1404,10 @@ Return JSON only:
       }
     }
     const result: FeatureCreature = {
-      universe: FC_UNIVERSE,
+      universe: FC_UNIVERSE.name,
       angleLabel: FC_ANGLE.label,
       angleKey: FC_ANGLE.key,
-      title: parsed.title ?? `${FC_UNIVERSE}: ${FC_ANGLE.label}`,
+      title: parsed.title ?? `${FC_UNIVERSE.name}: ${FC_ANGLE.label}`,
       synopsis: parsed.synopsis ?? "",
       headers: [parsed.headers?.[0] ?? "", parsed.headers?.[1] ?? ""],
       ctaHeader: parsed.ctaHeader ?? undefined,

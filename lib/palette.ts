@@ -132,27 +132,40 @@ export const CURSIVE_FONT_FAMILY = CURSIVE_FONTS[_edition % CURSIVE_FONTS.length
 export const CURSIVE_FONT_URL = `https://fonts.googleapis.com/css2?family=${CURSIVE_FONTS[_edition % CURSIVE_FONTS.length][1]}&display=swap`;
 
 // ── Feature Creature — fictional universe pool ────────────────────────────────
-export const FC_UNIVERSES = [
+type FCMedium = "anime" | "film" | "tv" | "novel" | "game" | "fantasy";
+export type FCUniverse = { name: string; medium: FCMedium };
+
+const u = (name: string, medium: FCMedium): FCUniverse => ({ name, medium });
+
+export const FC_UNIVERSES: FCUniverse[] = [
   // Anime
-  "Ghost in the Shell", "Akira", "Neon Genesis Evangelion", "Cowboy Bebop",
-  "Attack on Titan", "Fullmetal Alchemist", "Steins;Gate", "Serial Experiments Lain",
-  "Psycho-Pass", "Planetes", "Vinland Saga", "Paprika",
-  // Sci-fi film & TV
-  "Blade Runner 2049", "Arrival", "Interstellar", "Ex Machina", "Her",
-  "Annihilation", "The Matrix", "Minority Report", "Contact", "Gattaca",
-  "Children of Men", "Moon", "Severance", "Black Mirror", "Westworld",
-  "Battlestar Galactica", "Altered Carbon", "Dark", "Devs",
+  u("Ghost in the Shell", "anime"), u("Akira", "anime"), u("Neon Genesis Evangelion", "anime"),
+  u("Cowboy Bebop", "anime"), u("Attack on Titan", "anime"), u("Fullmetal Alchemist", "anime"),
+  u("Steins;Gate", "anime"), u("Serial Experiments Lain", "anime"), u("Psycho-Pass", "anime"),
+  u("Planetes", "anime"), u("Vinland Saga", "anime"), u("Paprika", "anime"),
+  // Sci-fi film
+  u("Blade Runner 2049", "film"), u("Arrival", "film"), u("Interstellar", "film"),
+  u("Ex Machina", "film"), u("Her", "film"), u("Annihilation", "film"),
+  u("The Matrix", "film"), u("Minority Report", "film"), u("Contact", "film"),
+  u("Gattaca", "film"), u("Children of Men", "film"), u("Moon", "film"),
+  // Sci-fi TV
+  u("Severance", "tv"), u("Black Mirror", "tv"), u("Westworld", "tv"),
+  u("Battlestar Galactica", "tv"), u("Altered Carbon", "tv"), u("Dark", "tv"), u("Devs", "tv"),
   // Novels & written sci-fi
-  "Dune", "Neuromancer", "Snow Crash", "The Left Hand of Darkness",
-  "Solaris", "Foundation", "A Canticle for Leibowitz", "The Dispossessed",
-  "Blindsight", "Permutation City", "Flowers for Algernon", "The Diamond Age",
-  "A Fire Upon the Deep", "Ender's Game", "Hyperion",
-  // Games & other worlds
-  "Disco Elysium", "Cyberpunk 2077", "Nier: Automata", "Control",
-  "Death Stranding", "Hollow Knight", "Hades", "Outer Wilds",
+  u("Dune", "novel"), u("Neuromancer", "novel"), u("Snow Crash", "novel"),
+  u("The Left Hand of Darkness", "novel"), u("Solaris", "novel"), u("Foundation", "novel"),
+  u("A Canticle for Leibowitz", "novel"), u("The Dispossessed", "novel"),
+  u("Blindsight", "novel"), u("Permutation City", "novel"), u("Flowers for Algernon", "novel"),
+  u("The Diamond Age", "novel"), u("A Fire Upon the Deep", "novel"),
+  u("Ender's Game", "novel"), u("Hyperion", "novel"),
+  // Games
+  u("Disco Elysium", "game"), u("Cyberpunk 2077", "game"), u("Nier: Automata", "game"),
+  u("Control", "game"), u("Death Stranding", "game"), u("Hollow Knight", "game"),
+  u("Hades", "game"), u("Outer Wilds", "game"),
   // Fantasy & adjacent
-  "Ursula K. Le Guin's Earthsea", "His Dark Materials", "Solarpunk movement",
-  "Studio Ghibli's Nausicaä", "Princess Mononoke", "Spirited Away",
+  u("Ursula K. Le Guin's Earthsea", "fantasy"), u("His Dark Materials", "fantasy"),
+  u("Solarpunk movement", "fantasy"), u("Studio Ghibli's Nausicaä", "anime"),
+  u("Princess Mononoke", "anime"), u("Spirited Away", "anime"),
 ];
 
 export const FC_ANGLES = [
@@ -162,7 +175,12 @@ export const FC_ANGLES = [
 ];
 
 const _fc = Math.floor(Date.now() / 14_400_000);
-export const FC_UNIVERSE = FC_UNIVERSES[_fc % FC_UNIVERSES.length];
+export const FC_UNIVERSE: FCUniverse = new Proxy({} as FCUniverse, {
+  get(_, key) {
+    const current = FC_UNIVERSES[Math.floor(Date.now() / 14_400_000) % FC_UNIVERSES.length];
+    return current[key as keyof FCUniverse];
+  },
+});
 export const FC_ANGLE = FC_ANGLES[Math.floor(_fc / FC_UNIVERSES.length) % FC_ANGLES.length];
 
 // Returns #000 or #fff — whichever contrasts better against the given hex color
