@@ -145,24 +145,43 @@ const SEVEN_DAYS = 7 * 24 * ONE_HOUR;
 
 // ── Edition windows (5 per day, ~4 hrs each) ─────────────────────────────────
 export function getEdition(): { label: string; key: string } {
-  const h = new Date().getHours();
-  const date = new Date().toISOString().slice(0, 10);
-  if (h >= 5  && h < 9)  return { label: "Early Morning Edition", key: `${date}_early`    };
-  if (h >= 9  && h < 13) return { label: "Morning Edition",       key: `${date}_morning`  };
-  if (h >= 13 && h < 17) return { label: "Afternoon Edition",     key: `${date}_afternoon`};
-  if (h >= 17 && h < 21) return { label: "Evening Edition",       key: `${date}_evening`  };
-  return                         { label: "Night Edition",         key: `${date}_night`    };
+  const now = new Date();
+  const h = now.getUTCHours();
+  const date = now.toISOString().slice(0, 10);
+  if (h >= 5  && h < 9)  return { label: "First Light",     key: `${date}_early`    };
+  if (h >= 9  && h < 13) return { label: "The Brief",       key: `${date}_morning`  };
+  if (h >= 13 && h < 17) return { label: "Midday",          key: `${date}_afternoon`};
+  if (h >= 17 && h < 21) return { label: "The Digest",      key: `${date}_evening`  };
+  return                         { label: "Night Dispatch",  key: `${date}_night`    };
+}
+
+export function getEditionForTimezone(timezone: string): { label: string; key: string } {
+  try {
+    const now = new Date();
+    const utcDate = now.toISOString().slice(0, 10);
+    const h = parseInt(
+      new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: timezone }).format(now),
+      10
+    );
+    if (h >= 5  && h < 9)  return { label: "First Light",    key: `${utcDate}_early`    };
+    if (h >= 9  && h < 13) return { label: "The Brief",      key: `${utcDate}_morning`  };
+    if (h >= 13 && h < 17) return { label: "Midday",         key: `${utcDate}_afternoon`};
+    if (h >= 17 && h < 21) return { label: "The Digest",     key: `${utcDate}_evening`  };
+    return                         { label: "Night Dispatch", key: `${utcDate}_night`    };
+  } catch {
+    return getEdition();
+  }
 }
 
 export function getNextEdition(): { label: string; key: string } {
   const future = new Date(Date.now() + 16 * 60 * 1000);
   const h = future.getUTCHours();
   const date = future.toISOString().slice(0, 10);
-  if (h >= 5  && h < 9)  return { label: "Early Morning Edition", key: `${date}_early`    };
-  if (h >= 9  && h < 13) return { label: "Morning Edition",       key: `${date}_morning`  };
-  if (h >= 13 && h < 17) return { label: "Afternoon Edition",     key: `${date}_afternoon`};
-  if (h >= 17 && h < 21) return { label: "Evening Edition",       key: `${date}_evening`  };
-  return                         { label: "Night Edition",         key: `${date}_night`    };
+  if (h >= 5  && h < 9)  return { label: "First Light",     key: `${date}_early`    };
+  if (h >= 9  && h < 13) return { label: "The Brief",       key: `${date}_morning`  };
+  if (h >= 13 && h < 17) return { label: "Midday",          key: `${date}_afternoon`};
+  if (h >= 17 && h < 21) return { label: "The Digest",      key: `${date}_evening`  };
+  return                         { label: "Night Dispatch",  key: `${date}_night`    };
 }
 
 // ── RSS media extraction ──────────────────────────────────────────────────────
@@ -543,14 +562,20 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   return pageData;
 }
 
-export async function getPageData(): Promise<PageData> {
-  const { label: editionLabel, key: editionKey } = getEdition();
+export async function getPageData(edition?: { key: string; label: string }): Promise<PageData> {
+  const utcEdition = getEdition();
+  const { label: editionLabel, key: editionKey } = edition ?? utcEdition;
   return unstable_cache(
     async () => {
       // Never generate live — pre-warm owns all generation.
       // Read from in-memory cache or archive blob only.
       const archived = await getArchivedPageData(editionKey);
       if (archived) return archived;
+      // Local-slot blob not built yet — fall back to current UTC edition silently.
+      if (edition && editionKey !== utcEdition.key) {
+        const utcArchived = await getArchivedPageData(utcEdition.key);
+        if (utcArchived) return utcArchived;
+      }
       return { stories: [], synthesis: { theme: "", observation: "", takeaways: [], conclusion: "", actions: [] }, editionLabel };
     },
     [editionKey],

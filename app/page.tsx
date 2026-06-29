@@ -1,11 +1,19 @@
-import { getPageData, getEdition, getArchiveList } from "@/lib/stories";
+import { getPageData, getEditionForTimezone, getArchiveList } from "@/lib/stories";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { EditionView } from "@/components/EditionView";
 
 export const dynamic = "force-dynamic";
 
+async function getLocalEdition() {
+  const headersList = await headers();
+  const timezone = headersList.get("x-vercel-ip-timezone") ?? "UTC";
+  return getEditionForTimezone(timezone);
+}
+
 export async function generateMetadata(): Promise<Metadata> {
-  const { stories, synthesis } = await getPageData();
+  const edition = await getLocalEdition();
+  const { stories, synthesis } = await getPageData(edition);
   const heroImage = stories[0]?.imageUrl;
   const title = synthesis?.theme ? `${synthesis.theme} — The Daily Signal` : "The Daily Signal";
   const description = synthesis?.observation ?? "AI-curated news — the front page, intelligently edited.";
@@ -18,9 +26,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const { key: editionKey } = getEdition();
+  const edition = await getLocalEdition();
+  const { key: editionKey } = edition;
   const [{ stories, synthesis, editionLabel, featureCreature }, archiveList] = await Promise.all([
-    getPageData(),
+    getPageData(edition),
     getArchiveList(),
   ]);
   const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });

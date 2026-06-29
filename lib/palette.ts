@@ -19,7 +19,7 @@ export const PALETTES: Palette[] = [
     inkLight: "#2E4E58", // was #4F6870 (~3.1:1) → now ~5.8:1 on cardBg
     shadow: "0 1px 4px rgba(17,45,50,0.08), 0 4px 20px rgba(17,45,50,0.10)",
     gradFrom: "#254E58", gradTo: "#112D32",
-    fontHeading: "'Raleway', 'Helvetica Neue', Arial, sans-serif",
+    fontHeading: "'DM Serif Display', Georgia, serif",
     fontBody: "'Raleway', 'Helvetica Neue', Arial, sans-serif", dark: false },
   // 2 — Military Green (fontBody changed from condensed to readable sans)
   { pageBg: "#222629", articleBg: "#1A1E22", cardBg: "#2E3236", tint: "#474B4F", accent: "#86C232", accent2: "#E8A020",
@@ -27,7 +27,7 @@ export const PALETTES: Palette[] = [
     inkLight: "#9CA4A0", // was #6B6E70 (~2.7:1) → now ~4.6:1 on cardBg
     shadow: "0 2px 8px rgba(0,0,0,0.5), 0 8px 24px rgba(134,194,50,0.12)",
     gradFrom: "#61892F", gradTo: "#86C232",
-    fontHeading: "'Barlow Condensed', Impact, 'Arial Narrow', sans-serif",
+    fontHeading: "'Inter', 'Helvetica Neue', Arial, sans-serif",
     fontBody: "'Inter', 'Helvetica Neue', Arial, sans-serif", dark: true },
   // 3 — Light Editorial (best palette — minor inkLight fix)
   { pageBg: "#EDEAE5", articleBg: "#FEFDF8", cardBg: "#FEFDF8", tint: "#9FEDD7", accent: "#026670", accent2: "#C0392B",
@@ -38,12 +38,12 @@ export const PALETTES: Palette[] = [
     fontHeading: "'Playfair Display', Georgia, serif",
     fontBody: "'Raleway', 'Helvetica Neue', Arial, sans-serif", dark: false },
   // 4 — Dark Purple / Yellow (fontBody changed from condensed to readable sans)
-  { pageBg: "#46344E", articleBg: "#2E2038", cardBg: "#382840", tint: "#5A5560", accent: "#FAED26", accent2: "#F4845F",
+  { pageBg: "#46344E", articleBg: "#2E2038", cardBg: "#382840", tint: "#5A5560", accent: "#F5D800", accent2: "#F4845F",
     ink: "#FFFFFF", inkMid: "#C8C0D0",
     inkLight: "#A89AB0", // was #807888 (~2.5:1) → now ~4.8:1 on cardBg
     shadow: "0 2px 8px rgba(0,0,0,0.5), 0 8px 24px rgba(250,237,38,0.10)",
-    gradFrom: "#5A5560", gradTo: "#FAED26",
-    fontHeading: "'Oswald', 'Barlow Condensed', Impact, sans-serif",
+    gradFrom: "#5A5560", gradTo: "#F5D800",
+    fontHeading: "'Space Grotesk', 'Helvetica Neue', Arial, sans-serif",
     fontBody: "'Inter', 'Helvetica Neue', Arial, sans-serif", dark: true },
 ];
 
@@ -52,7 +52,7 @@ export const SECTION_COLORS: Record<string, string> = {
   Film: "#E07B3C", Entertainment: "#D4517A", Arts: "#C87AC0", Faith: "#F5A623",
 };
 
-export const P = PALETTES[Math.floor(Date.now() / 86_400_000) % PALETTES.length];
+export const P = PALETTES[Math.floor(Date.now() / 14_400_000) % PALETTES.length];
 
 // Daily-rotating quote fonts for The Bottom Line — expressive, editorial, distinct
 const QUOTE_FONTS = [
