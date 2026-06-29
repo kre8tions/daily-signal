@@ -3,11 +3,11 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "crons": [
-    { "path": "/api/revalidate", "schedule": "0 5 * * *" },
-    { "path": "/api/pre-warm",   "schedule": "44 4 * * *" },
-    { "path": "/api/pre-warm",   "schedule": "44 8 * * *" },
-    { "path": "/api/pre-warm",   "schedule": "44 12 * * *" },
-    { "path": "/api/pre-warm",   "schedule": "44 16 * * *" },
-    { "path": "/api/pre-warm",   "schedule": "44 20 * * *" }
+    { "path": "/api/revalidate", "schedule": "0 15 * * *" },
+    { "path": "/api/pre-warm",   "schedule": "44 2 * * *" },
+    { "path": "/api/pre-warm",   "schedule": "44 6 * * *" },
+    { "path": "/api/pre-warm",   "schedule": "44 14 * * *" },
+    { "path": "/api/pre-warm",   "schedule": "44 18 * * *" },
+    { "path": "/api/pre-warm",   "schedule": "44 22 * * *" }
   ]
 }

@@ -144,44 +144,46 @@ const ONE_HOUR   =      60 * 60 * 1000;
 const SEVEN_DAYS = 7 * 24 * ONE_HOUR;
 
 // ── Edition windows (5 per day, ~4 hrs each) ─────────────────────────────────
+// Build clock is UTC+14 (earliest timezone) so every reader's day has started
+// before the first edition of that UTC+14 date is built.
+const UTC14_OFFSET_MS = 14 * 60 * 60 * 1000;
+
+function utc14Now(): { h: number; date: string } {
+  const d = new Date(Date.now() + UTC14_OFFSET_MS);
+  return { h: d.getUTCHours(), date: d.toISOString().slice(0, 10) };
+}
+
+function slotFromHour(h: number, date: string): { label: string; key: string } {
+  if (h >= 5  && h < 9)  return { label: "First Light",    key: `${date}_early`    };
+  if (h >= 9  && h < 13) return { label: "The Brief",      key: `${date}_morning`  };
+  if (h >= 13 && h < 17) return { label: "Midday",         key: `${date}_afternoon`};
+  if (h >= 17 && h < 21) return { label: "The Digest",     key: `${date}_evening`  };
+  return                         { label: "Night Dispatch", key: `${date}_night`    };
+}
+
 export function getEdition(): { label: string; key: string } {
-  const now = new Date();
-  const h = now.getUTCHours();
-  const date = now.toISOString().slice(0, 10);
-  if (h >= 5  && h < 9)  return { label: "First Light",     key: `${date}_early`    };
-  if (h >= 9  && h < 13) return { label: "The Brief",       key: `${date}_morning`  };
-  if (h >= 13 && h < 17) return { label: "Midday",          key: `${date}_afternoon`};
-  if (h >= 17 && h < 21) return { label: "The Digest",      key: `${date}_evening`  };
-  return                         { label: "Night Dispatch",  key: `${date}_night`    };
+  const { h, date } = utc14Now();
+  return slotFromHour(h, date);
 }
 
 export function getEditionForTimezone(timezone: string): { label: string; key: string } {
   try {
     const now = new Date();
-    const utcDate = now.toISOString().slice(0, 10);
+    // Blob keys use UTC+14 date (build clock) — local hour selects the slot
+    const keyDate = new Date(Date.now() + UTC14_OFFSET_MS).toISOString().slice(0, 10);
     const h = parseInt(
       new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: timezone }).format(now),
       10
     );
-    if (h >= 5  && h < 9)  return { label: "First Light",    key: `${utcDate}_early`    };
-    if (h >= 9  && h < 13) return { label: "The Brief",      key: `${utcDate}_morning`  };
-    if (h >= 13 && h < 17) return { label: "Midday",         key: `${utcDate}_afternoon`};
-    if (h >= 17 && h < 21) return { label: "The Digest",     key: `${utcDate}_evening`  };
-    return                         { label: "Night Dispatch", key: `${utcDate}_night`    };
+    return slotFromHour(h, keyDate);
   } catch {
     return getEdition();
   }
 }
 
 export function getNextEdition(): { label: string; key: string } {
-  const future = new Date(Date.now() + 16 * 60 * 1000);
-  const h = future.getUTCHours();
-  const date = future.toISOString().slice(0, 10);
-  if (h >= 5  && h < 9)  return { label: "First Light",     key: `${date}_early`    };
-  if (h >= 9  && h < 13) return { label: "The Brief",       key: `${date}_morning`  };
-  if (h >= 13 && h < 17) return { label: "Midday",          key: `${date}_afternoon`};
-  if (h >= 17 && h < 21) return { label: "The Digest",      key: `${date}_evening`  };
-  return                         { label: "Night Dispatch",  key: `${date}_night`    };
+  const future = new Date(Date.now() + UTC14_OFFSET_MS + 16 * 60 * 1000);
+  return slotFromHour(future.getUTCHours(), future.toISOString().slice(0, 10));
 }
 
 // ── RSS media extraction ──────────────────────────────────────────────────────
