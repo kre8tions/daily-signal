@@ -202,51 +202,63 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
   const W = 800, H = 500;
   const sr = (n: number) => { const x = Math.sin(seed * 9301 + n * 49297 + 233995) * 10000; return x - Math.floor(x); };
 
-  // 1–3 planes, each in its own horizontal band so paths never cross each other
-  const numPlanes = 1 + Math.floor(sr(99) * 3);
-  const TENSION = 0.28;
+  const numPlanes = 1 + Math.floor(sr(99) * 3); // 1–3 planes
+  const TENSION = 0.9; // high tension = smooth flowing curves
+  // Safe zone: planes and X marks stay this far from edges (as fraction of W/H)
+  const ICON_MARGIN = 0.11;
+  // Waypoints stay within a slightly looser margin
+  const PT_MARGIN = 0.05;
 
   type Pt = { x: number; y: number };
   type PlaneData = { d: string; planeX: number; planeY: number; planeAngle: number; endX: number; endY: number };
 
+  const clampPt = (x: number, y: number): Pt => ({
+    x: Math.max(W * PT_MARGIN, Math.min(W * (1 - PT_MARGIN), x)),
+    y: Math.max(H * PT_MARGIN, Math.min(H * (1 - PT_MARGIN), y)),
+  });
+  const clampIcon = (x: number, y: number): Pt => ({
+    x: Math.max(W * ICON_MARGIN, Math.min(W * (1 - ICON_MARGIN), x)),
+    y: Math.max(H * ICON_MARGIN, Math.min(H * (1 - ICON_MARGIN), y)),
+  });
+
   const planes: PlaneData[] = Array.from({ length: numPlanes }, (_, pi) => {
-    const bandH = H / numPlanes;
-    const bandTop = pi * bandH + 18;
-    const bandBot = (pi + 1) * bandH - 18;
-    const br = bandBot - bandTop; // usable band height
-
-    // Start and end anywhere in the band (not forced left-to-right)
+    // Start and end freely anywhere (not left→right biased)
     const pts: Pt[] = [];
-    pts.push({ x: W * (0.04 + sr(pi * 60) * 0.35),      y: bandTop + sr(pi * 60 + 1) * br });
-    // 3–5 middle waypoints freely placed — X loosely progresses but can vary widely
-    const numMid = 3 + Math.floor(sr(pi * 60 + 2) * 3);
-    for (let i = 0; i < numMid; i++) {
-      const prog = (i + 1) / (numMid + 1);
-      const x = W * (0.08 + prog * 0.78) + (sr(pi * 60 + i * 7 + 3) - 0.5) * W * 0.22;
-      const y = bandTop + sr(pi * 60 + i * 7 + 4) * br;
-      pts.push({ x: Math.max(W * 0.03, Math.min(W * 0.97, x)), y: Math.max(bandTop, Math.min(bandBot, y)) });
-    }
-    pts.push({ x: W * (0.62 + sr(pi * 60 + 20) * 0.34), y: bandTop + sr(pi * 60 + 21) * br });
+    pts.push(clampPt(
+      W * (PT_MARGIN + sr(pi * 60) * (1 - 2 * PT_MARGIN)),
+      H * (PT_MARGIN + sr(pi * 60 + 1) * (1 - 2 * PT_MARGIN)),
+    ));
 
-    // 40% chance of inserting a tight loop somewhere mid-path
-    if (sr(pi * 60 + 30) < 0.4 && pts.length >= 3) {
+    // 4–6 middle waypoints scattered across the whole image
+    const numMid = 4 + Math.floor(sr(pi * 60 + 2) * 3);
+    for (let i = 0; i < numMid; i++) {
+      pts.push(clampPt(
+        W * (PT_MARGIN + sr(pi * 60 + i * 7 + 3) * (1 - 2 * PT_MARGIN)),
+        H * (PT_MARGIN + sr(pi * 60 + i * 7 + 4) * (1 - 2 * PT_MARGIN)),
+      ));
+    }
+
+    pts.push(clampPt(
+      W * (PT_MARGIN + sr(pi * 60 + 20) * (1 - 2 * PT_MARGIN)),
+      H * (PT_MARGIN + sr(pi * 60 + 21) * (1 - 2 * PT_MARGIN)),
+    ));
+
+    // 55% chance of a smooth loop mid-path
+    if (sr(pi * 60 + 30) < 0.55 && pts.length >= 3) {
       const li = 1 + Math.floor(sr(pi * 60 + 31) * (pts.length - 2));
       const lx = pts[li].x, ly = pts[li].y;
-      const r = 28 + sr(pi * 60 + 32) * 28; // loop radius 28–56px
+      const r = 40 + sr(pi * 60 + 32) * 55; // 40–95 px radius
       const dir = sr(pi * 60 + 33) < 0.5 ? 1 : -1;
-      // Four points tracing a rough circle: E → S → W → N (clockwise or CCW)
       const loop: Pt[] = [
-        { x: lx + r,       y: ly + dir * r * 0.4 },
-        { x: lx + r * 0.2, y: ly + dir * r },
-        { x: lx - r * 0.6, y: ly + dir * r * 0.6 },
-        { x: lx - r * 0.2, y: ly - dir * r * 0.2 },
-      ];
-      // Clamp loop points to band
-      const clamped = loop.map(p => ({ x: Math.max(W * 0.02, Math.min(W * 0.98, p.x)), y: Math.max(bandTop, Math.min(bandBot, p.y)) }));
-      pts.splice(li + 1, 0, ...clamped);
+        { x: lx + r,        y: ly + dir * r * 0.45 },
+        { x: lx + r * 0.25, y: ly + dir * r },
+        { x: lx - r * 0.65, y: ly + dir * r * 0.55 },
+        { x: lx - r * 0.2,  y: ly - dir * r * 0.25 },
+      ].map(p => clampPt(p.x, p.y));
+      pts.splice(li + 1, 0, ...loop);
     }
 
-    // Catmull-Rom → cubic bezier
+    // Catmull-Rom → cubic bezier (high TENSION = smooth)
     const p = [pts[0], ...pts, pts[pts.length - 1]];
     let d = `M ${p[1].x.toFixed(1)} ${p[1].y.toFixed(1)}`;
     for (let i = 1; i < p.length - 2; i++) {
@@ -258,13 +270,17 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
     const start = pts[0], end = pts[pts.length - 1];
     const firstCp = { x: p[1].x + (p[2].x - p[0].x) * TENSION / 3, y: p[1].y + (p[2].y - p[0].y) * TENSION / 3 };
     const dAngle = Math.atan2(firstCp.y - start.y, firstCp.x - start.x);
-    const OFFSET = 44;
+    const OFFSET = 38;
+    const rawPlane = clampIcon(
+      start.x - Math.cos(dAngle) * OFFSET,
+      start.y - Math.sin(dAngle) * OFFSET,
+    );
+    const clampedEnd = clampIcon(end.x, end.y);
     return {
       d,
-      planeX: start.x - Math.cos(dAngle) * OFFSET,
-      planeY: start.y - Math.sin(dAngle) * OFFSET,
+      planeX: rawPlane.x, planeY: rawPlane.y,
       planeAngle: dAngle * 180 / Math.PI + 90,
-      endX: end.x, endY: end.y,
+      endX: clampedEnd.x, endY: clampedEnd.y,
     };
   });
 
