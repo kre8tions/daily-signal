@@ -1210,7 +1210,11 @@ Pure prose body. No paragraph labels. Paragraphs separated by a blank line. FORB
     const extractArr = (key: string) => {
       const m = jsonPart.match(new RegExp(`"${key}"\\s*:\\s*\\[([^\\]]+)\\]`, "s"));
       if (!m) return undefined;
-      return [...m[1].matchAll(/"((?:[^"\\\\]|\\\\.)*)"/gs)].map(x => x[1]);
+      const items: string[] = [];
+      const re = /"((?:[^"\\]|\\.)*)"/g;
+      let hit: RegExpExecArray | null;
+      while ((hit = re.exec(m[1])) !== null) items.push(hit[1]);
+      return items;
     };
     pass1 = {
       ownedTitle: extractStr("ownedTitle"),
