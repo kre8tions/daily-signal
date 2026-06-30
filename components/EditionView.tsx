@@ -432,7 +432,7 @@ function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synt
                 const encoded = Buffer.from(action).toString("base64");
                 const relStory = stories[i] ?? stories[0];
                 const relSlug = relStory ? urlToSlug(relStory.link) : "";
-                const relTitle = relStory ? encodeURIComponent(relStory.title) : "";
+                const relTitle = relStory ? encodeURIComponent(relStory.ownedTitle || relStory.title) : "";
                 const synthCtx = [
                   synthesis.theme ? `st=${encodeURIComponent(synthesis.theme)}` : "",
                   synthesis.hook ? `sh=${encodeURIComponent(synthesis.hook)}` : "",
