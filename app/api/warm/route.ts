@@ -10,7 +10,17 @@ export async function GET(req: Request) {
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { key: editionKey, label: editionLabel } = getEdition();
+  const url = new URL(req.url);
+  const editionParam = url.searchParams.get("edition");
+  const EDITION_LABELS: Record<string, string> = {
+    early: "First Light", morning: "The Brief", afternoon: "Midday",
+    evening: "The Digest", night: "Night Dispatch",
+  };
+  const { key: currentKey, label: currentLabel } = getEdition();
+  const editionKey = editionParam ?? currentKey;
+  const editionLabel = editionParam
+    ? (EDITION_LABELS[editionParam.split("_")[1] ?? ""] ?? editionParam)
+    : currentLabel;
   const startedAt = new Date().toISOString();
 
   try {
