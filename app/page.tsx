@@ -36,7 +36,12 @@ export default async function Home() {
   const SLOT_ORDER: Record<string, number> = { early: 0, morning: 1, afternoon: 2, evening: 3, night: 4 };
   const editionRank = (key: string) => { const [d, s = ""] = key.split("_"); return d.replace(/-/g, "") + String(SLOT_ORDER[s] ?? 0).padStart(2, "0"); };
   const currentRank = editionRank(editionKey);
-  const prevEdition = archiveList.find(e => editionRank(e.key) < currentRank) ?? null;
+  // The requested slot may not be warmed yet — getPageData silently falls back to the
+  // most recent available blob. Use the most recent archive entry at-or-before the
+  // requested slot as the anchor for prevEdition, so we never point backwards to a
+  // newer-than-displayed slot within the same day.
+  const displayedKey = archiveList.find(e => editionRank(e.key) <= currentRank)?.key ?? editionKey;
+  const prevEdition = archiveList.find(e => editionRank(e.key) < editionRank(displayedKey)) ?? null;
 
   return (
     <EditionView
