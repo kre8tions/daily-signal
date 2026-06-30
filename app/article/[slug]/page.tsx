@@ -55,6 +55,16 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
     weekday: "long", month: "long", day: "numeric", year: "numeric",
   });
 
+  // Deterministic style seed per article — pull quote style, etc.
+  const slugSeed = slug.split("").reduce((a: number, c: string, i: number) => a + c.charCodeAt(0) * (i + 1), 0);
+  const pullQuoteStyle = slugSeed % 3; // 0=left border, 1=big quote marks, 2=dots divider only
+
+  // Related: same-section stories first, then others — cap at 3
+  const sameSection = related.filter(s => s.section === story.section);
+  const otherSection = related.filter(s => s.section !== story.section);
+  const relatedStories = [...sameSection, ...otherSection].slice(0, 3);
+  const moreFromEdition = related.filter(s => !relatedStories.find(r => r.link === s.link)).slice(0, 5);
+
   return (
     <div style={{ minHeight: "100vh", background: P.articleBg, color: P.ink, fontFamily: P.fontBody, paddingBottom: 80 }}>
 
@@ -131,11 +141,30 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
                     <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 32, marginTop: 8, aspectRatio: "16/9", maxWidth: 720 }}>
                       <img src={fullArticle.imageUrl2} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
                     </div>
-                  ) : fullArticle.pullQuote ? (
+                  ) : fullArticle.pullQuote && pullQuoteStyle === 0 ? (
+                    /* Style A: left-border blockquote */
                     <blockquote style={{ borderLeft: `4px solid ${sectionColor}`, paddingLeft: 24, marginLeft: 0, marginRight: 0, marginBottom: 28, marginTop: 4 }}>
                       <p style={{ fontSize: 22, fontStyle: "italic", color: sectionColor, lineHeight: 1.5, fontFamily: "Georgia, 'Times New Roman', serif", margin: 0 }}>{fullArticle.pullQuote}</p>
                     </blockquote>
-                  ) : null
+                  ) : fullArticle.pullQuote && pullQuoteStyle === 1 ? (
+                    /* Style B: large decorative quotation marks */
+                    <div style={{ position: "relative", paddingTop: 28, paddingBottom: 28, paddingLeft: 48, paddingRight: 48, marginBottom: 28, marginTop: 4, maxWidth: 720 }}>
+                      <span style={{ position: "absolute", top: -8, left: 0, fontSize: 100, lineHeight: 1, color: sectionColor, opacity: 0.18, fontFamily: "Georgia, serif", userSelect: "none" }}>&ldquo;</span>
+                      <p style={{ fontSize: 23, fontStyle: "italic", color: sectionColor, lineHeight: 1.55, fontFamily: "Georgia, 'Times New Roman', serif", margin: 0, textAlign: "center" }}>{fullArticle.pullQuote}</p>
+                      <span style={{ position: "absolute", bottom: -24, right: 0, fontSize: 100, lineHeight: 1, color: sectionColor, opacity: 0.18, fontFamily: "Georgia, serif", userSelect: "none" }}>&rdquo;</span>
+                    </div>
+                  ) : (
+                    /* Style C: dots divider (with or without quote) */
+                    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 32, marginTop: 12, maxWidth: 720 }}>
+                      <div style={{ flex: 1, height: 1, background: `${sectionColor}33` }} />
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {[0.4, 1, 0.4].map((op, k) => (
+                          <div key={k} style={{ width: 5, height: 5, borderRadius: "50%", background: sectionColor, opacity: op }} />
+                        ))}
+                      </div>
+                      <div style={{ flex: 1, height: 1, background: `${sectionColor}33` }} />
+                    </div>
+                  )
                 )}
               </div>
             ))}
@@ -167,12 +196,24 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
 
 
 
-        {/* Related Stories */}
-        {related.length > 0 && (
-          <div style={{ marginBottom: 48 }}>
-            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>More From Today&apos;s Edition</div>
+        {/* Related Stories — same section first */}
+        {relatedStories.length > 0 && (
+          <div style={{ marginBottom: 40 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.inkLight, marginBottom: 16, fontFamily: P.fontBody }}>Related Stories</div>
             <div style={{ display: "flex", flexDirection: "column" }}>
-              {related.slice(0, 5).map((s) => (
+              {relatedStories.map((s) => (
+                <RelatedCard key={s.link} story={s} editionKey={editionKey} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* More From Today's Edition */}
+        {moreFromEdition.length > 0 && (
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>More From Today&apos;s Edition</div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {moreFromEdition.map((s) => (
                 <RelatedCard key={s.link} story={s} editionKey={editionKey} />
               ))}
             </div>
