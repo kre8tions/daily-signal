@@ -1363,7 +1363,16 @@ Return JSON only, no markdown:
 }
 
 ---
-Pure prose body. No paragraph labels. Paragraphs separated by a blank line. FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's interesting is', 'Let's be clear', 'Make no mistake' — any setup phrase before the real point); colons used to split a sentence into setup + payoff ('X: Y'); semicolons (rewrite as two sentences instead).`,
+Pure prose body. No paragraph labels. Paragraphs separated by a blank line.
+
+Structure to aim for — not a template, but a rhythm that works:
+1. Open with the central claim or observation stated as fact. No setup. The reader lands in the middle of it.
+2. Ground it in the specific story — what happened, what was unusual, what it reveals. Use the striking number or detail if there is one.
+3. Pull in a parallel: a named person, moment, or case where the same trait or mechanism showed up. Not a vague "this has happened before" — name the thing. The parallel should make the reader see the pattern, not just the example.
+4. Name the trait, habit, or mechanism at the center. The one thing that explains why this worked, why this person succeeded, why this keeps happening. Give the reader something they can hold.
+5. End with a consequence or question that transfers — something that changes how the reader sees their own situation, not just this story. Not prescriptive. Just: here is what follows from this.
+
+FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's interesting is', 'Let's be clear', 'Make no mistake' — any setup phrase before the real point); colons used to split a sentence into setup + payoff ('X: Y'); semicolons (rewrite as two sentences instead); vague lesson-gesturing ('this teaches us', 'there's a lesson here', 'we can all learn from') — show the insight, don't announce it.`,
     }],
   });
 
