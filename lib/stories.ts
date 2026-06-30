@@ -980,14 +980,14 @@ function genreInstruction(a: SourceAnalysis): string {
   const ten = a.tension;
   const mis = a.missed;
   const briefs: Record<SourceGenre, string> = {
-    news_report:        `This is a news report. Lead with what this means — not what happened. The event is the last thing that matters. The source says: ${pos}. The tension it buried: ${ten}. The angle it skipped: ${mis}. Go there.`,
-    science_discovery:  `This is a science story. Lead with what changes because of this finding — for ordinary people, for the field, for assumptions we held. The source says: ${pos}. What it missed: ${mis}. The real tension: ${ten}.`,
-    cultural_criticism: `This is cultural criticism. The source argues: ${pos}. Engage that argument directly — agree and push further, or find the flaw and name it. The real tension: ${ten}. The angle they didn't take: ${mis}.`,
-    profile:            `This is a profile. The source says: ${pos}. Find the one detail that unlocks this person and build outward from it. The tension underneath: ${ten}. What the source avoided: ${mis}.`,
-    policy_politics:    `This is a policy story. Strip the procedural language. What does this actually do to actual people? The source says: ${pos}. The real tension: ${ten}. What they glossed over: ${mis}.`,
-    entertainment:      `This is an entertainment story. Treat it as a cultural symptom — what does the audience's appetite for this reveal about us? The source says: ${pos}. The tension: ${ten}. The missed angle: ${mis}.`,
-    opinion:            `This is an opinion piece. The source argues: ${pos}. Have a direct conversation with it — where is it right, where does it fall short, what did it not dare say? The tension: ${ten}. The missed move: ${mis}.`,
-    explainer:          `This is an explainer. The source covers the what. Your job is the why-now and the so-what. The source claims: ${pos}. The real tension: ${ten}. The angle they didn't follow: ${mis}.`,
+    news_report:        `This is a news story. Lead with what this means — not what happened. The event is the last thing that matters. The claim in the air: ${pos}. The tension nobody named: ${ten}. The angle that got skipped: ${mis}. Go there. Establish the subject first so a cold reader knows what we're talking about.`,
+    science_discovery:  `This is a science story. Establish the discovery clearly — what was found, by whom, and why it's surprising — then lead with what changes because of it. For ordinary people, for the field, for assumptions we held. The prevailing view: ${pos}. What the finding doesn't settle: ${ten}. The implication nobody followed: ${mis}.`,
+    cultural_criticism: `This is cultural criticism. Name the subject — the film, show, album, book, or moment — and establish what it is before you argue about it. The prevailing read: ${pos}. Engage that directly — agree and push further, or find the flaw and name it. The real tension: ${ten}. The angle nobody took: ${mis}.`,
+    profile:            `This is a profile. Name the person and give the reader a foothold — who are they and why do they matter right now. Then find the one detail that unlocks them and build outward from it. The established narrative: ${pos}. The tension underneath: ${ten}. What got avoided: ${mis}.`,
+    policy_politics:    `This is a policy story. Strip the procedural language. Name what is actually happening and who it affects before you argue about it. Then: what does this actually do to actual people? The official position: ${pos}. The real tension: ${ten}. What got glossed over: ${mis}.`,
+    entertainment:      `This is an entertainment story. Name the subject — the film, franchise, star, or moment — and anchor the reader before you have an opinion. Then treat it as a cultural symptom: what does the audience's appetite for this reveal about us right now? The surface read: ${pos}. The tension: ${ten}. The missed angle: ${mis}.`,
+    opinion:            `This is an opinion piece on a real subject. Establish what that subject is — the idea, event, or figure being debated — then enter the argument. The position in the room: ${pos}. Where it's right, where it falls short, what it didn't dare say. The real tension: ${ten}. The move nobody made: ${mis}.`,
+    explainer:          `This is an explainer. Cover the what clearly — a cold reader needs to understand the subject before they can care about your take. Then do the job the explainer skipped: the why-now and the so-what. The standard framing: ${pos}. The real tension: ${ten}. The thread nobody followed: ${mis}.`,
   };
   return briefs[a.genre] ?? briefs.news_report;
 }
@@ -1128,9 +1128,19 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
       role: "user",
       content: `${editorialBrief}${voiceInstruction}
 
-Your job is NOT to summarise this story. The editorial brief above tells you what the source said, what it missed, and where the real tension is. Write into that gap — respond to the source, don't just report it. What assumption does it expose? What does it reveal about how power, incentives, or human nature actually work? Who benefits that nobody's talking about? What breaks if this keeps going?
+You are writing for a curious, independent-minded adult who wants to understand the world better and occasionally act on what they learn. They came to read about the subject — the film, the discovery, the person, the idea — not about the journalism covering it.
 
-Be equally sceptical of institutions, activists, and reactionaries. No ideological lean. No moralising. No virtue signalling.
+YOUR READER ARRIVES COLD. They have not read the source article. They do not know what we are talking about. Your first move is always to establish the subject: name the thing, anchor the reader, give them a foothold. Then have a real opinion about it.
+
+Draw on everything you know about this subject — not just what the source provided. Bring in the broader conversation: the history, the debates, the context outside the article. Write as if you chose to cover this topic today because it matters to you.
+
+Never reference the source, the headline, the article, or your own process. You are writing about the subject. That is all the reader sees.
+
+The editorial brief gives you your angle. Use it to know where to go — not as a script. What does this subject reveal about how things actually work? What do most people get wrong about it? What would genuinely help a reader understand or act?
+
+When the subject connects to how people live, think, grow, or make decisions — make that useful. Not preachy, not prescriptive. Just: here is something worth knowing, and here is what you can do with it.
+
+Write for someone who is intelligent, not ideological. No left or right lean. No woke framing. No moralising. No virtue signalling. Equally sceptical of institutions, activists, and reactionaries.
 
 Use ONE reference — a specific idea, experiment, thinker, film, or moment — that creates a genuinely surprising connection. One sentence, then move on. If nothing fits cleanly, skip it. Do NOT use: Goodhart's Law, Dunning-Kruger, Streisand Effect, Overton Window, Occam's Razor, Hanlon's Razor, Butterfly Effect, Maslow's Hierarchy, Trolley Problem, Black Swan.
 
@@ -1142,6 +1152,7 @@ Voice — write like this:
 - Vivid and specific — name the thing, don't describe it abstractly.
 - No academic hedging: never "one might argue", "it is worth noting", "this suggests that".
 - No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...", "No one is saying out loud...".
+- Never reference the source article or your own process: never "the source headline", "the article argues", "the piece claims", "what the reporting missed", "the question embedded in", or any phrase that implies the reader has seen what you read. You chose to write about this subject — write about it directly.
 - No semicolons — ever. Rewrite any semicolon sentence as two separate sentences.
 
 Also return:
