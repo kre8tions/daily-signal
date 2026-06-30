@@ -1588,7 +1588,13 @@ export async function getArchiveList(): Promise<ArchiveEntry[]> {
     };
   });
 
-  return entries.sort((a, b) => b.key.localeCompare(a.key));
+  const SLOT_ORDER: Record<string, number> = { early: 0, morning: 1, afternoon: 2, evening: 3, night: 4 };
+  return entries.sort((a, b) => {
+    const [aDate, aSlot = ""] = a.key.split("_");
+    const [bDate, bSlot = ""] = b.key.split("_");
+    if (bDate !== aDate) return bDate.localeCompare(aDate);
+    return (SLOT_ORDER[bSlot] ?? 0) - (SLOT_ORDER[aSlot] ?? 0);
+  });
 }
 
 export async function getArchivedPageData(key: string): Promise<PageData | null> {
