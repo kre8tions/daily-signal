@@ -1179,42 +1179,39 @@ Return JSON only, no markdown:
   "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
   "imageQuery": "${analysis?.subject ? `This article is about ${analysis.subject.type === "person" ? `the person "${analysis.subject.name}"` : `the ${analysis.subject.type.replace("_", " ")} "${analysis.subject.name}"${analysis.subject.year ? ` (${analysis.subject.year})` : ""}`}. Use that as your search — e.g. "${analysis.subject.name}${analysis.subject.type !== "person" ? " " + analysis.subject.type.replace("_", " ") : " portrait"}". 4-6 words max.` : `4-6 words for Unsplash hero image. Named film/show/game/book → start with exact title + medium (e.g. 'Dune film', 'The Bear TV show'). Real person → role/setting not name. Everything else: concrete scene, no brand names, no text, no logos.`}",
   "header": "...",
-  "pullQuote": "1 sentence. Your sharpest, most arresting framing of the central tension — a paraphrase, not a direct quote from the source. Something a reader would screenshot.",
-  "body": "Pure prose, no paragraph labels. Paragraphs separated by \\n\\n. FORBIDDEN: throat-clearing openers ('Here's the thing', 'Here's the structure', 'The truth is', 'What's interesting is', 'Let's be clear', 'Make no mistake', 'The reality is', 'Here's what', 'Here's why' — any setup phrase before the real point); colons used to split a sentence into setup + payoff ('X: Y'); semicolons (rewrite as two sentences instead)."${hasCta ? `,
+  "pullQuote": "1 sentence. Your sharpest, most arresting framing of the central tension — a paraphrase, not a direct quote from the source. Something a reader would screenshot."${hasCta ? `,
   "cta": {
     "header": "2-4 words. Active verb phrase. E.g. 'Try This Tonight', 'Start Here', 'Read This Next'.",
     "body": "1 sentence. A specific thing to DO, WATCH, READ, or TRY that connects directly to this story. Name the exact thing. Beginner-friendly, low-commitment. Not a genre — a specific title, tool, experiment, or action."
   }` : ""}
-}`,
+}
+
+---
+Pure prose body. No paragraph labels. Paragraphs separated by a blank line. FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's interesting is', 'Let's be clear', 'Make no mistake' — any setup phrase before the real point); colons used to split a sentence into setup + payoff ('X: Y'); semicolons (rewrite as two sentences instead).`,
     }],
   });
 
   const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
-  const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  // Body is written after a "---" separator — split it out before JSON parsing
+  // so prose with unescaped quotes never corrupts the metadata fields.
+  const sepIdx = raw1.indexOf("\n---");
+  const bodyFromSep = sepIdx >= 0 ? raw1.slice(sepIdx + 4).trim() : "";
+  const jsonPart = (sepIdx >= 0 ? raw1.slice(0, sepIdx) : raw1)
+    .replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   let pass1: { ownedTitle?: string; summary?: string; bullets?: string[]; imageQuery?: string; header?: string; pullQuote?: string; body?: string; cta?: { header: string; body: string } } = {};
   try {
-    pass1 = JSON.parse(text1);
-    if (!pass1.body) throw new Error();
+    pass1 = JSON.parse(jsonPart);
   } catch {
-    // JSON.parse fails when body text has unescaped double quotes (common in Haiku output).
-    // Try extracting fields via regex before giving up — a partial recovery is better than empty.
+    // Regex fallback for metadata fields only
     const extractStr = (key: string) => {
-      const m = text1.match(new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, "s"));
+      const m = jsonPart.match(new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, "s"));
       return m ? m[1].replace(/\\n/g, "\n").replace(/\\"/g, '"') : undefined;
     };
     const extractArr = (key: string) => {
-      const m = text1.match(new RegExp(`"${key}"\\s*:\\s*\\[([^\\]]+)\\]`, "s"));
+      const m = jsonPart.match(new RegExp(`"${key}"\\s*:\\s*\\[([^\\]]+)\\]`, "s"));
       if (!m) return undefined;
       return [...m[1].matchAll(/"((?:[^"\\\\]|\\\\.)*)"/gs)].map(x => x[1]);
     };
-    // Last resort: grab everything after "body": " to end of JSON as the body
-    const bodyFallback = (() => {
-      const idx = text1.indexOf('"body"');
-      if (idx < 0) return text1.startsWith("{") ? "" : text1;
-      const after = text1.slice(idx + 6).replace(/^\s*:\s*"/, "");
-      // strip trailing JSON artifacts
-      return after.replace(/",?\s*"(?:cta|writer|header2|imageUrl2)"[\s\S]*$/, "").replace(/"\s*}[\s\S]*$/, "").replace(/\\n/g, "\n").replace(/\\"/g, '"');
-    })();
     pass1 = {
       ownedTitle: extractStr("ownedTitle"),
       summary: extractStr("summary"),
@@ -1222,9 +1219,10 @@ Return JSON only, no markdown:
       imageQuery: extractStr("imageQuery"),
       header: extractStr("header"),
       pullQuote: extractStr("pullQuote"),
-      body: extractStr("body") ?? bodyFallback,
     };
   }
+  // Use body from separator section; fall back to any body field in JSON
+  if (bodyFromSep) pass1.body = bodyFromSep;
 
   // ── Pass 2: structure — always runs; isBrief only gates imageUrl2 (no mid-article image for brief cards) ──
   const isBrief = story.cardStyle === "brief";
