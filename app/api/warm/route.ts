@@ -9,8 +9,11 @@ export const maxDuration = 300;
 async function runWarm(editionKey: string, editionLabel: string) {
   try {
     const pageData = await buildPageData(editionKey, editionLabel);
-    const failed = pageData.stories.filter(s => !s.summary).length;
-    console.log(`[warm] ${editionKey} done — ${failed} stories missing summary, FC: ${!!pageData.featureCreature}, theme: "${pageData.synthesis.theme}"`);
+    const failed = pageData.stories.filter(s => !s.summary);
+    if (failed.length > 0) {
+      failed.forEach(s => console.error(`[warm] missing summary: "${s.title}" — ${s.generationError ?? "no error captured"}`));
+    }
+    console.log(`[warm] ${editionKey} done — ${failed.length} stories missing summary, FC: ${!!pageData.featureCreature}, theme: "${pageData.synthesis.theme}"`);
     revalidateTag(`edition-${editionKey}`);
   } catch (e) {
     console.error(`[warm] ${editionKey} FAILED`, e);
