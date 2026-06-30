@@ -1196,8 +1196,34 @@ Return JSON only, no markdown:
     pass1 = JSON.parse(text1);
     if (!pass1.body) throw new Error();
   } catch {
-    const isJson = text1.startsWith("{") || text1.startsWith("[");
-    pass1 = { header: "", body: isJson ? "" : text1 };
+    // JSON.parse fails when body text has unescaped double quotes (common in Haiku output).
+    // Try extracting fields via regex before giving up — a partial recovery is better than empty.
+    const extractStr = (key: string) => {
+      const m = text1.match(new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, "s"));
+      return m ? m[1].replace(/\\n/g, "\n").replace(/\\"/g, '"') : undefined;
+    };
+    const extractArr = (key: string) => {
+      const m = text1.match(new RegExp(`"${key}"\\s*:\\s*\\[([^\\]]+)\\]`, "s"));
+      if (!m) return undefined;
+      return [...m[1].matchAll(/"((?:[^"\\\\]|\\\\.)*)"/gs)].map(x => x[1]);
+    };
+    // Last resort: grab everything after "body": " to end of JSON as the body
+    const bodyFallback = (() => {
+      const idx = text1.indexOf('"body"');
+      if (idx < 0) return text1.startsWith("{") ? "" : text1;
+      const after = text1.slice(idx + 6).replace(/^\s*:\s*"/, "");
+      // strip trailing JSON artifacts
+      return after.replace(/",?\s*"(?:cta|writer|header2|imageUrl2)"[\s\S]*$/, "").replace(/"\s*}[\s\S]*$/, "").replace(/\\n/g, "\n").replace(/\\"/g, '"');
+    })();
+    pass1 = {
+      ownedTitle: extractStr("ownedTitle"),
+      summary: extractStr("summary"),
+      bullets: extractArr("bullets"),
+      imageQuery: extractStr("imageQuery"),
+      header: extractStr("header"),
+      pullQuote: extractStr("pullQuote"),
+      body: extractStr("body") ?? bodyFallback,
+    };
   }
 
   // ── Pass 2: structure — always runs; isBrief only gates imageUrl2 (no mid-article image for brief cards) ──
