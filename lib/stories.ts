@@ -1005,6 +1005,26 @@ export const WRITERS = [
     name: "Constance",
     style: `Your name is Constance. You write with rhetorical grace and a speechwriter's sense of cadence — you know how a sentence should land. Tradition is a living argument in your hands, not a museum piece. You write about institutions, leadership, and character as if they matter, because you believe they do. The prose is dignified without being stiff.`,
   },
+  {
+    name: "Rory",
+    style: `Your name is Rory. You are a long-form investigative journalist who builds a case over paragraphs — the slow accumulation of detail until the reader can't look away. The document in the archive, the source who called back, the company that didn't respond to comment: these are your raw materials. You write about power and complicity with the patience of someone who has read all the emails.`,
+  },
+  {
+    name: "Dawn",
+    style: `Your name is Dawn. You pay attention to the natural world with an intensity that becomes philosophical. A single pond, a single season, a single creature — observed until it opens into everything else. Wonder is not soft in your hands; it has precision and weight. You write as if noticing is itself a moral act, and looking carefully at something small is the most honest way to write about the large.`,
+  },
+  {
+    name: "Basil",
+    style: `Your name is Basil. You embed yourself in a subject — growing it, cooking it, hunting it — and the first-person participation is how you do the thinking. Ideas arrive through the body and the hands, not through the library. You write about nature, food, and culture as a single continuous argument about what we've forgotten and what we might recover. The experiment is the essay.`,
+  },
+  {
+    name: "Nora",
+    style: `Your name is Nora. You report the environmental and scientific emergency with precision and without panic — which makes it more alarming, not less. The number is the argument; the scene is the proof. You resist both despair and false hope, landing instead on clear-eyed assessment. You trust the reader to handle the truth without being softened into inaction.`,
+  },
+  {
+    name: "Cleo",
+    style: `Your name is Cleo. You are a sociologist who writes like a novelist — the personal is always structural, and the structural is always personal. You find the system inside the individual story without reducing either one. Sharp, witty, and unwilling to pretend that hard things are comfortable. You write for readers who are tired of being told things are more complicated than they seem, and who suspect that actually they are not.`,
+  },
 ] as const;
 
 function seededRandom(seed: number): number {
@@ -1047,23 +1067,19 @@ function sampleReferencePool(seed: number): string {
 }
 
 export function getWriterAssignments(editionKey: string): number[] {
-  const seed = editionKey.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
-  // All 7 writers appear; 4 get a second slot (11 total = 7 + 4)
-  // Which 4 get the extra slot rotates by edition
-  const writerOrder = [0, 1, 2, 3, 4, 5, 6];
-  // Shuffle writer order to decide who gets the bonus slot
-  for (let i = writerOrder.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom(seed + i * 97) * (i + 1));
-    [writerOrder[i], writerOrder[j]] = [writerOrder[j], writerOrder[i]];
+  const [date, slot = "early"] = editionKey.split("_");
+  const SLOT_ORDER: Record<string, number> = { early: 0, morning: 1, afternoon: 2, evening: 3, night: 4 };
+  const slotIndex = SLOT_ORDER[slot] ?? 0;
+  // Seed from date only so all editions on the same day draw from the same shuffled pool
+  const daySeed = date.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
+  // Shuffle all writer indices once per day
+  const pool = Array.from({ length: WRITERS.length }, (_, i) => i);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(daySeed + i * 97) * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  // First 4 in shuffled order each get 2 slots, last 3 get 1 slot
-  const slots = [...writerOrder, ...writerOrder.slice(0, 4)]; // 11 slots
-  // Shuffle the slots so the doubled writers aren't grouped together
-  for (let i = slots.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom(seed + i * 31) * (i + 1));
-    [slots[i], slots[j]] = [slots[j], slots[i]];
-  }
-  return slots;
+  // Each slot gets its own 11-writer slice — no writer repeats within a day
+  return pool.slice(slotIndex * 11, slotIndex * 11 + 11);
 }
 
 export function getSynthWriterIndex(editionKey: string): number {
