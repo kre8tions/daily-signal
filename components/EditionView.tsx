@@ -220,6 +220,17 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
     y: Math.max(H * ICON_M, Math.min(H * (1 - ICON_M), y)),
   });
 
+  // Band dividers: one between each pair of bands, randomly rotated -30°..+30°
+  const MIN_RADIUS = 30; // minimum turn radius in SVG units
+  const MIN_DIST = MIN_RADIUS * 2; // minimum spacing between waypoints to enforce it
+
+  const bandDividers = Array.from({ length: numPlanes - 1 }, (_, di) => {
+    const bandH = H / numPlanes;
+    const divY = (di + 1) * bandH;
+    const angleDeg = sr(di * 60 + 90) * 60 - 30; // -30 to +30
+    return { cx: W / 2, cy: divY, angleDeg };
+  });
+
   const planes: PlaneData[] = Array.from({ length: numPlanes }, (_, pi) => {
     // Each plane owns a horizontal band — guarantees no path crossing
     const bandH = H / numPlanes;
@@ -262,7 +273,7 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
     if (sr(pi * 60 + 30) < 0.55 && pts.length >= 3) {
       const li = 1 + Math.floor(sr(pi * 60 + 31) * (pts.length - 2));
       const lx = pts[li].x, ly = pts[li].y;
-      const r = 40 + sr(pi * 60 + 32) * 55;
+      const r = Math.max(MIN_RADIUS, 40 + sr(pi * 60 + 32) * 55);
       const dir = sr(pi * 60 + 33) < 0.5 ? 1 : -1;
       const loop: Pt[] = [
         { x: lx + r,        y: ly + dir * r * 0.45 },
@@ -273,8 +284,16 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
       pts.splice(li + 1, 0, ...loop);
     }
 
+    // Enforce minimum spacing between waypoints so no turn is tighter than MIN_RADIUS
+    const dist = (a: Pt, b: Pt) => Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
+    const filtered: Pt[] = [pts[0]];
+    for (let i = 1; i < pts.length - 1; i++) {
+      if (dist(filtered[filtered.length - 1], pts[i]) >= MIN_DIST) filtered.push(pts[i]);
+    }
+    filtered.push(pts[pts.length - 1]);
+
     // Catmull-Rom → cubic bezier
-    const p = [pts[0], ...pts, pts[pts.length - 1]];
+    const p = [filtered[0], ...filtered, filtered[filtered.length - 1]];
     let d = `M ${p[1].x.toFixed(1)} ${p[1].y.toFixed(1)}`;
     for (let i = 1; i < p.length - 2; i++) {
       const cp1 = { x: p[i].x + (p[i+1].x - p[i-1].x) * TENSION / 3, y: p[i].y + (p[i+1].y - p[i-1].y) * TENSION / 3 };
@@ -301,6 +320,11 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}>
       <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", inset: 0 }}>
+        {bandDividers.map((dv, i) => (
+          <line key={`div-${i}`} x1={-W * 0.5} y1={dv.cy} x2={W * 1.5} y2={dv.cy}
+            stroke={color} strokeWidth="1.5" strokeDasharray="4 9" strokeLinecap="round" opacity="0.3"
+            transform={`rotate(${dv.angleDeg.toFixed(1)} ${dv.cx} ${dv.cy})`} />
+        ))}
         {planes.map((pl, i) => (
           <path key={i} d={pl.d} fill="none" stroke={color} strokeWidth="2.5" strokeDasharray="4 9" strokeLinecap="round" opacity="0.65" />
         ))}
