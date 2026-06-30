@@ -1150,6 +1150,7 @@ ${sampleReferencePool(refSeed)}
 Voice — write like this:
 - Vary sentence length. Short punches. Then one that earns it. Then short again.
 - Vivid and specific — name the thing, don't describe it abstractly.
+- When the source contains a notable number — a record, a scale, a count, a sum — use it. 7.8 on the Richter scale. $34 billion. Six-time champion. 40,000 years old. The specific number does more work than the abstraction it replaces. Only include it if the source actually states it and it's genuinely striking.
 - No academic hedging: never "one might argue", "it is worth noting", "this suggests that".
 - No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...", "No one is saying out loud...".
 - Never reference the source article or your own process: never "the source headline", "the article argues", "the piece claims", "what the reporting missed", "the question embedded in", or any phrase that implies the reader has seen what you read. You chose to write about this subject — write about it directly.
