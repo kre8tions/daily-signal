@@ -1,5 +1,12 @@
 # The Daily Signal — Claude Context
 
+<!-- STATUS:START -->
+Last updated: 2026-07-01
+Status: Live, 5 editions/day generating via Claude Haiku; latest commit expanded writer roster to 65
+Next: Custom domain (currently pending, see line below) + share button
+Blockers: none
+<!-- STATUS:END -->
+
 Live: https://daily-signal-omega.vercel.app/ (custom domain pending)
 GitHub: github.com/kre8tions/daily-signal (main branch)
 Local: C:\dev\daily-signal
