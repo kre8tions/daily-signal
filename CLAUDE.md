@@ -1,9 +1,9 @@
 # The Daily Signal — Claude Context
 
 <!-- STATUS:START -->
-Last updated: 2026-07-02 (session 2)
-Status: Live, 5 editions/day; 66 writers, day-pool system active; article body generation fixed
-Next: Custom domain + share button + Anime/Film/Comics filter + add `inspiration` field to WRITERS + fix Signal Desk hardcoded maps
+Last updated: 2026-07-02 (session 3)
+Status: Live, 5 editions/day; 66 writers with inspiration field; Signal Desk fully functional; article body generation fixed
+Next: Custom domain + share button + Anime/Film/Comics filter (reject items with no named work)
 Blockers: none
 <!-- STATUS:END -->
 
@@ -90,7 +90,7 @@ Edition labels: early="First Light", morning="The Brief", afternoon="Midday", ev
 ## Writer Personas (66 writers — day-pool no-repeat system)
 All nicknames are fictional (never the writer's real first name). Full objects in `lib/stories.ts` WRITERS array.
 
-**TODO**: Add `inspiration` field to each writer object in WRITERS — currently missing. Signal Desk has a stale hardcoded 7-writer `WRITER_STYLE`/`WRITER_INSPIRATION` map that needs to be replaced with a read from WRITERS directly.
+Each writer object has `name`, `inspiration`, and `style` fields. Signal Desk reads `inspiration` and derives personality from the first sentence of `style`.
 
 **Daily assignment** (`lib/stories.ts`):
 - `getDayPool(date)` shuffles all 66 writers once from date seed — one source of truth
@@ -156,7 +156,7 @@ Below:   Synthesis card → S3-S11 3-column grid
 
 ## Signal Desk (/signal-desk)
 Internal password-protected dashboard (password: "office"). Shows all editions with per-story writer assignments, pseudonyms, inspirations. `app/signal-desk/page.tsx` + `DeskClient.tsx`.
-**Known issue**: `WRITER_STYLE` and `WRITER_INSPIRATION` maps are hardcoded for only 7 writers — all 59 newer writers show blank Modeled After / Personality columns. Fix: add `inspiration` to WRITERS array and read from there directly.
+Password-protected dashboard showing all editions with per-story writer assignments, pseudonyms, inspirations, and generation status. `app/signal-desk/page.tsx` + `DeskClient.tsx`. Status column shows `✓ OK`, `No Body`, `Pass 1 Fail`, or `Missing` per article row; synthesis and FC rows show their own OK/fail state.
 
 ## Feed System (lib/stories.ts — FEEDS array)
 Optional fields: `preferRssImage?: boolean`, `slotOnly?: string`.
@@ -204,5 +204,4 @@ Optional fields: `preferRssImage?: boolean`, `slotOnly?: string`.
 ## Open Items
 1. Custom domain (still on daily-signal-omega.vercel.app)
 2. Share button on articles
-3. Add `inspiration` field to all 66 writers in WRITERS array; update Signal Desk to read from it
-4. Filter Anime/Film/Comics stories that lack a named cultural work (reject at pool-build time)
+3. Filter Anime/Film/Comics stories that lack a named cultural work (reject at pool-build time)
