@@ -1361,7 +1361,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
 
   const pass1msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 950,
+    max_tokens: 1600,
     messages: [{
       role: "user",
       content: `${editorialBrief}${voiceInstruction}
