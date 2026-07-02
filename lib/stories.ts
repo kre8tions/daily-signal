@@ -522,8 +522,7 @@ export async function getSynthesis(items: RawItem[], editionKey: string): Promis
     }
   } catch { /* generate fresh */ }
 
-  const synthSeed = editionKey.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 13), 0);
-  const synthWriter = WRITERS[synthSeed % WRITERS.length];
+  const synthWriter = WRITERS[getSynthWriterIndex(editionKey)];
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const storyList = items.map((a, i) =>
     `[${i}] ${a.section.toUpperCase()} — ${a.source}: ${a.title}\n${a.content.slice(0, 300)}`
@@ -1439,7 +1438,7 @@ FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's 
     }],
   });
 
-  const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
+  const raw1 = (pass1msg.content[0]?.type === "text" ? pass1msg.content[0].text : undefined) ?? "{}";
   // Body is written after a "---" separator — split it out before JSON parsing
   // so prose with unescaped quotes never corrupts the metadata fields.
   const sepIdx = raw1.indexOf("\n---");
@@ -1516,7 +1515,7 @@ Return JSON only:
 {"header2":"...","imageQuery2":"...","pullQuoteAfterPara":4,"para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`,
         }],
       });
-      const raw2 = pass2msg.content[0].type === "text" ? pass2msg.content[0].text : "{}";
+      const raw2 = (pass2msg.content[0]?.type === "text" ? pass2msg.content[0].text : undefined) ?? "{}";
       const text2 = raw2.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
       const scaffold = JSON.parse(text2);
       const limits: Record<string, number> = { para1: 1, para2: 1, para3: 2, para4: 3, para5: 2 };
@@ -1525,7 +1524,8 @@ Return JSON only:
         body = paraKeys
           .filter(k => scaffold[k])
           .map(k => {
-            const matches = (scaffold[k] as string).match(/[^.!?]*[.!?]+["']?\s*/g) ?? [scaffold[k]];
+            const val = (scaffold[k] as string | undefined) ?? "";
+            const matches = val.match(/[^.!?]*[.!?]+["']?\s*/g) ?? [val];
             return matches.slice(0, limits[k]).join(" ").trim();
           })
           .join("\n\n");
@@ -1602,9 +1602,7 @@ export async function getFeatureCreature(editionKey: string): Promise<FeatureCre
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  // Pick a writer voice seeded by edition key
-  const fcSeed = editionKey.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 7), 0);
-  const fcWriterIndex = fcSeed % WRITERS.length;
+  const fcWriterIndex = getFCWriterIndex(editionKey);
   const fcWriter = WRITERS[fcWriterIndex];
   const voiceId = fcWriterIndex + 1;
 
@@ -1641,7 +1639,7 @@ Before writing, state your core claim in ONE sentence. Requirements:
 Reply with the claim sentence only. No preamble.`,
       }],
     });
-    const coreClaim = claimMsg.content[0].type === "text" ? claimMsg.content[0].text.trim() : "";
+    const coreClaim = (claimMsg.content[0]?.type === "text" ? claimMsg.content[0].text.trim() : undefined) ?? "";
 
     // ── Pass 1: free-write — write from the committed claim ──
     const pass1msg = await client.messages.create({
@@ -1682,7 +1680,7 @@ Return JSON only, no markdown:
         }],
       });
 
-    const raw1 = pass1msg.content[0].type === "text" ? pass1msg.content[0].text : "{}";
+    const raw1 = (pass1msg.content[0]?.type === "text" ? pass1msg.content[0].text : undefined) ?? "{}";
     const text1 = raw1.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const pass1 = JSON.parse(text1);
 
@@ -1720,7 +1718,7 @@ Return JSON only:
       }],
     });
 
-    const raw2 = scaffoldMsg.content[0].type === "text" ? scaffoldMsg.content[0].text : "{}";
+    const raw2 = (scaffoldMsg.content[0]?.type === "text" ? scaffoldMsg.content[0].text : undefined) ?? "{}";
     const text2 = raw2.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const scaffold = JSON.parse(text2);
 
