@@ -1,9 +1,9 @@
 # The Daily Signal — Claude Context
 
 <!-- STATUS:START -->
-Last updated: 2026-07-02
-Status: Live, 5 editions/day generating via Claude Haiku; 66 writers, day-pool no-repeat system active
-Next: Custom domain + share button + Anime/Film/Comics filter (reject items with no named work) + add `inspiration` field to WRITERS + fix Signal Desk hardcoded maps
+Last updated: 2026-07-02 (session 2)
+Status: Live, 5 editions/day; 66 writers, day-pool system active; article body generation fixed
+Next: Custom domain + share button + Anime/Film/Comics filter + add `inspiration` field to WRITERS + fix Signal Desk hardcoded maps
 Blockers: none
 <!-- STATUS:END -->
 
@@ -194,6 +194,12 @@ Optional fields: `preferRssImage?: boolean`, `slotOnly?: string`.
 | `app/api/pre-warm/route.ts` | Primary cron entrypoint |
 | `app/api/warm/route.ts` | Manual regen entrypoint |
 | `vercel.json` | Cron schedule |
+
+## Bug Fixes Applied (2026-07-02)
+- **Synthesis + FC writer mismatch**: `getSynthesis` and `getFeatureCreature` were computing writer index independently of day pool. Now both call `getSynthWriterIndex`/`getFCWriterIndex` — Signal Desk and generation are in sync.
+- **content[0] TypeError**: All Claude response reads now use `content[0]?.type` with `?? "{}"` fallback — prevents crash when Claude returns empty content array (rate limit / safety response).
+- **Pass 1 body cut off**: `max_tokens` raised 950→1600. At 950, JSON metadata consumed the budget before the `---` separator + body could be written. Body was empty, Pass 2 never ran, article fell back to summary+bullets only.
+- **`---` separator is correct architecture**: body as plain text after separator, metadata as JSON before. Do NOT split into two calls — title/summary/pullQuote/body must be written in one coherent voice pass.
 
 ## Open Items
 1. Custom domain (still on daily-signal-omega.vercel.app)
