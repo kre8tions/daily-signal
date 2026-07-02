@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-type Row = { title: string; ownedTitle: string; source: string; section: string; link: string; slug: string; writerIdx: number; cardType: "story" | "synthesis" | "fc"; generationError?: string };
+type Row = { title: string; ownedTitle: string; source: string; section: string; link: string; slug: string; writerIdx: number; cardType: "story" | "synthesis" | "fc"; generationError?: string; generationStatus?: string };
 type Edition = { key: string; label: string; theme: string; isCurrent: boolean; rows: Row[] };
 type Writer = { id: number; name: string; inspiration: string; personality: string };
 type Palette = { pageBg: string; cardBg: string; ink: string; inkMid: string; inkLight: string; accent: string; tint: string; fontBody: string; fontHeading: string };
@@ -36,7 +36,14 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
     );
   }
 
-  const COLS = ["#", "Our Headline", "Original Headline", "Source", "Section", "W#", "Pseudonym", "Modeled After", "Personality"];
+  const COLS = ["#", "Status", "Our Headline", "Original Headline", "Source", "Section", "W#", "Pseudonym", "Modeled After", "Personality"];
+
+  const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+    ok:           { label: "✓ OK",         color: "#22c55e" },
+    no_body:      { label: "No Body",      color: "#f59e0b" },
+    pass1_failed: { label: "Pass 1 Fail",  color: "#e05c5c" },
+    missing:      { label: "Missing",      color: "#94a3b8" },
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: P.pageBg, color: P.ink, fontFamily: P.fontBody, paddingBottom: 80 }}>
@@ -81,6 +88,18 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                     return (
                       <tr key={i} style={{ borderBottom: `1px solid ${P.tint}33`, background: isCard ? P.tint + "18" : "transparent" }}>
                         <td style={{ padding: "10px 10px", color: P.inkLight, fontSize: 11, verticalAlign: "top" as const }}>{storyNum ?? ""}</td>
+                        <td style={{ padding: "10px 10px", verticalAlign: "top" as const, whiteSpace: "nowrap" as const }}>
+                          {isCard ? (
+                            row.cardType === "synthesis"
+                              ? <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: row.title ? "#22c55e" : "#f59e0b", background: (row.title ? "#22c55e" : "#f59e0b") + "22", padding: "3px 8px", borderRadius: 20 }}>{row.title ? "✓ OK" : "No Theme"}</span>
+                              : row.cardType === "fc"
+                                ? <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: row.title ? "#22c55e" : "#e05c5c", background: (row.title ? "#22c55e" : "#e05c5c") + "22", padding: "3px 8px", borderRadius: 20 }}>{row.title ? "✓ OK" : "FC Failed"}</span>
+                                : na
+                          ) : (() => {
+                            const s = STATUS_CONFIG[row.generationStatus ?? "missing"] ?? STATUS_CONFIG.missing;
+                            return <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: s.color, background: s.color + "22", padding: "3px 8px", borderRadius: 20 }}>{s.label}</span>;
+                          })()}
+                        </td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, minWidth: 200 }}>
                           {isCard ? (
                             row.slug ? (

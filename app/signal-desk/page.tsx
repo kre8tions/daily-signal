@@ -5,32 +5,14 @@ import { DeskClient } from "./DeskClient";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const WRITER_STYLE: Record<string, string> = {
-  Rex:    "Prosecutorial contrarian — verdicts, not opinions",
-  Eric:   "Plain language moralist — shows, never preaches",
-  Margot: "Cool observer — dread underneath the detail",
-  Finn:   "Narrative thriller — follow the incentive chain",
-  Cal:    "Counter-intuitive — starts wrong, lands right",
-  Jack:   "Sardonic equal-opportunity mocker",
-  Ward:   "Status-game anthropologist — reads the room",
-};
-const WRITER_INSPIRATION: Record<string, string> = {
-  Rex:    "Christopher Hitchens",
-  Eric:   "George Orwell",
-  Margot: "Joan Didion",
-  Finn:   "Michael Lewis",
-  Cal:    "Malcolm Gladwell",
-  Jack:   "P.J. O'Rourke",
-  Ward:   "Tom Wolfe",
-};
-
 const writers = WRITERS.map((w, i) => ({
-  id: i, name: w.name,
-  inspiration: WRITER_INSPIRATION[w.name] ?? "",
-  personality: WRITER_STYLE[w.name] ?? "",
+  id: i,
+  name: w.name,
+  inspiration: w.inspiration,
+  personality: w.style.match(/^Your name is \w+\. (.+?)\./)?.[1] ?? "",
 }));
 
-type StoryLike = { title: string; ownedTitle?: string; source: string; section: string; link: string; generationError?: string };
+type StoryLike = { title: string; ownedTitle?: string; source: string; section: string; link: string; generationError?: string; generationStatus?: string };
 type FCData = { title?: string; universe?: string; angleLabel?: string; editionKey?: string } | null | undefined;
 
 function buildRows(stories: StoryLike[], editionKey: string, fc: FCData, synthTheme?: string) {
@@ -38,7 +20,7 @@ function buildRows(stories: StoryLike[], editionKey: string, fc: FCData, synthTh
   const storyRows = stories.map((s, i) => ({
     title: s.title, ownedTitle: s.ownedTitle ?? "", source: s.source, section: s.section,
     link: s.link, slug: urlToSlug(s.link), writerIdx: writerSlots[i] ?? 0, cardType: "story" as const,
-    generationError: s.generationError,
+    generationError: s.generationError, generationStatus: s.generationStatus,
   }));
   const synthRow = {
     title: synthTheme ?? "", ownedTitle: "", source: "", section: "Synthesis",
