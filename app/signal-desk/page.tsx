@@ -5,29 +5,10 @@ import { DeskClient } from "./DeskClient";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const WRITER_STYLE: Record<string, string> = {
-  Rex:    "Prosecutorial contrarian — verdicts, not opinions",
-  Eric:   "Plain language moralist — shows, never preaches",
-  Margot: "Cool observer — dread underneath the detail",
-  Finn:   "Narrative thriller — follow the incentive chain",
-  Cal:    "Counter-intuitive — starts wrong, lands right",
-  Jack:   "Sardonic equal-opportunity mocker",
-  Ward:   "Status-game anthropologist — reads the room",
-};
-const WRITER_INSPIRATION: Record<string, string> = {
-  Rex:    "Christopher Hitchens",
-  Eric:   "George Orwell",
-  Margot: "Joan Didion",
-  Finn:   "Michael Lewis",
-  Cal:    "Malcolm Gladwell",
-  Jack:   "P.J. O'Rourke",
-  Ward:   "Tom Wolfe",
-};
-
 const writers = WRITERS.map((w, i) => ({
   id: i, name: w.name,
-  inspiration: WRITER_INSPIRATION[w.name] ?? "",
-  personality: WRITER_STYLE[w.name] ?? "",
+  inspiration: w.inspiration,
+  personality: w.style.split(". ").slice(1, 2).join("").replace(/^You /, "").replace(/\.$/, "") || "",
 }));
 
 type StoryLike = { title: string; ownedTitle?: string; source: string; section: string; link: string; generationError?: string };
@@ -41,7 +22,7 @@ function buildRows(stories: StoryLike[], editionKey: string, fc: FCData, synthTh
     generationError: s.generationError,
   }));
   const synthRow = {
-    title: synthTheme ?? "", ownedTitle: "", source: "", section: "Synthesis",
+    title: synthTheme ?? "Not yet warmed", ownedTitle: "", source: "", section: "Synthesis",
     link: "", slug: "", writerIdx: getSynthWriterIndex(editionKey), cardType: "synthesis" as const,
   };
   const fcRow = fc ? {
