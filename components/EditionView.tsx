@@ -202,9 +202,7 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
   const W = 800, H = 500;
   const sr = (n: number) => { const x = Math.sin(seed * 9301 + n * 49297 + 233995) * 10000; return x - Math.floor(x); };
 
-  // 45% one plane, 45% two planes, 10% three planes
-  const r99 = sr(99);
-  const numPlanes = r99 < 0.45 ? 1 : r99 < 0.90 ? 2 : 3;
+  const numPlanes = 1;
   const TENSION = 0.9;
   // Icons (plane + X) must stay inside this margin so they're never clipped
   const ICON_M = 0.13;
