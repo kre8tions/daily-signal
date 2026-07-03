@@ -479,7 +479,9 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
   const upl = uplift.slice(0, 3), sci = science.slice(0, 2), cre = creative.slice(0, 4), tec = tech.slice(0, 3);
   const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1), ...comics.slice(0, 1), ...anime.slice(0, 1)];
   // S1 = best uplift story; S2 = second uplift or science; rows 1+2 are always high-engagement
-  const corePool = [upl[0] ?? sci[0], upl[1] ?? sci[0], upl[2] ?? sci[1], cre[0], sci[0] ?? upl[0], cre[1], cre[2], cre[3], tec[0], tec[1], tec[2]].filter(Boolean);
+  const corePoolRaw = [upl[0] ?? sci[0], upl[1] ?? sci[0], upl[2] ?? sci[1], cre[0], sci[0] ?? upl[0], cre[1], cre[2], cre[3], tec[0], tec[1], tec[2]].filter(Boolean);
+  const seenLinks = new Set<string>();
+  const corePool = corePoolRaw.filter(i => { if (seenLinks.has(i.link)) return false; seenLinks.add(i.link); return true; });
   // Seeded Fisher-Yates shuffle of s2-s11 indices to pick replacement positions
   const poolSeed = editionKey.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const srPool = (n: number) => { const x = Math.sin(poolSeed * 127 + n * 311) * 10000; return x - Math.floor(x); };
