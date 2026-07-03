@@ -1081,10 +1081,11 @@ function genreInstruction(a: SourceAnalysis): string {
   return briefs[a.genre] ?? briefs.news_report;
 }
 
-// ── Pass 0.5: mode selection ──────────────────────────────────────────────────
+// ── Pass 0.5: mode selection + pre-flight claim ───────────────────────────────
 interface ModeSelection {
   mode: string;
   reasoning: string; // why this mode for this specific story
+  claim: string;     // one specific falsifiable sentence the writer commits to before writing
 }
 
 async function selectMode(
@@ -1096,7 +1097,7 @@ async function selectMode(
   try {
     const msg = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 200,
+      max_tokens: 300,
       messages: [{
         role: "user",
         content: `You are ${writerName}. You have read this article and its editorial analysis. Using your knowledge of this subject — the players, the history, the debates in this field — choose the single mode of engagement that would produce the most insightful, conversation-sparking response. Do not pick mechanically. Pick based on what you actually know about this topic and what would make a reader think differently.
@@ -1123,12 +1124,108 @@ MODES:
 - The So What: source reports the what — deliver the why-care, what changes, what the reader does with this
 
 Return JSON only:
-{"mode":"exact mode name","reasoning":"one sentence — specifically why this mode, what you know about this topic that makes it the right call"}`,
+{"mode":"exact mode name","reasoning":"one sentence — specifically why this mode, what you know about this topic that makes it the right call","claim":"one specific falsifiable sentence that is the central argument of the piece — something that could be wrong, names something concrete, and is not obvious. Not a theme. Not a question. A claim."}`,
       }],
     });
     const raw = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
     return JSON.parse(raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()) as ModeSelection;
   } catch { return null; }
+}
+
+// ── Mode-aware rhythms ────────────────────────────────────────────────────────
+function rhythmForMode(mode: string): string {
+  const rhythms: Record<string, string> = {
+    "The Reframe": `Structure to aim for:
+1. State the facts as presented — flatly, without argument. One sentence.
+2. Name the reframe. This is a different kind of story. Not a correction — a relabeling.
+3. Show what the reframe reveals that the original framing hid. One specific thing changes.
+4. Follow the implication: if this is actually about X not Y, what does that require us to see?
+5. End with what the reader now sees differently. A shifted lens, not a lesson.`,
+
+    "The Extension": `Structure to aim for:
+1. Accept the source's central point. State it as true — don't hedge it.
+2. Identify exactly where the source stopped. Name the edge of their argument.
+3. Follow the thread one step further. What does the logic require if you keep going?
+4. Ground the extension in something specific — a named case or mechanism, not speculation.
+5. End where the thread leads. Let the reader see the destination the source refused to reach.`,
+
+    "The Complication": `Structure to aim for:
+1. State the source's claim as legitimate. It's not wrong — it's incomplete.
+2. Introduce the complication. The thing that is also true, that changes the picture.
+3. Hold both simultaneously — the original point AND the complication. Don't resolve them.
+4. Name the tension specifically. What makes these two true things hard to reconcile?
+5. End in the productive discomfort. No resolution — a clearer picture of the actual complexity.`,
+
+    "The Rebuttal": `Structure to aim for:
+1. State what is being claimed — fairly, without strawmanning. One sentence.
+2. Name the specific flaw. Not the conclusion — the root. Where exactly does the reasoning break?
+3. Show what's actually true instead. Use something specific: a named case, a number, a mechanism.
+4. Acknowledge what the original claim gets right, if anything. Sharpens the rebuttal.
+5. End with the corrected picture — what the reader should hold instead.`,
+
+    "The Zoom Out": `Structure to aim for:
+1. Name the specific story — anchor the reader in the particular event or detail.
+2. Name the larger pattern it belongs to. Not a vague category — a specific recurring dynamic.
+3. Show at least one other instance of the same pattern. Named and specific.
+4. Name the mechanism: why does this pattern repeat? The structural reason, not surface similarity.
+5. End with what the pattern tells us about how things work — beyond this specific story.`,
+
+    "The Zoom In": `Structure to aim for:
+1. State the abstract claim or trend the source describes.
+2. Choose one specific case where it becomes real — a person, place, moment, or number.
+3. Inhabit that case. What actually happens there? What does it look like on the ground?
+4. Show what the specific reveals that the abstract hid. The zoom-in should change something.
+5. End with what follows — for the specific case, and by implication for the larger claim.`,
+
+    "The Unstated Assumption": `Structure to aim for:
+1. Establish the subject and what the argument takes for granted.
+2. Name the unstated assumption explicitly. The thing the argument depends on but never defends.
+3. Show it's actually contested — not obviously true, not universally shared.
+4. Follow what happens to the argument if the assumption falls. What changes?
+5. End with the real question the source should have been asking.`,
+
+    "The Beneficiary Question": `Structure to aim for:
+1. Describe what happened — the event, decision, or outcome.
+2. Ask the beneficiary question directly: who specifically wanted this?
+3. Follow the incentives — what did they stand to gain and what did they do to get it?
+4. Name the mechanism: how does following the incentives explain what actually happened?
+5. End with what this tells the reader about who to watch next time something similar unfolds.`,
+
+    "The Historical Echo": `Structure to aim for:
+1. Name the current situation — anchor the reader in the present.
+2. Name the historical parallel. Not "this has happened before" — the exact case, date, figure.
+3. Show the structural similarity — the underlying mechanism that repeats, not surface resemblance.
+4. Name what happened in the historical case. The outcome the echo suggests.
+5. End with what's different this time — the variable that might change the ending, or confirm it.`,
+
+    "The Paradox": `Structure to aim for:
+1. State the source's conclusion — the thing they arrived at.
+2. Show how that conclusion undermines its own premise. Where the argument turns on itself.
+3. Make the contradiction visible and specific. Name exactly where the logic breaks.
+4. Resist resolving it. The paradox is the point — sit in it.
+5. End with what the paradox reveals. The thing you can only see by holding both sides at once.`,
+
+    "The Missing Voice": `Structure to aim for:
+1. Name what the source discusses — and who it discusses without talking to them.
+2. Name the missing group specifically. Who should be in this piece but isn't?
+3. Surface what they would actually say — their documented, findable position, not projection.
+4. Show why the gap matters. What changes when you hear the absent voice?
+5. End with what the piece would look like if it had started from their perspective.`,
+
+    "The So What": `Structure to aim for:
+1. State what happened — the event, finding, or announcement. One sentence.
+2. Name why it actually matters. Not the official significance — the real consequence for real people.
+3. Get specific: who is affected, how, and on what timeline?
+4. Name the causal chain in plain language. Why does this event produce that consequence?
+5. End with the awareness or action the reader walks away with. What do they do differently now?`,
+  };
+
+  return rhythms[mode] ?? `Structure to aim for — not a template, but a rhythm that works:
+1. Open with the central claim or observation stated as fact. No setup. The reader lands in the middle of it.
+2. Ground it in the specific story — what happened, what was unusual, what it reveals.
+3. Pull in a parallel: a named person, moment, or case where the same trait or mechanism showed up. Name the thing.
+4. Name the mechanism at the center. The one thing that explains why this keeps happening.
+5. End with a consequence or question that transfers — something that changes how the reader sees their own situation.`;
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number, readOnly = false): Promise<ArticleCommentary> {
@@ -1137,7 +1234,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const hasCta = seededRandom(refSeed + 13) < 0.2;
   const hasImg2 = seededRandom(refSeed + 7) < 0.2;
   const hasKeyFacts = !hasCta && seededRandom(refSeed + 19) < 0.33;
-  const PROMPT_V = "v3"; // bump when prompts change to invalidate stale global cache
+  const PROMPT_V = "v4"; // bump when prompts change to invalidate stale global cache
   const blobKey = `articles/${editionKey}/${slug}.json`;
   const globalKey = `articles/${PROMPT_V}/by-slug/${slug}.json`;
 
@@ -1200,25 +1297,25 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const lens = getLens(story.section, refSeed);
   const modeSelection = analysis ? await selectMode(client, story, analysis, writerName) : null;
 
-  const editorialBrief = (analysis || modeSelection) ? [
-    "EDITORIAL BRIEF:",
-    analysis ? genreInstruction(analysis) : "",
-    modeSelection ? `\nMODE: ${modeSelection.mode}\nWHY: ${modeSelection.reasoning}\n\nWrite from this mode. This is your specific angle into this piece — not a template, a decision you made based on what you know about this subject.` : "",
-    "\n---\n",
-  ].filter(Boolean).join("\n") : "";
-
-  // ── Pass 1: voice — write freely, pure quality, no structural constraints ──
+  // ── Pass 1: pure prose — voice leads, brief follows ──────────────────────────
   const voiceInstruction = writer
     ? `${writer.style}${lens ? `\n\n${lens.prompt}` : ""}`
     : `You write "The Signal Take" — a short, sharp editorial for a news digest. Your voice: the smartest person in the room who happens to be your friend. Direct. A little irreverent. Never preachy. You find the non-obvious angle and follow it somewhere unexpected.${lens ? `\n\n${lens.prompt}` : ""}`;
 
-  // ── Pass 1: pure prose — full focus on voice, no metadata distraction ──
+  const editorialBrief = (analysis || modeSelection) ? [
+    "\n\nEDITORIAL BRIEF:",
+    analysis ? genreInstruction(analysis) : "",
+    modeSelection ? `\nMODE: ${modeSelection.mode}\nWHY: ${modeSelection.reasoning}` : "",
+    modeSelection?.claim ? `\nYOUR COMMITTED CLAIM: ${modeSelection.claim}\n\nStart from this claim. Don't restate it verbatim — build from it, complicate it, weaponize it. Everything in the piece serves this claim or sharpens it.` : "",
+    "\n---\n",
+  ].filter(Boolean).join("\n") : "";
+
   const pass1msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 1000,
     messages: [{
       role: "user",
-      content: `${editorialBrief}${voiceInstruction}
+      content: `${voiceInstruction}${editorialBrief}
 
 You are writing for a curious, independent-minded adult who wants to understand the world better and occasionally act on what they learn. They came to read about the subject — the film, the discovery, the person, the idea — not about the journalism covering it.
 
@@ -1228,27 +1325,23 @@ Draw on everything you know about this subject — not just what the source prov
 
 Never reference the source, the headline, the article, or your own process. You are writing about the subject. That is all the reader sees.
 
-The editorial brief gives you your angle. Use it to know where to go — not as a script. What does this subject reveal about how things actually work? What do most people get wrong about it? What would genuinely help a reader understand or act?
+Never write an article whose conclusion is "this is complicated" or "there are no simple answers" or "science doesn't know yet." That is not a piece — it is an absence of one. Have a position. Give the reader something they can hold onto.
 
-When the subject connects to how people live, think, grow, or make decisions — make that useful. Not preachy, not prescriptive. Just: here is something worth knowing, and here is what you can do with it.
-
-Never write an article whose conclusion is "this is complicated" or "there are no simple answers" or "science doesn't know yet." That is not a piece — it is an absence of one. If the source hedges, you are not required to. You have knowledge about this subject beyond what the source says. Use it. Have a position. Give the reader something they can hold onto — a finding, a mechanism, a pattern, a specific thing that actually works. Uncertainty about the complete picture does not prevent you from saying something true and useful about the part you can see.
-
-Write for someone who is intelligent, not ideological. No left or right lean. No woke framing. No moralising. No virtue signalling. Equally sceptical of institutions, activists, and reactionaries.
+Write for someone who is intelligent, not ideological. No left or right lean. No woke framing. No moralising. Equally sceptical of institutions, activists, and reactionaries.
 
 Use ONE reference — a specific idea, experiment, thinker, film, or moment — that creates a genuinely surprising connection. One sentence, then move on. If nothing fits cleanly, skip it. Do NOT use: Goodhart's Law, Dunning-Kruger, Streisand Effect, Overton Window, Occam's Razor, Hanlon's Razor, Butterfly Effect, Maslow's Hierarchy, Trolley Problem, Black Swan.
 
 REFERENCE POOL — pick something unexpected:
 ${sampleReferencePool(refSeed)}
 
-Voice — write like this:
+Voice rules:
 - Vary sentence length. Short punches. Then one that earns it. Then short again.
 - Vivid and specific — name the thing, don't describe it abstractly.
-- When the source contains a notable number — a record, a scale, a count, a sum — use it. 7.8 on the Richter scale. $34 billion. Six-time champion. 40,000 years old. The specific number does more work than the abstraction it replaces. Only include it if the source actually states it and it's genuinely striking.
+- When the source contains a striking number — use it. The specific number does more work than the abstraction.
 - No academic hedging: never "one might argue", "it is worth noting", "this suggests that".
-- No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...", "No one is saying out loud...".
-- Never reference the source article or your own process: never "the source headline", "the article argues", "the piece claims", "what the reporting missed", "the question embedded in", or any phrase that implies the reader has seen what you read. You chose to write about this subject — write about it directly.
-- No semicolons — ever. Rewrite any semicolon sentence as two separate sentences.
+- No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...".
+- Never reference the source article or your own process. You chose to write about this subject — write about it directly.
+- No semicolons — ever. Rewrite as two sentences.
 
 STORY: ${story.title}
 SOURCE: ${story.source}
@@ -1263,16 +1356,11 @@ ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
 
 Write the article now. Pure prose only. No paragraph labels. Paragraphs separated by a blank line.
 
-Structure to aim for — not a template, but a rhythm that works:
-1. Open with the central claim or observation stated as fact. No setup. The reader lands in the middle of it.
-2. Ground it in the specific story — what happened, what was unusual, what it reveals. Use the striking number or detail if there is one.
-3. Pull in a parallel: a named person, moment, or case where the same trait or mechanism showed up. Not a vague "this has happened before" — name the thing. The parallel should make the reader see the pattern, not just the example.
-4. Name the trait, habit, or mechanism at the center. The one thing that explains why this worked, why this person succeeded, why this keeps happening. Give the reader something they can hold.
-5. End with a consequence or question that transfers — something that changes how the reader sees their own situation, not just this story. Not prescriptive. Just: here is what follows from this.
+${rhythmForMode(modeSelection?.mode ?? "")}
 
 Total length: 250-350 words. Tight and complete — no padding, no filler, no repetition.
 
-FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's interesting is', 'Let's be clear', 'Make no mistake' — any setup phrase before the real point); colons anywhere in the prose — rewrite every sentence that uses a colon as two separate sentences, no exceptions; semicolons (rewrite as two sentences instead); vague lesson-gesturing ('this teaches us', 'there's a lesson here', 'we can all learn from') — show the insight, don't announce it.`,
+FORBIDDEN: throat-clearing openers; colons anywhere in the prose — rewrite as two sentences, no exceptions; semicolons — rewrite as two sentences; vague lesson-gesturing ('this teaches us', 'there's a lesson here') — show the insight, don't announce it.`,
     }],
   });
 

@@ -4,7 +4,28 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
-## pass1-prose-first + pass1.5-metadata (2026-07-04) — CURRENT STABLE
+## writing-overhaul-attempt-2 (2026-07-04) — CURRENT STABLE
+
+**What changed:**
+- Pass 0.5: added `claim` field — one specific falsifiable sentence the writer commits to before Pass 1 runs. max_tokens 200→300.
+- New `rhythmForMode()`: 12 mode-specific 5-step rhythms replace the universal rhythm. Each mode has its own natural argumentative arc.
+- Pass 1 restructured: writer voice leads the prompt, editorial brief follows. Claim injected as "YOUR COMMITTED CLAIM" before the rhythm. Mode rhythm replaces universal steps.
+- Cache bumped to `v4/by-slug` to invalidate stale pre-overhaul articles.
+
+**Why:**
+- Mode was selected but ignored structurally — all 12 modes got the same rhythm
+- No committed claim meant Pass 1 wrote toward a vague angle; the claim forces a position before writing starts
+- Writer persona was buried after ~300 words of instructions; voice needs to be established first
+- All three items are tightly coupled: claim feeds the rhythm, both land better with voice established first
+
+**What to observe on next live edition:**
+- Are articles more distinctly shaped by their mode?
+- Does the committed claim produce a sharper hook?
+- Does writer voice feel more present, or does Haiku still flatten it?
+
+---
+
+## pass1-prose-first + pass1.5-metadata (2026-07-04)
 
 **What changed:**
 - Pass 1 now outputs pure prose only — no JSON, no metadata fields, no `---` separator. Full focus on voice and argument.
