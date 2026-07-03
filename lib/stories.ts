@@ -1038,29 +1038,60 @@ interface SourceAnalysis {
   subject?: { name: string; type: "film" | "tv_show" | "book" | "album" | "game" | "person" | "other"; year?: string };
 }
 
-async function analyzeSource(client: Anthropic, story: Story): Promise<SourceAnalysis | null> {
+// ── Pass 0+0.5: combined analysis + mode selection + pre-flight claim ─────────
+// Merged from two sequential calls into one to save ~2s per article.
+interface AnalysisAndMode extends SourceAnalysis, ModeSelection {}
+
+async function analyzeAndSelect(
+  client: Anthropic,
+  story: Story,
+  writerName: string
+): Promise<AnalysisAndMode | null> {
   const content = story.content
     ? `EXCERPT: ${story.content.slice(0, 500)}`
     : [story.summary, story.bullets?.join(". ")].filter(Boolean).join("\n");
   try {
     const msg = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 220,
+      max_tokens: 450,
       messages: [{
         role: "user",
-        content: `Read this article and return a brief editorial analysis. Be specific — one tight sentence each.
+        content: `You are ${writerName}. Read this article, analyze it editorially, then choose your mode of engagement and commit to a claim. Do all three in one pass.
 
 TITLE: ${story.title}
 SOURCE: ${story.source}
 SECTION: ${story.section}
 ${content}
 
+MODES:
+- The Reframe: accept the facts, reject the framing — show it's actually a different kind of story entirely
+- The Extension: source got it right but stopped too soon — follow the thread to its real conclusion
+- The Complication: source has a point but it's messier than admitted — yes, and also
+- The Rebuttal: source is wrong at the root — name the specific flaw, don't hedge
+- The Zoom Out: this story is a symptom of a larger pattern — show the system behind it
+- The Zoom In: the abstract claim only becomes real in one specific case — go granular
+- The Unstated Assumption: source takes something for granted that's actually the most contested thing — name it
+- The Beneficiary Question: follow the incentives — who specifically wanted this to happen and why
+- The Historical Echo: this has happened before — name the specific case, the outcome, what it tells us now
+- The Paradox: source's conclusion undermines its own premise — make the contradiction visible
+- The Missing Voice: source talks about a group without talking to them — surface what they would actually say
+- The So What: source reports the what — deliver the why-care, what changes, what the reader does with this
+
 Return JSON only:
-{"genre":"news_report|science_discovery|cultural_criticism|profile|policy_politics|entertainment|opinion|explainer","source_position":"what claim or stance the source takes, or neutral if wire copy","tension":"what is unresolved contested or glossed over","missed":"the angle or implication the source did not pursue","subject":{"name":"exact title or person name if the article is primarily about a specific named film/TV show/book/album/video game/person — omit this field entirely if the article is not about a specific named work or person","type":"film|tv_show|book|album|game|person|other","year":"release or birth year if known, otherwise omit"}}`,
+{
+  "genre": "news_report|science_discovery|cultural_criticism|profile|policy_politics|entertainment|opinion|explainer",
+  "source_position": "what claim or stance the source takes, or neutral if wire copy",
+  "tension": "what is unresolved, contested, or glossed over",
+  "missed": "the angle or implication the source did not pursue",
+  "subject": {"name":"exact title or person name if primarily about a specific named film/TV show/book/album/video game/person — omit entirely if not","type":"film|tv_show|book|album|game|person|other","year":"if known"},
+  "mode": "exact mode name from the list above",
+  "reasoning": "one sentence — specifically why this mode, what you know about this topic that makes it the right call",
+  "claim": "one specific falsifiable sentence — the central argument of the piece. Something that could be wrong, names something concrete, is not obvious. Not a theme. Not a question. A claim."
+}`,
       }],
     });
     const raw = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
-    return JSON.parse(raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()) as SourceAnalysis;
+    return JSON.parse(raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()) as AnalysisAndMode;
   } catch { return null; }
 }
 
@@ -1081,55 +1112,10 @@ function genreInstruction(a: SourceAnalysis): string {
   return briefs[a.genre] ?? briefs.news_report;
 }
 
-// ── Pass 0.5: mode selection + pre-flight claim ───────────────────────────────
 interface ModeSelection {
   mode: string;
-  reasoning: string; // why this mode for this specific story
-  claim: string;     // one specific falsifiable sentence the writer commits to before writing
-}
-
-async function selectMode(
-  client: Anthropic,
-  story: Story,
-  analysis: SourceAnalysis,
-  writerName: string
-): Promise<ModeSelection | null> {
-  try {
-    const msg = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 300,
-      messages: [{
-        role: "user",
-        content: `You are ${writerName}. You have read this article and its editorial analysis. Using your knowledge of this subject — the players, the history, the debates in this field — choose the single mode of engagement that would produce the most insightful, conversation-sparking response. Do not pick mechanically. Pick based on what you actually know about this topic and what would make a reader think differently.
-
-ARTICLE: ${story.title}
-SOURCE: ${story.source}
-GENRE: ${analysis.genre}
-SOURCE POSITION: ${analysis.source_position}
-TENSION: ${analysis.tension}
-MISSED ANGLE: ${analysis.missed}
-
-MODES:
-- The Reframe: accept the facts, reject the framing — show it's actually a different kind of story entirely
-- The Extension: source got it right but stopped too soon — follow the thread to its real conclusion
-- The Complication: source has a point but it's messier than admitted — yes, and also
-- The Rebuttal: source is wrong at the root — name the specific flaw, don't hedge
-- The Zoom Out: this story is a symptom of a larger pattern — show the system behind it
-- The Zoom In: the abstract claim only becomes real in one specific case — go granular
-- The Unstated Assumption: source takes something for granted that's actually the most contested thing — name it
-- The Beneficiary Question: follow the incentives — who specifically wanted this to happen and why
-- The Historical Echo: this has happened before — name the specific case, the outcome, what it tells us now
-- The Paradox: source's conclusion undermines its own premise — make the contradiction visible
-- The Missing Voice: source talks about a group without talking to them — surface what they would actually say
-- The So What: source reports the what — deliver the why-care, what changes, what the reader does with this
-
-Return JSON only:
-{"mode":"exact mode name","reasoning":"one sentence — specifically why this mode, what you know about this topic that makes it the right call","claim":"one specific falsifiable sentence that is the central argument of the piece — something that could be wrong, names something concrete, and is not obvious. Not a theme. Not a question. A claim."}`,
-      }],
-    });
-    const raw = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
-    return JSON.parse(raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()) as ModeSelection;
-  } catch { return null; }
+  reasoning: string;
+  claim: string;
 }
 
 // ── Mode-aware rhythms ────────────────────────────────────────────────────────
@@ -1288,14 +1274,12 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const related = relatedStories.filter((s) => s.link !== story.link).slice(0, 5);
 
-  // ── Pass 0: source analysis — genre, position, tension, missed angle ──
-  const analysis = await analyzeSource(client, story);
-
-  // ── Pass 0.5: mode selection — writer chooses engagement mode based on subject knowledge ──
+  // ── Pass 0+0.5: analysis + mode selection + claim (merged) ──────────────────
   const writer = writerIndex !== undefined ? WRITERS[writerIndex % WRITERS.length] : null;
   const writerName = writer?.name ?? "The Signal editor";
   const lens = getLens(story.section, refSeed);
-  const modeSelection = analysis ? await selectMode(client, story, analysis, writerName) : null;
+  const analysis = await analyzeAndSelect(client, story, writerName);
+  const modeSelection: ModeSelection | null = analysis ? { mode: analysis.mode, reasoning: analysis.reasoning, claim: analysis.claim } : null;
 
   // ── Pass 1: pure prose — voice leads, brief follows ──────────────────────────
   const voiceInstruction = writer
