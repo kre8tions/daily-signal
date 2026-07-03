@@ -4,7 +4,20 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
-## pre-writing-overhaul-plus-two-july4 (2026-07-04) — CURRENT STABLE
+## post-july4-structure (2026-07-04) — CURRENT STABLE
+
+**What changed from pre-writing-overhaul-plus-two-july4:**
+- Pass 1: 250-350 word cap restored (had been silently dropped during a prior prompt rewrite)
+- Pass 2 sentence caps updated: `para1=1, para2=2, para3=2-3, para4=3-4, para5=3-5` — no sentence constraint after para5
+- Pass 2 code limits (`trimSentences()`) updated to match: `{ para1: 1, para2: 2, para3: 3, para4: 4, para5: 5 }`
+
+**Why:**
+- Word count cap: without it, Pass 1 articles were running 900+ words unchecked. Pass 2 shapes structure but doesn't control length — the cap belongs in Pass 1.
+- Sentence caps: prior caps (1/1/2/3/2) were too tight. New structure gives breathing room that matches the intent of each paragraph's role: hook is tight, landing has room to breathe.
+
+---
+
+## pre-writing-overhaul-plus-two-july4 (2026-07-04)
 **Git tag:** `pre-writing-overhaul-plus-two-july4`
 **Commits:** `f46818d` → `204be47` → `aa76f3f`
 

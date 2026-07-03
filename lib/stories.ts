@@ -1242,6 +1242,8 @@ Structure to aim for — not a template, but a rhythm that works:
 4. Name the trait, habit, or mechanism at the center. The one thing that explains why this worked, why this person succeeded, why this keeps happening. Give the reader something they can hold.
 5. End with a consequence or question that transfers — something that changes how the reader sees their own situation, not just this story. Not prescriptive. Just: here is what follows from this.
 
+Total length: 250-350 words. Tight and complete — no padding, no filler, no repetition.
+
 FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's interesting is', 'Let's be clear', 'Make no mistake' — any setup phrase before the real point); colons anywhere in the prose — rewrite every sentence that uses a colon as two separate sentences, no exceptions; semicolons (rewrite as two sentences instead); vague lesson-gesturing ('this teaches us', 'there's a lesson here', 'we can all learn from') — show the insight, don't announce it.`,
     }],
   });
@@ -1306,10 +1308,10 @@ Three jobs only:
 
 Structure for first 5 paragraphs:
 - para1: EXACTLY 1 sentence — the hook. Irreversible opener. No exceptions.
-- para2: EXACTLY 1 sentence — deepens or reframes the hook. Creates tension.
-- para3: 1-2 sentences — first insight or evidence. The "here's why" moment.
-- para4: 2-3 sentences — the turn. Complication, contradiction, or escalation.
-- para5: 1-2 sentences — landing. A sharp question, provocation, or implication. Omit if the content doesn't need it.
+- para2: up to 2 sentences — deepens or reframes the hook. Creates tension.
+- para3: 2-3 sentences — first insight or evidence. The "here's why" moment.
+- para4: 3-4 sentences — the turn. Complication, contradiction, or escalation.
+- para5: 3-5 sentences — landing. The consequence, open question, or provocation. Room to breathe.
 - remainder: everything after paragraph 5, preserved exactly as written. Empty string if nothing remains.
 
 Also return:
@@ -1327,7 +1329,7 @@ Return JSON only:
       const raw2 = (pass2msg.content[0]?.type === "text" ? pass2msg.content[0].text : undefined) ?? "{}";
       const text2 = raw2.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
       const scaffold = JSON.parse(text2);
-      const limits: Record<string, number> = { para1: 1, para2: 1, para3: 2, para4: 3, para5: 2 };
+      const limits: Record<string, number> = { para1: 1, para2: 2, para3: 3, para4: 4, para5: 5 };
       const paraKeys = ["para1", "para2", "para3", "para4", "para5"];
       if (scaffold.para1 && scaffold.para2 && scaffold.para3) {
         const shaped = paraKeys
