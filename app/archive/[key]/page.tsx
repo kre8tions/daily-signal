@@ -1,10 +1,19 @@
-import { getArchivedPageData, getArchiveList } from "@/lib/stories";
+import { getArchivedPageData, getArchiveList, getEditionForTimezone } from "@/lib/stories";
 import { EditionView } from "@/components/EditionView";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
+const SLOT_ORDER: Record<string, number> = { early: 0, morning: 1, afternoon: 2, evening: 3, night: 4 };
+const editionRank = (k: string) => { const [d, s = ""] = k.split("_"); return d.replace(/-/g, "") + String(SLOT_ORDER[s] ?? 0).padStart(2, "0"); };
+
 export default async function ArchiveEditionPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = await params;
+
+  const headersList = await headers();
+  const timezone = headersList.get("x-vercel-ip-timezone") ?? "UTC";
+  const visitorEditionKey = getEditionForTimezone(timezone).key;
+  const visitorRank = editionRank(visitorEditionKey);
 
   const [data, archiveList] = await Promise.all([
     getArchivedPageData(key),
@@ -24,12 +33,14 @@ export default async function ArchiveEditionPage({ params }: { params: Promise<{
 
   const { stories, synthesis, editionLabel, featureCreature } = data;
   const [datePart] = key.split("_");
-  const dateStr = new Date(datePart + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  const dateStr = new Date(datePart + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
   // Sorted newest-first — prev = older (higher index), next = newer (lower index)
+  // Suppress nextEdition if it's beyond the visitor's current edition (future UTC+14 content)
   const idx = archiveList.findIndex(e => e.key === key);
   const prevEdition = idx >= 0 && idx < archiveList.length - 1 ? archiveList[idx + 1] : null;
-  const nextEdition = idx > 0 ? archiveList[idx - 1] : null;
+  const rawNext = idx > 0 ? archiveList[idx - 1] : null;
+  const nextEdition = rawNext && editionRank(rawNext.key) <= visitorRank ? rawNext : null;
 
   return (
     <EditionView
