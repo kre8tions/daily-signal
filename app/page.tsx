@@ -5,14 +5,16 @@ import { EditionView } from "@/components/EditionView";
 
 export const dynamic = "force-dynamic";
 
-async function getLocalEdition() {
+async function getVisitorContext() {
   const headersList = await headers();
   const timezone = headersList.get("x-vercel-ip-timezone") ?? "UTC";
-  return getEditionForTimezone(timezone);
+  const edition = getEditionForTimezone(timezone);
+  const dateStr = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: timezone }).format(new Date());
+  return { edition, dateStr };
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const edition = await getLocalEdition();
+  const { edition } = await getVisitorContext();
   const { stories, synthesis } = await getPageData(edition);
   const heroImage = stories[0]?.imageUrl;
   const title = synthesis?.theme ? `${synthesis.theme} — The Daily Signal` : "The Daily Signal";
@@ -26,14 +28,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const edition = await getLocalEdition();
+  const { edition, dateStr } = await getVisitorContext();
   const { key: editionKey } = edition;
   const [{ stories, synthesis, editionLabel, featureCreature }, archiveList] = await Promise.all([
     getPageData(edition),
     getArchiveList(),
   ]);
-  const [keyDatePart] = editionKey.split("_");
-  const dateStr = new Date(keyDatePart + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const SLOT_ORDER: Record<string, number> = { early: 0, morning: 1, afternoon: 2, evening: 3, night: 4 };
   const editionRank = (key: string) => { const [d, s = ""] = key.split("_"); return d.replace(/-/g, "") + String(SLOT_ORDER[s] ?? 0).padStart(2, "0"); };
   const currentRank = editionRank(editionKey);
