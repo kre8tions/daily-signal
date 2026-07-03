@@ -1092,8 +1092,9 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const hasCta = seededRandom(refSeed + 13) < 0.2;
   const hasImg2 = seededRandom(refSeed + 7) < 0.2;
   const hasKeyFacts = !hasCta && seededRandom(refSeed + 19) < 0.33;
+  const PROMPT_V = "v3"; // bump when prompts change to invalidate stale global cache
   const blobKey = `articles/${editionKey}/${slug}.json`;
-  const globalKey = `articles/by-slug-v2/${slug}.json`;
+  const globalKey = `articles/${PROMPT_V}/by-slug/${slug}.json`;
 
   // Check global slug cache first (reuse content if this link was ever processed)
   try {
@@ -1121,8 +1122,9 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
 
   // In read-only mode, try old versioned paths before giving up
   if (readOnly) {
-    for (const oldV of ["by-slug", "v22", "v21", "v20", "v19", "v18"]) {
+    for (const oldV of ["by-slug-v2", "by-slug", "v22", "v21", "v20", "v19", "v18"]) {
       for (const key of [
+        oldV === "by-slug-v2" ? `articles/by-slug-v2/${slug}.json` :
         oldV === "by-slug" ? `articles/by-slug/${slug}.json` : `articles/${oldV}/by-slug/${slug}.json`,
         `articles/${oldV}/${editionKey}/${slug}.json`,
       ]) {
@@ -1297,19 +1299,20 @@ FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's 
         max_tokens: 700,
         messages: [{
           role: "user",
-          content: `Restructure this article body into exactly 4-5 paragraphs. Preserve ALL ideas and the original voice word-for-word where possible. Do not add new ideas.
+          content: `Shape the opening structure of this article. Preserve ALL ideas and the original voice word-for-word where possible. Do not add new ideas, do not delete content.
 
 Three jobs only:
-1. Enforce the paragraph structure below
+1. Enforce the sentence limits on the first 5 paragraphs (structure below). Content beyond paragraph 5 is preserved verbatim in "remainder" — do not touch it.
 2. Break any sentence over 20 words at a natural clause boundary — em-dash, "and", "but", "because", "which", "so". Keep both halves punchy. NEVER break at a semicolon — rewrite to remove it entirely.
 3. Remove throat-clearing openers ("Here's the thing", "Here's the structure", "The truth is", "What's interesting is", "Let's be clear", "Make no mistake" — any setup phrase before the real point). Remove colons used as setup-payoff splits ("X: Y") — rewrite as a direct statement.
 
-Structure:
+Structure for first 5 paragraphs:
 - para1: EXACTLY 1 sentence — the hook. Irreversible opener. No exceptions.
 - para2: EXACTLY 1 sentence — deepens or reframes the hook. Creates tension.
 - para3: 1-2 sentences — first insight or evidence. The "here's why" moment.
 - para4: 2-3 sentences — the turn. Complication, contradiction, or escalation.
 - para5: 1-2 sentences — landing. A sharp question, provocation, or implication. Omit if the content doesn't need it.
+- remainder: everything after paragraph 5, preserved exactly as written. Empty string if nothing remains.
 
 Also return:
 - header2: 3-5 words. Second sub-headline covering the second half of the argument. Specific, no colons, not generic.
@@ -1320,7 +1323,7 @@ Body to restructure:
 "${body}"
 
 Return JSON only:
-{"header2":"...","imageQuery2":"...","pullQuoteAfterPara":4,"para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`,
+{"header2":"...","imageQuery2":"...","pullQuoteAfterPara":4,"para1":"...","para2":"...","para3":"...","para4":"...","para5":"...","remainder":"..."}`,
         }],
       });
       const raw2 = (pass2msg.content[0]?.type === "text" ? pass2msg.content[0].text : undefined) ?? "{}";
@@ -1329,7 +1332,7 @@ Return JSON only:
       const limits: Record<string, number> = { para1: 1, para2: 1, para3: 2, para4: 3, para5: 2 };
       const paraKeys = ["para1", "para2", "para3", "para4", "para5"];
       if (scaffold.para1 && scaffold.para2 && scaffold.para3) {
-        body = paraKeys
+        const shaped = paraKeys
           .filter(k => scaffold[k])
           .map(k => {
             const val = (scaffold[k] as string | undefined) ?? "";
@@ -1337,6 +1340,8 @@ Return JSON only:
             return matches.slice(0, limits[k]).join(" ").trim();
           })
           .join("\n\n");
+        const remainder = (scaffold.remainder as string | undefined)?.trim() ?? "";
+        body = remainder ? `${shaped}\n\n${remainder}` : shaped;
         if (scaffold.header2) pass1Header2 = scaffold.header2 as string;
         if (scaffold.imageQuery2) pass1ImageQuery2 = scaffold.imageQuery2 as string;
         if (typeof scaffold.pullQuoteAfterPara === "number" && (scaffold.pullQuoteAfterPara === 4 || scaffold.pullQuoteAfterPara === 5)) {
