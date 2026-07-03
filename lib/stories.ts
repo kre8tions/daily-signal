@@ -1269,8 +1269,7 @@ Return JSON only, no markdown:
   "summary": "2 punchy sentences — what happened and why it matters. Be specific.",
   "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
   "imageQuery": "${analysis?.subject ? `This article is about ${analysis.subject.type === "person" ? `the person "${analysis.subject.name}"` : `the ${analysis.subject.type.replace("_", " ")} "${analysis.subject.name}"${analysis.subject.year ? ` (${analysis.subject.year})` : ""}`}. Use that as your search — e.g. "${analysis.subject.name}${analysis.subject.type !== "person" ? " " + analysis.subject.type.replace("_", " ") : " portrait"}". 4-6 words max.` : `4-6 words for Unsplash hero image. Named film/show/game/book → start with exact title + medium (e.g. 'Dune film', 'The Bear TV show'). Real person → role/setting not name. Everything else: concrete scene, no brand names, no text, no logos.`}",
-  "header": "...",
-  "pullQuote": "Copy one sentence verbatim from your body below — the most arresting one. Word-for-word identical. Do not paraphrase."${hasCta ? `,
+  "header": "..."${hasCta ? `,
   "cta": {
     "header": "2-4 words. Active verb phrase. E.g. 'Try This Tonight', 'Start Here', 'Read This Next'.",
     "body": "1 sentence. A specific thing to DO, WATCH, READ, or TRY that connects directly to this story. Name the exact thing. Beginner-friendly, low-commitment. Not a genre — a specific title, tool, experiment, or action."
@@ -1364,12 +1363,13 @@ Also return:
 - header2: 3-5 words. Second sub-headline covering the second half of the argument. Specific, no colons, not generic.
 - imageQuery2: 4-6 concrete atmospheric words for a second Unsplash search. No names, no text, no logos. Think: texture, environment, light, emotion.
 - pullQuoteAfterPara: 4 or 5 only. Which paragraph the pull quote should follow. Must be after header2 (which appears before para4). Choose 4 if the energy peaks in para4, choose 5 if para5 is the stronger landing.
+- pullQuote: 1 sentence lifted verbatim from the shaped body — the single most arresting line. Something a reader would screenshot. Word-for-word identical to what appears in the body.
 
 Body to restructure:
 "${body}"
 
 Return JSON only:
-{"header2":"...","imageQuery2":"...","pullQuoteAfterPara":4,"para1":"...","para2":"...","para3":"...","para4":"...","para5":"...","remainder":"..."}`,
+{"header2":"...","imageQuery2":"...","pullQuoteAfterPara":4,"pullQuote":"...","para1":"...","para2":"...","para3":"...","para4":"...","para5":"...","remainder":"..."}`,
         }],
       });
       const raw2 = (pass2msg.content[0]?.type === "text" ? pass2msg.content[0].text : undefined) ?? "{}";
@@ -1389,6 +1389,7 @@ Return JSON only:
         const remainder = (scaffold.remainder as string | undefined)?.trim() ?? "";
         const assembled = remainder ? `${shaped}\n\n${remainder}` : shaped;
         body = await repairPunctuation(client, assembled);
+        if (scaffold.pullQuote) extractedPullQuote = scaffold.pullQuote as string;
         if (scaffold.header2) pass1Header2 = scaffold.header2 as string;
         if (scaffold.imageQuery2) pass1ImageQuery2 = scaffold.imageQuery2 as string;
         if (typeof scaffold.pullQuoteAfterPara === "number" && (scaffold.pullQuoteAfterPara === 4 || scaffold.pullQuoteAfterPara === 5)) {
@@ -1534,7 +1535,6 @@ Return JSON only, no markdown:
   "ctaHeader": "2-4 words. Active verb phrase.",
   "callToAction": "1 sentence. A specific thing to DO, WATCH, READ, or PLAY that connects to the argument — not just 'watch the film'. Name something adjacent: a documentary, a book about the making-of, a scene timestamp, a related work that answers the question this one left open.",
   "digDeeper": "1 sentence. One specific piece of criticism, making-of documentary, essay, interview, or adjacent work that changes how you see this universe — something a dedicated fan might not have found. Name it precisely enough to be searchable. Not Wikipedia. Not 'read the source material'.",
-  "pullQuote": "Copy one sentence verbatim from your body — the most arresting one. Word-for-word identical.",
   "imageQuery": "4-6 concrete visual nouns for Unsplash. A real-world scene or object that carries the mood of the article's central argument — NOT the fictional universe name. Dark source = dark moody image. E.g. 'rain slicked city street neon reflection' / 'empty modernist room glass walls solitude' / 'astronaut sunrise orbit earth'."
 }`
         }],
@@ -1570,11 +1570,14 @@ Structure:
 - para4: 2-3 sentences — the turn. A complication, contradiction, or escalation that changes how you see the thesis.
 - para5: 1-2 sentences — the landing. A sharp consequence, open question, or provocation. Omit only if the content genuinely doesn't need it.
 
+Also return:
+- pullQuote: 1 sentence lifted verbatim from the shaped body — the single most arresting line. Something a reader would screenshot. Word-for-word identical to what appears in the body.
+
 Body to restructure:
 "${pass1.body}"
 
 Return JSON only:
-{"para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`
+{"pullQuote":"...","para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`
       }],
     });
 
@@ -1594,6 +1597,7 @@ Return JSON only:
           .map(k => trimSentences(scaffold[k], limits[k]))
           .join("\n\n")
       : (pass1.body ?? "");
+    const fcPullQuote: string = scaffold.pullQuote ?? pass1.pullQuote ?? "";
 
     const parsed = pass1;
 
@@ -1631,7 +1635,7 @@ Return JSON only:
       headers: [parsed.headers?.[0] ?? "", parsed.headers?.[1] ?? ""],
       ctaHeader: parsed.ctaHeader ?? undefined,
       body,
-      pullQuote: parsed.pullQuote ?? undefined,
+      pullQuote: fcPullQuote || undefined,
       callToAction: parsed.callToAction ?? "",
       digDeeper: parsed.digDeeper ?? "",
       imageUrl,
