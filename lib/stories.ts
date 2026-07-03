@@ -1270,7 +1270,7 @@ Return JSON only, no markdown:
   "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
   "imageQuery": "${analysis?.subject ? `This article is about ${analysis.subject.type === "person" ? `the person "${analysis.subject.name}"` : `the ${analysis.subject.type.replace("_", " ")} "${analysis.subject.name}"${analysis.subject.year ? ` (${analysis.subject.year})` : ""}`}. Use that as your search — e.g. "${analysis.subject.name}${analysis.subject.type !== "person" ? " " + analysis.subject.type.replace("_", " ") : " portrait"}". 4-6 words max.` : `4-6 words for Unsplash hero image. Named film/show/game/book → start with exact title + medium (e.g. 'Dune film', 'The Bear TV show'). Real person → role/setting not name. Everything else: concrete scene, no brand names, no text, no logos.`}",
   "header": "...",
-  "pullQuote": "1 sentence. Your sharpest, most arresting framing of the central tension — a paraphrase, not a direct quote from the source. Something a reader would screenshot."${hasCta ? `,
+  "pullQuote": "Copy one sentence verbatim from your body below — the most arresting one. Word-for-word identical. Do not paraphrase."${hasCta ? `,
   "cta": {
     "header": "2-4 words. Active verb phrase. E.g. 'Try This Tonight', 'Start Here', 'Read This Next'.",
     "body": "1 sentence. A specific thing to DO, WATCH, READ, or TRY that connects directly to this story. Name the exact thing. Beginner-friendly, low-commitment. Not a genre — a specific title, tool, experiment, or action."
@@ -1337,13 +1337,7 @@ FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's 
   let pass1ImageQuery2 = "";
   let extractedPullQuote = pass1.pullQuote ?? "";
   let pullQuoteAfterPara = 4;
-  // Strip pullQuote from body opening if Pass 1 reused it as the first sentence
-  if (extractedPullQuote && body) {
-    const firstSentence = (body.match(/^[^.!?]+[.!?]+/) ?? [])[0]?.trim() ?? "";
-    if (firstSentence && extractedPullQuote.trim().startsWith(firstSentence.slice(0, 40))) {
-      body = body.slice(firstSentence.length).trimStart();
-    }
-  }
+  // pullQuote is now a verbatim lift from the body — nothing to dedup
   if (body) {
     try {
       const pass2msg = await client.messages.create({
