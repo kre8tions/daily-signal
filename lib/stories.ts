@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import Parser from "rss-parser";
 import { unstable_cache } from "next/cache";
 import { cacheGet, cacheSet } from "@/lib/cache";
-import { put, head, list } from "@vercel/blob";
+import { put, head, list, del } from "@vercel/blob";
 import { createHash } from "crypto";
 import { getLens } from "./palette";
 
@@ -1228,27 +1228,27 @@ function rhythmForMode(mode: string): string {
 5. End with a consequence or question that transfers — something that changes how the reader sees their own situation.`;
 }
 
+export async function clearEditionCache(editionKey: string): Promise<void> {
+  const PROMPT_V = "v4";
+  const prefix = `articles/${PROMPT_V}/${editionKey}/`;
+  try {
+    let cursor: string | undefined;
+    do {
+      const { blobs, cursor: next } = await list({ prefix, cursor, limit: 100 });
+      if (blobs.length > 0) await del(blobs.map(b => b.url));
+      cursor = next;
+    } while (cursor);
+  } catch { /* non-fatal — warm will overwrite anyway */ }
+}
+
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number, readOnly = false): Promise<ArticleCommentary> {
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
   const hasImg2 = seededRandom(refSeed + 7) < 0.2;
   const hasKeyFacts = !hasCta && seededRandom(refSeed + 19) < 0.33;
-  const PROMPT_V = "v4"; // bump when prompts change to invalidate stale global cache
+  const PROMPT_V = "v4";
   const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
-  const globalKey = `articles/${PROMPT_V}/by-slug/${slug}.json`;
-
-  // Check global slug cache first (reuse content if this link was ever processed)
-  try {
-    const global = await head(globalKey);
-    if (global) {
-      const res = await fetch(global.url, { cache: "no-store" });
-      if (res.ok) {
-        const cached = await res.json() as ArticleCommentary;
-        if (cached.body && cached.summary) return cached;
-      }
-    }
-  } catch { /* not found */ }
 
   // Check edition-scoped blob cache
   try {
@@ -1264,7 +1264,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
 
   // In read-only mode, try old versioned paths before giving up
   if (readOnly) {
-    for (const oldV of ["v4", "v3", "by-slug-v2", "by-slug", "v22", "v21", "v20", "v19", "v18"]) {
+    for (const oldV of ["v3", "by-slug-v2", "by-slug", "v22", "v21", "v20", "v19", "v18"]) {
       for (const key of [
         oldV === "by-slug-v2" ? `articles/by-slug-v2/${slug}.json` :
         oldV === "by-slug" ? `articles/by-slug/${slug}.json` : `articles/${oldV}/by-slug/${slug}.json`,
@@ -1526,10 +1526,9 @@ Return JSON only:
     hasKeyFacts,
   };
 
-  // Save to Blob for this edition + global slug cache (reuse if link ever recurs)
+  // Save to edition-scoped blob
   try {
     await put(blobKey, JSON.stringify(commentary), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
-    put(globalKey, JSON.stringify(commentary), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
   } catch { /* non-fatal */ }
 
   return commentary;

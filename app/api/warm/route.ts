@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { buildPageData, getEdition } from "@/lib/stories";
+import { buildPageData, getEdition, clearEditionCache } from "@/lib/stories";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -24,6 +24,7 @@ export async function GET(req: Request) {
   const startedAt = new Date().toISOString();
 
   try {
+    await clearEditionCache(editionKey);
     const pageData = await buildPageData(editionKey, editionLabel);
     revalidateTag(`edition-${editionKey}`);
 
