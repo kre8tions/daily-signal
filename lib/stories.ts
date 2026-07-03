@@ -215,8 +215,10 @@ export function getEdition(): { label: string; key: string } {
 export function getEditionForTimezone(timezone: string): { label: string; key: string } {
   try {
     const now = new Date();
-    // Blob keys use UTC+14 date (build clock) — local hour selects the slot
-    const keyDate = new Date(Date.now() + UTC14_OFFSET_MS).toISOString().slice(0, 10);
+    // Use visitor's local date for the key — editions are built on UTC+14 clock but
+    // visitors should see the edition for their local date, not the UTC+14 date.
+    // "en-CA" locale formats as YYYY-MM-DD which matches our key format.
+    const keyDate = new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(now);
     const h = parseInt(
       new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: timezone }).format(now),
       10
