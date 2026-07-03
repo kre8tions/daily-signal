@@ -2,6 +2,7 @@ import { getPageData, getStoryBySlug, getFullArticle, getEdition, getWriterAssig
 import { notFound } from "next/navigation";
 import { P, SECTION_COLORS } from "@/lib/palette";
 import type { Metadata } from "next";
+import { ShareButton } from "@/app/ShareButton";
 
 export const dynamic = "force-dynamic";
 
@@ -90,10 +91,16 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
         </h1>
 
         {/* Meta */}
-        <div style={{ display: "flex", gap: 16, fontSize: 12, color: P.inkLight, marginBottom: 30, fontFamily: P.fontBody }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 12, color: P.inkLight, marginBottom: 30, fontFamily: P.fontBody }}>
           {fullArticle?.writer && <span style={{ fontWeight: 700, color: P.inkMid }}>{fullArticle.writer}</span>}
           {fullArticle?.writer && <span>·</span>}
           <span>{pubDate}</span>
+          <ShareButton
+            title={fullArticle?.ownedTitle || story.ownedTitle || story.title}
+            url={`https://dailysignal.cc/article/${slug}?e=${editionKey}`}
+            color={sectionColor}
+            fontBody={P.fontBody}
+          />
         </div>
 
         {/* Hero image */}
