@@ -7,7 +7,7 @@ Next: Custom domain + share button + Anime/Film/Comics filter (reject items with
 Blockers: none
 <!-- STATUS:END -->
 
-Live: https://daily-signal-omega.vercel.app/ (custom domain pending)
+Live: https://dailysignal.cc (custom domain live 2026-07-03; also at daily-signal-omega.vercel.app)
 GitHub: github.com/kre8tions/daily-signal (main branch)
 Local: C:\dev\daily-signal
 
@@ -211,6 +211,5 @@ Optional fields: `preferRssImage?: boolean`, `slotOnly?: string`.
 - **S1FlightPaths: always 1 plane (session 4)**: Was probabilistic 1/2/3. Now hardcoded to 1.
 
 ## Open Items
-1. Custom domain (still on daily-signal-omega.vercel.app)
-2. Share button on articles
-3. Filter Anime/Film/Comics stories that lack a named cultural work (reject at pool-build time)
+1. Share button on articles
+2. Filter Anime/Film/Comics stories that lack a named cultural work (reject at pool-build time)
