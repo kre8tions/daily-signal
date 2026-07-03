@@ -1235,7 +1235,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const hasImg2 = seededRandom(refSeed + 7) < 0.2;
   const hasKeyFacts = !hasCta && seededRandom(refSeed + 19) < 0.33;
   const PROMPT_V = "v4"; // bump when prompts change to invalidate stale global cache
-  const blobKey = `articles/${editionKey}/${slug}.json`;
+  const blobKey = `articles/${PROMPT_V}/${editionKey}/${slug}.json`;
   const globalKey = `articles/${PROMPT_V}/by-slug/${slug}.json`;
 
   // Check global slug cache first (reuse content if this link was ever processed)
@@ -1264,7 +1264,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
 
   // In read-only mode, try old versioned paths before giving up
   if (readOnly) {
-    for (const oldV of ["by-slug-v2", "by-slug", "v22", "v21", "v20", "v19", "v18"]) {
+    for (const oldV of ["v4", "v3", "by-slug-v2", "by-slug", "v22", "v21", "v20", "v19", "v18"]) {
       for (const key of [
         oldV === "by-slug-v2" ? `articles/by-slug-v2/${slug}.json` :
         oldV === "by-slug" ? `articles/by-slug/${slug}.json` : `articles/${oldV}/by-slug/${slug}.json`,
