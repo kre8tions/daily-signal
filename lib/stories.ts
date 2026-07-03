@@ -793,7 +793,7 @@ Return JSON only:
       }],
     });
 
-    const text = msg.content[0].type === "text" ? msg.content[0].text.trim() : "";
+    const text = (msg.content[0]?.type === "text" ? msg.content[0].text.trim() : undefined) ?? "";
     const json = JSON.parse(text.replace(/^```json\n?/, "").replace(/\n?```$/, "")) as HowTo;
     await put(blobKey, JSON.stringify(json), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
     return json;
@@ -1012,7 +1012,7 @@ Return JSON only:
 {"genre":"news_report|science_discovery|cultural_criticism|profile|policy_politics|entertainment|opinion|explainer","source_position":"what claim or stance the source takes, or neutral if wire copy","tension":"what is unresolved contested or glossed over","missed":"the angle or implication the source did not pursue","subject":{"name":"exact title or person name if the article is primarily about a specific named film/TV show/book/album/video game/person — omit this field entirely if the article is not about a specific named work or person","type":"film|tv_show|book|album|game|person|other","year":"release or birth year if known, otherwise omit"}}`,
       }],
     });
-    const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
+    const raw = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
     return JSON.parse(raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()) as SourceAnalysis;
   } catch { return null; }
 }
@@ -1079,7 +1079,7 @@ Return JSON only:
 {"mode":"exact mode name","reasoning":"one sentence — specifically why this mode, what you know about this topic that makes it the right call"}`,
       }],
     });
-    const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
+    const raw = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
     return JSON.parse(raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()) as ModeSelection;
   } catch { return null; }
 }
