@@ -4,7 +4,21 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
-## colon-semicolon repair pass (2026-07-04) — CURRENT STABLE
+## pullquote-dedup + opinion/explainer named-case (2026-07-04) — CURRENT STABLE
+
+**What changed:**
+- Body opening: if Pass 1 reused the pullQuote as the first sentence, it's stripped from the body before Pass 2 runs — reader no longer hits the same sentence twice
+- `opinion` genre brief: added explicit instruction to reach into own knowledge and name a specific company, executive, or incident when the source is abstract
+- `explainer` genre brief: same — if no named subject in source, must ground the abstract idea in a specific named person, institution, or case
+
+**Why:**
+- "Who Profits From Saying No" (June 30) exhibited both problems: pullQuote duplicated as body opener, entire piece stayed abstract with no named parallel
+- Named parallel has been a known weakness since `pre-writing-overhaul` — genre briefs for abstract pieces never told Haiku to reach beyond the source
+- PullQuote dedup is structural: Pass 1 is asked for its "sharpest sentence" and naturally opens the body with the same line
+
+---
+
+## colon-semicolon repair pass (2026-07-04)
 
 **What changed:**
 - Added `repairPunctuation()` — runs after Pass 2 body assembly

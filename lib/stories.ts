@@ -1075,8 +1075,8 @@ function genreInstruction(a: SourceAnalysis): string {
     profile:            `This is a profile. Name the person and give the reader a foothold — who are they and why do they matter right now. Then find the one detail that unlocks them and build outward from it. The established narrative: ${pos}. The tension underneath: ${ten}. What got avoided: ${mis}.`,
     policy_politics:    `This is a policy story. Strip the procedural language. Name what is actually happening and who it affects before you argue about it. Then: what does this actually do to actual people? The official position: ${pos}. The real tension: ${ten}. What got glossed over: ${mis}.`,
     entertainment:      `This is an entertainment story. Name the subject — the film, franchise, star, or moment — and anchor the reader before you have an opinion. Then treat it as a cultural symptom: what does the audience's appetite for this reveal about us right now? The surface read: ${pos}. The tension: ${ten}. The missed angle: ${mis}.`,
-    opinion:            `This is an opinion piece on a real subject. Establish what that subject is — the idea, event, or figure being debated — then enter the argument. The position in the room: ${pos}. Where it's right, where it falls short, what it didn't dare say. The real tension: ${ten}. The move nobody made: ${mis}.`,
-    explainer:          `This is an explainer. Cover the what clearly — a cold reader needs to understand the subject before they can care about your take. Then do the job the explainer skipped: the why-now and the so-what. The standard framing: ${pos}. The real tension: ${ten}. The thread nobody followed: ${mis}.`,
+    opinion:            `This is an opinion piece on a real subject. Establish what that subject is — the idea, event, or figure being debated — then enter the argument. The position in the room: ${pos}. Where it's right, where it falls short, what it didn't dare say. The real tension: ${ten}. The move nobody made: ${mis}. The source may be abstract — reach into your own knowledge and name a specific company, executive, or documented incident where this dynamic played out. The named case is not optional.`,
+    explainer:          `This is an explainer. Cover the what clearly — a cold reader needs to understand the subject before they can care about your take. Then do the job the explainer skipped: the why-now and the so-what. The standard framing: ${pos}. The real tension: ${ten}. The thread nobody followed: ${mis}. If the source has no named subject, reach into your own knowledge and name a specific person, institution, or case that grounds the abstract idea. Do not stay in the abstract.`,
   };
   return briefs[a.genre] ?? briefs.news_report;
 }
@@ -1337,6 +1337,13 @@ FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's 
   let pass1ImageQuery2 = "";
   let extractedPullQuote = pass1.pullQuote ?? "";
   let pullQuoteAfterPara = 4;
+  // Strip pullQuote from body opening if Pass 1 reused it as the first sentence
+  if (extractedPullQuote && body) {
+    const firstSentence = (body.match(/^[^.!?]+[.!?]+/) ?? [])[0]?.trim() ?? "";
+    if (firstSentence && extractedPullQuote.trim().startsWith(firstSentence.slice(0, 40))) {
+      body = body.slice(firstSentence.length).trimStart();
+    }
+  }
   if (body) {
     try {
       const pass2msg = await client.messages.create({
