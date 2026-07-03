@@ -263,7 +263,7 @@ const MORBID_RE = /^(dead|dies|died|death|killed|kill|murder|murdered|shooting|s
 // Detect obituary headlines
 const OBIT_RE = /\b(dead|dies|died|has died|passed away|obituary|obit|in memoriam)\b/i;
 
-export async function fetchUnsplash(headline: string, section?: string, page = 1, imageQuery?: string): Promise<{ url: string; color?: string } | undefined> {
+export async function fetchUnsplash(headline: string, section?: string, page = 1, imageQuery?: string, blocked?: Set<string>): Promise<{ url: string; color?: string } | undefined> {
   const key = process.env.UNSPLASH_ACCESS_KEY;
   if (!key) return undefined;
 
@@ -285,7 +285,7 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
   const sectionFallback: Record<string, string> = {
     Technology: "futuristic technology innovation",
     Science: "science discovery universe",
-    Culture: "culture creative ideas",
+    Culture: "creative performance stage expression",
     Film: "cinema film director",
     Entertainment: "music concert stage performance",
     Arts: "art design studio gallery",
@@ -331,7 +331,7 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
       const url = photo?.urls?.regular
         ? (photo.urls.regular as string).replace(/&w=\d+/, "&w=1600")
         : undefined;
-      if (url) return { url, color: photo.color as string | undefined };
+      if (url && (!blocked || !blocked.has(url))) return { url, color: photo.color as string | undefined };
     } catch { continue; }
   }
   return undefined;
@@ -341,21 +341,21 @@ function imgCacheKey(link: string) {
   return `artimg_v4_${createHash("md5").update(link).digest("hex")}`;
 }
 
-async function getArticleImage(article: { link: string; title: string; section?: string; imageQuery?: string; rssImageUrl?: string; preferRssImage?: boolean }): Promise<{ url: string; color?: string } | undefined> {
+async function getArticleImage(article: { link: string; title: string; section?: string; imageQuery?: string; rssImageUrl?: string; preferRssImage?: boolean }, blocked?: Set<string>): Promise<{ url: string; color?: string } | undefined> {
   if (article.preferRssImage && article.rssImageUrl) return { url: article.rssImageUrl };
   const cKey = imgCacheKey(article.link);
   const hit = cacheGet<string>(cKey);
-  if (hit) return hit === "__none__" ? undefined : { url: hit };
+  if (hit && hit !== "__none__" && (!blocked || !blocked.has(hit))) return { url: hit };
 
-  const unsplash = await fetchUnsplash(article.title, article.section, 1, article.imageQuery);
+  const unsplash = await fetchUnsplash(article.title, article.section, 1, article.imageQuery, blocked);
   if (unsplash) { cacheSet(cKey, unsplash.url, THREE_DAYS); return unsplash; }
   cacheSet(cKey, "__none__", ONE_HOUR);
   return undefined;
 }
 
-export async function getUniqueImages(articles: (RawItem & { imageQuery?: string; preferRssImage?: boolean })[]): Promise<{ url?: string; color?: string }[]> {
-  const raw = await Promise.all(articles.map((a) => getArticleImage(a)));
-  const seen = new Set<string>();
+export async function getUniqueImages(articles: (RawItem & { imageQuery?: string; preferRssImage?: boolean })[], blocked?: Set<string>): Promise<{ url?: string; color?: string }[]> {
+  const seen = blocked ?? new Set<string>();
+  const raw = await Promise.all(articles.map((a) => getArticleImage(a, seen)));
   const result: { url?: string; color?: string }[] = [];
   for (let i = 0; i < raw.length; i++) {
     const img = raw[i];
@@ -365,7 +365,7 @@ export async function getUniqueImages(articles: (RawItem & { imageQuery?: string
     } else {
       const cKey = imgCacheKey(articles[i].link);
       cacheSet(cKey, "__none__", 1);
-      const fresh = await fetchUnsplash(articles[i].title + " " + articles[i].section, undefined, 1, articles[i].imageQuery);
+      const fresh = await fetchUnsplash(articles[i].title + " " + articles[i].section, undefined, 1, articles[i].imageQuery, seen);
       if (fresh && !seen.has(fresh.url)) {
         seen.add(fresh.url);
         cacheSet(cKey, fresh.url, THREE_DAYS);
@@ -581,6 +581,7 @@ Return JSON only, no markdown:
     const imgQuery = (parsed.imageQuery || parsed.theme || "").replace(/[^a-zA-Z\s]/g, "").trim();
     if (imgQuery) {
       parsed.imageUrl = await fetchUnsplash(imgQuery, undefined, 1, imgQuery).then(r => r?.url).catch(() => undefined);
+      // Note: synthesis image history is appended by buildPageData after all images resolve
     }
     put(blobKey, JSON.stringify(parsed), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
     return parsed;
@@ -589,16 +590,52 @@ Return JSON only, no markdown:
   }
 }
 
+// ── Image history (30-day dedup across editions) ──────────────────────────────
+const IMAGE_HISTORY_KEY = "image-history/used.json";
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+async function loadImageHistory(): Promise<Set<string>> {
+  try {
+    const blob = await head(IMAGE_HISTORY_KEY);
+    if (!blob) return new Set();
+    const res = await fetch(blob.url, { cache: "no-store" });
+    if (!res.ok) return new Set();
+    const entries = await res.json() as { url: string; usedAt: string }[];
+    const cutoff = Date.now() - THIRTY_DAYS_MS;
+    return new Set(entries.filter(e => new Date(e.usedAt).getTime() > cutoff).map(e => e.url));
+  } catch { return new Set(); }
+}
+
+async function appendImageHistory(urls: string[]): Promise<void> {
+  if (!urls.length) return;
+  try {
+    let entries: { url: string; usedAt: string }[] = [];
+    const blob = await head(IMAGE_HISTORY_KEY);
+    if (blob) {
+      const res = await fetch(blob.url, { cache: "no-store" });
+      if (res.ok) entries = await res.json() as { url: string; usedAt: string }[];
+    }
+    const cutoff = Date.now() - THIRTY_DAYS_MS;
+    const fresh = entries.filter(e => new Date(e.usedAt).getTime() > cutoff);
+    const now = new Date().toISOString();
+    for (const url of urls) {
+      if (!fresh.find(e => e.url === url)) fresh.push({ url, usedAt: now });
+    }
+    await put(IMAGE_HISTORY_KEY, JSON.stringify(fresh), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
+  } catch { /* non-fatal */ }
+}
+
 // ── Assemble page data (cached per edition via Next.js data cache) ────────────
 const CARD_STYLES: Story["cardStyle"][] = ["full", "pullquote", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief"];
 
 export async function buildPageData(editionKey: string, editionLabel: string): Promise<PageData> {
   const { primary: raw, bench } = await fetchTopStories(editionKey);
   const writerSlots = getWriterAssignments(editionKey);
+  const blocked = await loadImageHistory();
 
   // Synthesis and FC run in background while articles are batched
   const synthesisPromise = getSynthesis(raw, editionKey);
-  const fcPromise = getFeatureCreature(editionKey).catch(() => null);
+  const fcPromise = getFeatureCreature(editionKey, blocked).catch(() => null);
 
   // Generate articles in batches of 3 to avoid Claude rate-limit bursts.
   // 11 simultaneous × 4 passes each = ~44 concurrent calls; batching keeps it to ~12 at a time.
@@ -641,7 +678,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
 
   const artErrors = arts.map((a, i) => (!a && articleResults[i]?.status === "rejected") ? String((articleResults[i] as PromiseRejectedResult).reason) : undefined);
   const rawWithQuery = activeRaw.map((r, i) => ({ ...r, imageQuery: arts[i]?.imageQuery }));
-  const images = await getUniqueImages(rawWithQuery);
+  const images = await getUniqueImages(rawWithQuery, blocked);
 
   const allStories: Story[] = activeRaw.map((r, i) => ({
     ...r,
@@ -676,6 +713,14 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     key: editionKey, label: editionLabel,
     date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl,
   }).catch(() => {});
+
+  // Save all used image URLs to 30-day history to prevent cross-edition reuse
+  const usedImageUrls = [
+    ...stories.map(s => s.imageUrl).filter(Boolean) as string[],
+    ...(featureCreature?.imageUrl ? [featureCreature.imageUrl] : []),
+    ...(synthesis.imageUrl ? [synthesis.imageUrl] : []),
+  ];
+  appendImageHistory(usedImageUrls).catch(() => {});
 
   // Pre-generate how-to pages — awaited so they complete before waitUntil exits
   if (synthesis.actions?.length) {
@@ -1553,7 +1598,7 @@ export interface FeatureCreature {
   voiceId?: number;      // 1-7, internal use only
 }
 
-export async function getFeatureCreature(editionKey: string): Promise<FeatureCreature | null> {
+export async function getFeatureCreature(editionKey: string, blocked?: Set<string>): Promise<FeatureCreature | null> {
   const { FC_UNIVERSE, FC_ANGLE } = await import("./palette");
   const blobKey = `feature-creature/v20/${editionKey}.json`;
 
@@ -1652,8 +1697,8 @@ Return JSON only, no markdown:
     const mediumLabel: Record<string, string> = { film: "film", tv: "TV series", anime: "anime", novel: "book cover", game: "video game", fantasy: "fantasy art" };
     const sourceQuery = `${FC_UNIVERSE.name} ${mediumLabel[FC_UNIVERSE.medium] ?? ""}`.trim();
     const moodQuery = (pass1.imageQuery as string | undefined)?.trim() || `${FC_UNIVERSE.name} ${FC_ANGLE.key}`;
-    const imageUrl = await fetchUnsplash(sourceQuery, "Culture").then(r => r?.url)
-      ?? await fetchUnsplash(moodQuery, "Culture").then(r => r?.url);
+    const imageUrl = await fetchUnsplash(sourceQuery, "Culture", 1, undefined, blocked).then(r => r?.url)
+      ?? await fetchUnsplash(moodQuery, "Culture", 1, undefined, blocked).then(r => r?.url);
 
     // ── Pass 2: scaffold — restructure the free-write into the para cadence ──
     const scaffoldMsg = await client.messages.create({
@@ -1709,7 +1754,7 @@ Return JSON only:
     const imageQuery = parsed.imageQuery as string | undefined;
     let imageUrl2: string | undefined;
     if (imageQuery) {
-      const candidate = await fetchUnsplash(imageQuery, "Arts", 2);
+      const candidate = await fetchUnsplash(imageQuery, "Arts", 2, undefined, blocked);
       const candidateUrl = candidate?.url;
       if (candidateUrl && candidateUrl !== imageUrl) {
         // Vision review: score relevance 1-10; accept if >= 6
