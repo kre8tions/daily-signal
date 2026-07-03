@@ -5,10 +5,13 @@ import { ClientBody } from "./ClientBody";
 export const metadata: Metadata = {
   title: "The Daily Signal",
   description: "AI-curated news — the front page, intelligently edited.",
+  metadataBase: new URL("https://dailysignal.cc"),
   openGraph: {
     title: "The Daily Signal",
     description: "AI-curated news — the front page, intelligently edited.",
     type: "website",
+    url: "https://dailysignal.cc",
+    siteName: "The Daily Signal",
   },
 };
 
