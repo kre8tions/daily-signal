@@ -4,7 +4,21 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
-## post-july4-structure (2026-07-04) — CURRENT STABLE
+## colon-semicolon repair pass (2026-07-04) — CURRENT STABLE
+
+**What changed:**
+- Added `repairPunctuation()` — runs after Pass 2 body assembly
+- Scans body for colon/semicolon violations (skipping URLs)
+- If violations found: single Haiku call rewrites only the offending sentences, returns a JSON map of original → rewritten
+- Fast path: if no violations, returns text unchanged with zero API cost
+
+**Why:**
+- No-colon/no-semicolon rule was prompt-only — Haiku occasionally slips one through with no catch
+- Code enforcement is the only reliable fix; a small repair call is cheaper than a bad article
+
+---
+
+## post-july4-structure (2026-07-04)
 
 **What changed from pre-writing-overhaul-plus-two-july4:**
 - Pass 1: 250-350 word cap restored (had been silently dropped during a prior prompt rewrite)

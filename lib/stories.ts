@@ -961,6 +961,49 @@ export interface ArticleCommentary {
   hasKeyFacts?: boolean;
 }
 
+// Scans body for colon/semicolon violations and rewrites offending sentences via a small Claude call.
+// Returns original text unchanged if no violations found (fast path).
+async function repairPunctuation(client: Anthropic, text: string): Promise<string> {
+  const COLON_RE = /(?<![a-z]{2,}:\/\/)(?<![A-Za-z]{2,}:\/\/)[^.\n]*:[^.\n]*/;
+  const SEMI_RE = /[^.\n]*;[^.\n]*/;
+  const hasColon = COLON_RE.test(text);
+  const hasSemi = text.includes(";");
+  if (!hasColon && !hasSemi) return text;
+
+  const violations: string[] = [];
+  for (const para of text.split("\n\n")) {
+    for (const sentence of (para.match(/[^.!?]*[.!?]+["']?\s*/g) ?? [para])) {
+      const s = sentence.trim();
+      if (COLON_RE.test(s) || SEMI_RE.test(s)) violations.push(s);
+    }
+  }
+  if (violations.length === 0) return text;
+
+  try {
+    const res = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 600,
+      messages: [{
+        role: "user",
+        content: `Rewrite each sentence below to remove colons and semicolons. Split into two sentences at the colon or semicolon — no colons, no semicolons in the output. Keep the meaning intact. Return ONLY a JSON object where each key is the original sentence (exactly) and the value is the rewritten version. No extra text.
+
+Sentences:
+${violations.map((v, i) => `${i + 1}. ${v}`).join("\n")}`,
+      }],
+    });
+    const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "";
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    const map: Record<string, string> = JSON.parse(cleaned);
+    let result = text;
+    for (const [original, rewritten] of Object.entries(map)) {
+      result = result.replace(original, rewritten);
+    }
+    return result;
+  } catch {
+    return text;
+  }
+}
+
 function breakLongSentences(text: string): string {
   const BREAK_AT = [" — ", "; ", ", and ", ", but ", ", because ", ", which ", ", so ", ", yet "];
   return text.split("\n\n").map(para => {
@@ -1341,7 +1384,8 @@ Return JSON only:
           })
           .join("\n\n");
         const remainder = (scaffold.remainder as string | undefined)?.trim() ?? "";
-        body = remainder ? `${shaped}\n\n${remainder}` : shaped;
+        const assembled = remainder ? `${shaped}\n\n${remainder}` : shaped;
+        body = await repairPunctuation(client, assembled);
         if (scaffold.header2) pass1Header2 = scaffold.header2 as string;
         if (scaffold.imageQuery2) pass1ImageQuery2 = scaffold.imageQuery2 as string;
         if (typeof scaffold.pullQuoteAfterPara === "number" && (scaffold.pullQuoteAfterPara === 4 || scaffold.pullQuoteAfterPara === 5)) {
