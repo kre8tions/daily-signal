@@ -195,6 +195,9 @@ Optional fields: `preferRssImage?: boolean`, `slotOnly?: string`.
 | `app/api/warm/route.ts` | Manual regen entrypoint |
 | `vercel.json` | Cron schedule |
 
+## Writing Pipeline Change Rule (enforced everywhere)
+Any meaningful change to the article generation pipeline — Pass 0 through Pass 2 prompts, word count rules, rhythm structure, mode logic, caching keys — **must be logged in `writing-changelog.md` before committing**. Each entry needs: what changed, why we tried it, what was observed, and why reverted (if applicable). This file is the institutional memory for the article quality improvement skill. Do not skip this step even for small prompt tweaks.
+
 ## Claude API Rule (enforced everywhere)
 **Never write `msg.content[0].type` — always `msg.content[0]?.type` with `?? fallback`.** Claude can return `content: []` on rate limit / safety responses (HTTP 200, no rejection). A bare access crashes; optional chaining degrades gracefully. Any new Claude call must follow this pattern from day one.
 
