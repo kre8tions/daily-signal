@@ -1242,8 +1242,6 @@ Structure to aim for — not a template, but a rhythm that works:
 4. Name the trait, habit, or mechanism at the center. The one thing that explains why this worked, why this person succeeded, why this keeps happening. Give the reader something they can hold.
 5. End with a consequence or question that transfers — something that changes how the reader sees their own situation, not just this story. Not prescriptive. Just: here is what follows from this.
 
-Total length: 250-350 words. Tight and complete — no padding, no filler, no repetition.
-
 FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's interesting is', 'Let's be clear', 'Make no mistake' — any setup phrase before the real point); colons anywhere in the prose — rewrite every sentence that uses a colon as two separate sentences, no exceptions; semicolons (rewrite as two sentences instead); vague lesson-gesturing ('this teaches us', 'there's a lesson here', 'we can all learn from') — show the insight, don't announce it.`,
     }],
   });
