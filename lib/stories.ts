@@ -1368,7 +1368,7 @@ Structure for first 5 paragraphs:
 - para3: 2-3 sentences — first insight or evidence. The "here's why" moment.
 - para4: 3-4 sentences — the turn. Complication, contradiction, or escalation.
 - para5: 3-5 sentences — landing. The consequence, open question, or provocation. Room to breathe.
-- remainder: everything after paragraph 5, preserved exactly as written. Empty string if nothing remains.
+- remainder: everything after paragraph 5, preserved exactly as written. Empty string if nothing remains. Each paragraph in remainder will be capped at 3-5 sentences in post-processing.
 
 Also return:
 - header2: 3-5 words. Second sub-headline covering the second half of the argument. Specific, no colons, not generic.
@@ -1397,7 +1397,13 @@ Return JSON only:
             return matches.slice(0, limits[k]).join(" ").trim();
           })
           .join("\n\n");
-        const remainder = (scaffold.remainder as string | undefined)?.trim() ?? "";
+        const remainderRaw = (scaffold.remainder as string | undefined)?.trim() ?? "";
+        const remainder = remainderRaw
+          ? remainderRaw.split(/\n\n+/).map(para => {
+              const sentences = para.match(/[^.!?]*[.!?]+["']?\s*/g) ?? [para];
+              return sentences.slice(0, 5).join(" ").trim();
+            }).join("\n\n")
+          : "";
         const assembled = remainder ? `${shaped}\n\n${remainder}` : shaped;
         body = await repairPunctuation(client, assembled);
         if (scaffold.pullQuote) extractedPullQuote = scaffold.pullQuote as string;
