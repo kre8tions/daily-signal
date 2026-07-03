@@ -1040,6 +1040,7 @@ function genreInstruction(a: SourceAnalysis): string {
 interface ModeSelection {
   mode: string;
   reasoning: string; // why this mode for this specific story
+  claim: string;     // one specific falsifiable sentence to open from
 }
 
 async function selectMode(
@@ -1051,7 +1052,7 @@ async function selectMode(
   try {
     const msg = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 200,
+      max_tokens: 300,
       messages: [{
         role: "user",
         content: `You are ${writerName}. You have read this article and its editorial analysis. Using your knowledge of this subject — the players, the history, the debates in this field — choose the single mode of engagement that would produce the most insightful, conversation-sparking response. Do not pick mechanically. Pick based on what you actually know about this topic and what would make a reader think differently.
@@ -1078,7 +1079,7 @@ MODES:
 - The So What: source reports the what — deliver the why-care, what changes, what the reader does with this
 
 Return JSON only:
-{"mode":"exact mode name","reasoning":"one sentence — specifically why this mode, what you know about this topic that makes it the right call"}`,
+{"mode":"exact mode name","reasoning":"one sentence — specifically why this mode, what you know about this topic that makes it the right call","claim":"one sentence — your specific falsifiable opening claim. Names something concrete (a person, number, mechanism, or case). Goes somewhere the source didn't. Not a summary — a position."}`,
       }],
     });
     const raw = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
@@ -1251,38 +1252,11 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const lens = getLens(story.section, refSeed);
   const modeSelection = analysis ? await selectMode(client, story, analysis, writerName) : null;
 
-  // ── Pass 0.75: pre-flight claim — commit to a specific take before writing ──
-  let preFlight = "";
-  if (modeSelection) {
-    try {
-      const claimMsg = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 120,
-        messages: [{
-          role: "user",
-          content: `You are ${writerName}. You are about to write a "${modeSelection.mode}" piece about this story.
-
-STORY: ${story.title}
-YOUR ANGLE: ${modeSelection.reasoning}
-
-Before writing, state your core claim in ONE sentence. Requirements:
-- Specific and falsifiable — a reader who disagrees should be able to argue against it
-- Names something concrete: a person, number, mechanism, or named case
-- Goes somewhere the source didn't go
-- Not a summary. A real claim with a position.
-
-Reply with the claim sentence only. No preamble.`,
-        }],
-      });
-      preFlight = (claimMsg.content[0]?.type === "text" ? claimMsg.content[0].text.trim() : undefined) ?? "";
-    } catch { /* non-fatal — proceed without claim */ }
-  }
-
   const editorialBrief = (analysis || modeSelection) ? [
     "EDITORIAL BRIEF:",
     analysis ? genreInstruction(analysis) : "",
     modeSelection ? `\nMODE: ${modeSelection.mode}\nWHY: ${modeSelection.reasoning}\n\nWrite from this mode. This is your specific angle — not a template, a decision you made based on what you know about this subject.` : "",
-    preFlight ? `\nYOUR COMMITTED CLAIM: ${preFlight}\n\nStart from this claim. Don't restate it — build from it, weaponize it. Everything in the piece serves this claim or complicates it productively.` : "",
+    modeSelection?.claim ? `\nYOUR COMMITTED CLAIM: ${modeSelection.claim}\n\nStart from this claim. Don't restate it — build from it, weaponize it. Everything in the piece serves this claim or complicates it productively.` : "",
     "\n---\n",
   ].filter(Boolean).join("\n") : "";
 
