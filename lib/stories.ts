@@ -1212,9 +1212,10 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
     ? `${writer.style}${lens ? `\n\n${lens.prompt}` : ""}`
     : `You write "The Signal Take" — a short, sharp editorial for a news digest. Your voice: the smartest person in the room who happens to be your friend. Direct. A little irreverent. Never preachy. You find the non-obvious angle and follow it somewhere unexpected.${lens ? `\n\n${lens.prompt}` : ""}`;
 
+  // ── Pass 1: pure prose — full focus on voice, no metadata distraction ──
   const pass1msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1600,
+    max_tokens: 1000,
     messages: [{
       role: "user",
       content: `${editorialBrief}${voiceInstruction}
@@ -1249,9 +1250,6 @@ Voice — write like this:
 - Never reference the source article or your own process: never "the source headline", "the article argues", "the piece claims", "what the reporting missed", "the question embedded in", or any phrase that implies the reader has seen what you read. You chose to write about this subject — write about it directly.
 - No semicolons — ever. Rewrite any semicolon sentence as two separate sentences.
 
-Also return:
-- header: 3-5 words. Magazine sub-headline — specific, not generic. No colons. BAD: "The Bigger Picture", "What This Means", "A New Era". GOOD: "The Quiet Monopoly", "Debt That Builds Nations", "Nobody Saw It Coming".
-
 STORY: ${story.title}
 SOURCE: ${story.source}
 SECTION: ${story.section}
@@ -1263,21 +1261,7 @@ ${story.content ? `RSS EXCERPT: ${story.content.slice(0, 400)}` : [
 TODAY'S OTHER STORIES (weave one in only if the parallel is genuinely non-obvious):
 ${related.map((s) => `- ${s.title} (${s.section})`).join("\n")}
 
-Return JSON only, no markdown:
-{
-  "ownedTitle": "5-9 words. A human journalist wrote this, not an AI. Strong verb, concrete nouns, no abstraction. Put the actual tension or finding in the words themselves — don't gesture at it. For Science: name the specific discovery or finding, not just that one happened. MUST BE FACTUALLY ACCURATE — never assert a claim the article doesn't support; if the article says Mars has tectonic recycling, don't imply Earth doesn't. FORBIDDEN PATTERNS — never use these: colons (almost never — 1 in 200 headlines earns one); 'X: When Y'; 'X as [abstract noun]'; 'Becomes [Cultural Noun]' (phenomenon, spectacle, currency, commodity); 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'/'Revolutionary'. Writer voice: Rex=confrontational verdict, Eric=plain moral charge, Margot=cool disturbing observation, Finn=insider thriller hook, Cal=counter-intuitive reversal, Jack=sardonic sting, Ward=status-game exposure. GOOD: 'Four Chameleons Named, Zero Habitats Protected' / 'Mathematicians Crack the 80-Year Randomness Problem' / 'Jackass Ends Because Bodies Run Out of Luck'. BAD: 'The Cheerleader Trap: When Visibility Becomes the Cage' / 'Optimism as Commodity, Resistance as Product'. Must differ from source headline.",
-  "summary": "2 punchy sentences — what happened and why it matters. Be specific.",
-  "bullets": ["specific fact ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
-  "imageQuery": "${analysis?.subject ? `This article is about ${analysis.subject.type === "person" ? `the person "${analysis.subject.name}"` : `the ${analysis.subject.type.replace("_", " ")} "${analysis.subject.name}"${analysis.subject.year ? ` (${analysis.subject.year})` : ""}`}. Use that as your search — e.g. "${analysis.subject.name}${analysis.subject.type !== "person" ? " " + analysis.subject.type.replace("_", " ") : " portrait"}". 4-6 words max.` : `4-6 words for Unsplash hero image. Named film/show/game/book → start with exact title + medium (e.g. 'Dune film', 'The Bear TV show'). Real person → role/setting not name. Everything else: concrete scene, no brand names, no text, no logos.`}",
-  "header": "..."${hasCta ? `,
-  "cta": {
-    "header": "2-4 words. Active verb phrase. E.g. 'Try This Tonight', 'Start Here', 'Read This Next'.",
-    "body": "1 sentence. A specific thing to DO, WATCH, READ, or TRY that connects directly to this story. Name the exact thing. Beginner-friendly, low-commitment. Not a genre — a specific title, tool, experiment, or action."
-  }` : ""}
-}
-
----
-Pure prose body. No paragraph labels. Paragraphs separated by a blank line.
+Write the article now. Pure prose only. No paragraph labels. Paragraphs separated by a blank line.
 
 Structure to aim for — not a template, but a rhythm that works:
 1. Open with the central claim or observation stated as fact. No setup. The reader lands in the middle of it.
@@ -1292,24 +1276,53 @@ FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's 
     }],
   });
 
-  const raw1 = (pass1msg.content[0]?.type === "text" ? pass1msg.content[0].text : undefined) ?? "{}";
-  // Body is written after a "---" separator — split it out before JSON parsing
-  // so prose with unescaped quotes never corrupts the metadata fields.
-  const sepIdx = raw1.indexOf("\n---");
-  const bodyFromSep = sepIdx >= 0 ? raw1.slice(sepIdx + 4).trim() : "";
-  const jsonPart = (sepIdx >= 0 ? raw1.slice(0, sepIdx) : raw1)
-    .replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  const proseBody = (pass1msg.content[0]?.type === "text" ? pass1msg.content[0].text : "").trim();
+
+  // ── Pass 1.5: metadata extraction — reads the finished prose, derives all fields ──
+  const imageQueryInstruction = analysis?.subject
+    ? `This article is about ${analysis.subject.type === "person" ? `the person "${analysis.subject.name}"` : `the ${analysis.subject.type.replace("_", " ")} "${analysis.subject.name}"${analysis.subject.year ? ` (${analysis.subject.year})` : ""}`}. Use that as your search — e.g. "${analysis.subject.name}${analysis.subject.type !== "person" ? " " + analysis.subject.type.replace("_", " ") : " portrait"}". 4-6 words max.`
+    : `4-6 words for Unsplash hero image. Named film/show/game/book → start with exact title + medium (e.g. 'Dune film', 'The Bear TV show'). Real person → role/setting not name. Everything else: concrete scene, no brand names, no text, no logos.`;
+
+  const metaMsg = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 600,
+    messages: [{
+      role: "user",
+      content: `Read this article and extract the following fields. Return JSON only, no markdown.
+
+STORY: ${story.title}
+SOURCE: ${story.source}
+SECTION: ${story.section}
+
+ARTICLE:
+${proseBody}
+
+{
+  "ownedTitle": "5-9 words. A human journalist wrote this, not an AI. Strong verb, concrete nouns — put the actual tension or finding in the words. MUST reflect what the article actually argues. FORBIDDEN: colons; 'X: When Y'; 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'. GOOD: 'Four Chameleons Named, Zero Habitats Protected' / 'Mathematicians Crack the 80-Year Randomness Problem'. Must differ from source headline.",
+  "summary": "2 punchy sentences — what the article argues and why it matters. Be specific. Written after reading the piece.",
+  "bullets": ["specific fact from the article ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
+  "imageQuery": "${imageQueryInstruction}",
+  "header": "3-5 words. Magazine sub-headline — specific, not generic. No colons. BAD: 'The Bigger Picture', 'What This Means'. GOOD: 'The Quiet Monopoly', 'Debt That Builds Nations'."${hasCta ? `,
+  "cta": {
+    "header": "2-4 words. Active verb phrase. E.g. 'Try This Tonight', 'Start Here', 'Read This Next'.",
+    "body": "1 sentence. A specific thing to DO, WATCH, READ, or TRY that connects directly to this article. Name the exact thing. Beginner-friendly, low-commitment."
+  }` : ""}
+}`,
+    }],
+  });
+
+  const metaRaw = (metaMsg.content[0]?.type === "text" ? metaMsg.content[0].text : "{}").trim();
+  const metaJson = metaRaw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   let pass1: { ownedTitle?: string; summary?: string; bullets?: string[]; imageQuery?: string; header?: string; pullQuote?: string; body?: string; cta?: { header: string; body: string } } = {};
   try {
-    pass1 = JSON.parse(jsonPart);
+    pass1 = JSON.parse(metaJson);
   } catch {
-    // Regex fallback for metadata fields only
     const extractStr = (key: string) => {
-      const m = jsonPart.match(new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, "s"));
+      const m = metaJson.match(new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, "s"));
       return m ? m[1].replace(/\\n/g, "\n").replace(/\\"/g, '"') : undefined;
     };
     const extractArr = (key: string) => {
-      const m = jsonPart.match(new RegExp(`"${key}"\\s*:\\s*\\[([^\\]]+)\\]`, "s"));
+      const m = metaJson.match(new RegExp(`"${key}"\\s*:\\s*\\[([^\\]]+)\\]`, "s"));
       if (!m) return undefined;
       const items: string[] = [];
       const re = /"((?:[^"\\]|\\.)*)"/g;
@@ -1323,11 +1336,9 @@ FORBIDDEN: throat-clearing openers ('Here's the thing', 'The truth is', 'What's 
       bullets: extractArr("bullets"),
       imageQuery: extractStr("imageQuery"),
       header: extractStr("header"),
-      pullQuote: extractStr("pullQuote"),
     };
   }
-  // Use body from separator section; fall back to any body field in JSON
-  if (bodyFromSep) pass1.body = bodyFromSep;
+  pass1.body = proseBody;
 
   // ── Pass 2: structure — always runs; isBrief only gates imageUrl2 (no mid-article image for brief cards) ──
   const isBrief = story.cardStyle === "brief";

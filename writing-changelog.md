@@ -4,7 +4,26 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
-## pullquote-dedup + opinion/explainer named-case (2026-07-04) — CURRENT STABLE
+## pass1-prose-first + pass1.5-metadata (2026-07-04) — CURRENT STABLE
+
+**What changed:**
+- Pass 1 now outputs pure prose only — no JSON, no metadata fields, no `---` separator. Full focus on voice and argument.
+- New Pass 1.5: reads the finished prose and extracts all metadata (ownedTitle, summary, bullets, imageQuery, header, cta). All derived fields are now genuinely derived from the article that exists, not previewed before it's written.
+- Pass 1 max_tokens reduced 1600→1000 (prose only, no metadata payload)
+- Pass 1.5 max_tokens: 600
+
+**Why:**
+- Title, summary, and bullets were written before the body existed — they previewed something not yet written rather than reflecting it
+- The pullQuote problem (generating alongside vs. selecting from) was the same sequencing issue at its root
+- "Write first, extract second" is the correct order: the model can only summarize what it has actually read
+
+**Open questions:**
+- Does title quality improve when written after seeing the full argument?
+- Does the extra API call (Pass 1.5) add meaningful latency?
+
+---
+
+## pullquote-dedup + opinion/explainer named-case (2026-07-04)
 
 **What changed:**
 - Body opening: if Pass 1 reused the pullQuote as the first sentence, it's stripped from the body before Pass 2 runs — reader no longer hits the same sentence twice
