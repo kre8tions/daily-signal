@@ -1,8 +1,8 @@
 # The Daily Signal — Claude Context
 
 <!-- STATUS:START -->
-Last updated: 2026-07-02 (session 3)
-Status: Live, 5 editions/day; 66 writers with inspiration field; Signal Desk fully functional; article body generation fixed
+Last updated: 2026-07-03 (session 4)
+Status: Live, 5 editions/day; timezone navigation fixed; all Claude content[0] reads hardened; 1 plane on S1
 Next: Custom domain + share button + Anime/Film/Comics filter (reject items with no named work)
 Blockers: none
 <!-- STATUS:END -->
@@ -23,8 +23,8 @@ Next.js 15 App Router (server components, no client except EditionCountdown/Emai
 ## Editions
 5/day (~4h each): early, morning, afternoon, evening, night.
 Key format: `2026-06-29_morning`
-**Build clock: UTC+14** — cron fires 16 min before each UTC+14 boundary.
-**Publish clock: visitor's local timezone** via `x-vercel-ip-timezone` header.
+**Build clock: UTC+14** — cron fires 16 min before each UTC+14 boundary. `getEdition()` uses UTC+14. Do NOT change.
+**Publish clock: visitor's local timezone** via `x-vercel-ip-timezone` header. `getEditionForTimezone(tz)` uses visitor's LOCAL date (not UTC+14 date) for the edition key — ensures homepage date label and archive nav match what the reader sees as "today".
 UTC cron schedule: `44 2,6,14,18,22 * * *`
 
 Edition labels: early="First Light", morning="The Brief", afternoon="Midday", evening="The Digest", night="Night Dispatch"
@@ -198,12 +198,17 @@ Optional fields: `preferRssImage?: boolean`, `slotOnly?: string`.
 ## Claude API Rule (enforced everywhere)
 **Never write `msg.content[0].type` — always `msg.content[0]?.type` with `?? fallback`.** Claude can return `content: []` on rate limit / safety responses (HTTP 200, no rejection). A bare access crashes; optional chaining degrades gracefully. Any new Claude call must follow this pattern from day one.
 
-## Bug Fixes Applied (2026-07-02 / 2026-07-03)
+## Bug Fixes Applied (2026-07-02 / 2026-07-03 / 2026-07-03 session 4)
 - **Synthesis + FC writer mismatch**: `getSynthesis` and `getFeatureCreature` were computing writer index independently of day pool. Now both call `getSynthWriterIndex`/`getFCWriterIndex` — Signal Desk and generation are in sync.
 - **Blank edition (getSynthesis crash)**: `getSynthesis` had bare `content[0].type` with no optional chaining and no try-catch. When Claude returned empty content, it threw, rejecting `Promise.all` in `buildPageData` before the edition blob was written → blank page. Fixed 2026-07-03.
 - **content[0] TypeError (all paths)**: All Claude response reads now use `content[0]?.type` with `?? "{}"` fallback — getHowTo, analyzeSource, selectMode, getSynthesis, getFeatureCreature, getFullArticle (all passes).
 - **Pass 1 body cut off**: `max_tokens` raised 950→1600. At 950, JSON metadata consumed the budget before the `---` separator + body could be written. Body was empty, Pass 2 never ran, article fell back to summary+bullets only.
 - **`---` separator is correct architecture**: body as plain text after separator, metadata as JSON before. Do NOT split into two calls — title/summary/pullQuote/body must be written in one coherent voice pass.
+
+- **Homepage date mismatch (session 4)**: `dateStr` was from `new Date()` (server UTC), but edition key uses UTC+14 date. Fixed: `getVisitorContext()` computes `dateStr` via `Intl.DateTimeFormat` with `x-vercel-ip-timezone`.
+- **`getEditionForTimezone` used UTC+14 date (session 4)**: Visitor at 10pm local July 3 got key `2026-07-04_night`, creating two apparent "July 3 Night" editions. Fixed: now uses visitor's local date via `Intl.DateTimeFormat("en-CA", { timeZone })`.
+- **Archive Next Edition leaked future UTC+14 editions (session 4)**: Archive pages showed Next Edition into UTC+14-built-but-visitor-future editions. Fixed: archive page caps `nextEdition` at visitor's current edition rank using `x-vercel-ip-timezone`.
+- **S1FlightPaths: always 1 plane (session 4)**: Was probabilistic 1/2/3. Now hardcoded to 1.
 
 ## Open Items
 1. Custom domain (still on daily-signal-omega.vercel.app)
