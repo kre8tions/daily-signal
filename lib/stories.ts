@@ -569,7 +569,7 @@ Return JSON only, no markdown:
   }).catch(() => null);
 
   if (!msg) return { theme: "", hook: "", observation: "", takeaways: [], conclusion: "", actions: [] };
-  const rawText = msg.content[0].type === "text" ? msg.content[0].text : "{}";
+  const rawText = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   try {
     const parsed = JSON.parse(cleaned) as Synthesis;
