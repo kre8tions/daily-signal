@@ -32,7 +32,8 @@ export default async function Home() {
     getPageData(edition),
     getArchiveList(),
   ]);
-  const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const [keyDatePart] = editionKey.split("_");
+  const dateStr = new Date(keyDatePart + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const SLOT_ORDER: Record<string, number> = { early: 0, morning: 1, afternoon: 2, evening: 3, night: 4 };
   const editionRank = (key: string) => { const [d, s = ""] = key.split("_"); return d.replace(/-/g, "") + String(SLOT_ORDER[s] ?? 0).padStart(2, "0"); };
   const currentRank = editionRank(editionKey);
