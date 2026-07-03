@@ -195,9 +195,13 @@ Optional fields: `preferRssImage?: boolean`, `slotOnly?: string`.
 | `app/api/warm/route.ts` | Manual regen entrypoint |
 | `vercel.json` | Cron schedule |
 
-## Bug Fixes Applied (2026-07-02)
+## Claude API Rule (enforced everywhere)
+**Never write `msg.content[0].type` — always `msg.content[0]?.type` with `?? fallback`.** Claude can return `content: []` on rate limit / safety responses (HTTP 200, no rejection). A bare access crashes; optional chaining degrades gracefully. Any new Claude call must follow this pattern from day one.
+
+## Bug Fixes Applied (2026-07-02 / 2026-07-03)
 - **Synthesis + FC writer mismatch**: `getSynthesis` and `getFeatureCreature` were computing writer index independently of day pool. Now both call `getSynthWriterIndex`/`getFCWriterIndex` — Signal Desk and generation are in sync.
-- **content[0] TypeError**: All Claude response reads now use `content[0]?.type` with `?? "{}"` fallback — prevents crash when Claude returns empty content array (rate limit / safety response).
+- **Blank edition (getSynthesis crash)**: `getSynthesis` had bare `content[0].type` with no optional chaining and no try-catch. When Claude returned empty content, it threw, rejecting `Promise.all` in `buildPageData` before the edition blob was written → blank page. Fixed 2026-07-03.
+- **content[0] TypeError (all paths)**: All Claude response reads now use `content[0]?.type` with `?? "{}"` fallback — getHowTo, analyzeSource, selectMode, getSynthesis, getFeatureCreature, getFullArticle (all passes).
 - **Pass 1 body cut off**: `max_tokens` raised 950→1600. At 950, JSON metadata consumed the budget before the `---` separator + body could be written. Body was empty, Pass 2 never ran, article fell back to summary+bullets only.
 - **`---` separator is correct architecture**: body as plain text after separator, metadata as JSON before. Do NOT split into two calls — title/summary/pullQuote/body must be written in one coherent voice pass.
 
