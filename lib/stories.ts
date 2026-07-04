@@ -1291,6 +1291,17 @@ export async function clearEditionCache(editionKey: string): Promise<void> {
       cursor = next;
     } while (cursor);
   } catch { /* non-fatal — warm will overwrite anyway */ }
+  // Also clear synthesis and FC so warm always regenerates fresh
+  const pointBlobs = [
+    `synthesis/v1/${editionKey}.json`,
+    `feature-creature/v20/${editionKey}.json`,
+  ];
+  for (const key of pointBlobs) {
+    try {
+      const b = await head(key);
+      if (b) await del(b.url);
+    } catch { /* not found — nothing to clear */ }
+  }
 }
 
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number, readOnly = false): Promise<ArticleCommentary> {
