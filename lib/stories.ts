@@ -621,6 +621,10 @@ async function appendImageHistory(urls: string[]): Promise<void> {
 const CARD_STYLES: Story["cardStyle"][] = ["full", "pullquote", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief"];
 
 export async function buildPageData(editionKey: string, editionLabel: string): Promise<PageData> {
+  // Set edition key hash so FC_UNIVERSE, FC_ANGLE, and P Proxies resolve correctly during generation
+  const { setEditionPaletteKey } = await import("./palette");
+  setEditionPaletteKey(editionKey);
+
   const { primary: raw, bench } = await fetchTopStories(editionKey);
   const writerSlots = getWriterAssignments(editionKey);
   const blocked = await loadImageHistory();
