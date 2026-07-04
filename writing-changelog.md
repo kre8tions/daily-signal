@@ -4,6 +4,50 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
+## voice-synthesis-image-overhaul (2026-07-04) — CURRENT STABLE
+
+**What changed:**
+
+### Writer voiceReminder
+- Added `voiceReminder` field to all 66 WRITERS — a single concrete behavioral sentence injected just before `rhythmForMode()` in Pass 1, at highest positional weight.
+- Example: Rex (Hitchens): "find the cowardice or hypocrisy in the official position and name it directly; the sentence lands like a verdict."
+- Placed between the prose trigger and the rhythm so it has maximum recency weight. Not part of `style` — kept short and behavioral, not descriptive.
+
+### Audience identity
+- Pass 1 reader description now specifies: "curious, independently-minded adult building a life with intention — a creative practice, a considered career, a way of thinking they have chosen deliberately."
+- Pass 1 "hold onto" changed to lens framing: "Give the reader a lens — something that changes how they see this subject, or something adjacent to it, for the rest of the week."
+- Pass 1.5 summary: "what the article argues and what it means for someone trying to think more clearly about the world. Not a news summary. The specific payoff for a curious reader who is building a considered life."
+- Pass 1.5 bullets: "specific, surprising, or reframe-inducing" — not plot summary.
+- CTA body: "something a thoughtful person building a considered life would actually find worth their time."
+
+### Synthesis prompt overhaul
+- **Framing shift:** Sources are research not content. Model writes from understanding, not about reading. Opening: "read today's stories until you understand something true about how the world works right now — then say it. Not what you read — what you now know."
+- **Writer identity opens prompt:** `synthWriter.style` injected first; `voiceReminder` injected just before JSON block.
+- **Source names stripped from storyList** — `[i] SECTION — title\n{300 chars}` — so takeaways can't fall back to "Article 2 shows..."
+- **Takeaway arc restructured:** mechanism → complication → implication (escalating, not parallel). Each takeaway has a defined role: (1) why the world works this way, (2) what it costs/the irony, (3) what breaks next/who wins.
+- **Conclusion:** "A sentence that feels true beyond today — about human behavior, systems, or power — stated with the confidence of someone who has seen this pattern before."
+- **Actions:** insight-specific, beginner-friendly (zero experience/tools/money required), reader-identity-aware (creative practice, small business, considered life), doable this week, max 15 words each.
+- **Voice rule added:** "The reader is building a life with intention — creatively, professionally, intellectually. The hook earns their attention if it tells them something true about how the world works that changes how they see their own situation."
+- No-colon/no-semicolon rule added to synthesis prompt.
+
+### Image system fixes
+- **`"__none__"` TTL reduced** from 1 hour to 5 minutes — failed image fetches no longer block retries across warm runs.
+- **`namedWorkQuery` removed** — auto-extracted "Supergirl film"-style branded queries are gone. Unsplash has no licensed franchise imagery; this pattern returned LEGO/cosplay/merch. Query cascade now: imageQuery → headline words → section fallback.
+- **Cultural section `imageQueryInstruction` (Pass 1.5):** Film, Entertainment, Arts, Comics, Anime now get atmospheric/mood instructions ("city rooftop night dramatic light") instead of title+medium ("Supergirl film"). Explicitly tells model Unsplash has no licensed franchise imagery.
+
+**Why:**
+- Writer voice was being flattened by Haiku — `voiceReminder` adds a behavioral anchor at highest positional weight to keep the persona present through the rhythm
+- Synthesis was recapping articles instead of synthesizing: source names in the storyList gave the model an easy out ("Article 2 shows..."). Removing names and reframing as pattern-discovery from understanding closes that door.
+- Audience identity was implicit — making it explicit and consistent across all prompts gives every pass a shared target
+- Film/Entertainment images were returning LEGO figures and cosplay because Unsplash has no licensed film stills and the model was following instructions that assumed it did
+
+**What to observe on next live edition:**
+- Does writer voice feel more distinct across pieces?
+- Does synthesis read as a genuine observation about the world, or does it still feel like a recap?
+- Do film/entertainment story images look editorial rather than fan-merchandise?
+
+---
+
 ## writing-overhaul-attempt-2 (2026-07-04) — CURRENT STABLE
 
 **What changed:**
