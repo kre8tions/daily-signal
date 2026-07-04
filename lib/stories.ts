@@ -551,6 +551,7 @@ Voice rules:
 - You have absorbed these stories. Write from that understanding, not about the reading. The sources are your research — they are not your content.
 - A specific story may appear once, as a single image or fact, then dropped. Never introduced. Never recapped. The reader doesn't need to hear it twice.
 - No colons or semicolons anywhere in the text fields.
+- The reader is building a life with intention — creatively, professionally, intellectually. The hook earns their attention if it tells them something true about how the world works that changes how they see their own situation.
 
 SOURCE MATERIAL (for context only — do not cite by publication name):
 ${storyList}
@@ -1368,7 +1369,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
       role: "user",
       content: `${voiceInstruction}${editorialBrief}
 
-You are writing for a curious, independent-minded adult who wants to understand the world better and occasionally act on what they learn. They came to read about the subject — the film, the discovery, the person, the idea — not about the journalism covering it.
+You are writing for a curious, independently-minded adult who is building a life with intention — a creative practice, a considered career, a way of thinking they have chosen deliberately. They want to understand the world so they can make better decisions and see things other people miss. They are skeptical of received wisdom, equally unimpressed by institutions and by contrarianism. Write for someone who came to think, not to be told what to think. They came to read about the subject — the film, the discovery, the person, the idea — not about the journalism covering it.
 
 YOUR READER ARRIVES COLD. They have not read the source article. They do not know what we are talking about. Your first move is always to establish the subject: name the thing, anchor the reader, give them a foothold. Then have a real opinion about it.
 
@@ -1376,7 +1377,7 @@ Draw on everything you know about this subject — not just what the source prov
 
 Never reference the source, the headline, the article, or your own process. You are writing about the subject. That is all the reader sees.
 
-Never write an article whose conclusion is "this is complicated" or "there are no simple answers" or "science doesn't know yet." That is not a piece — it is an absence of one. Have a position. Give the reader something they can hold onto.
+Never write an article whose conclusion is "this is complicated" or "there are no simple answers" or "science doesn't know yet." That is not a piece — it is an absence of one. Have a position. Give the reader a lens — something that changes how they see this subject, or something adjacent to it, for the rest of the week.
 
 Write for someone who is intelligent, not ideological. No left or right lean. No woke framing. No moralising. Equally sceptical of institutions, activists, and reactionaries.
 
@@ -1438,13 +1439,13 @@ ${proseBody}
 
 {
   "ownedTitle": "5-9 words. A human journalist wrote this, not an AI. Strong verb, concrete nouns — put the actual tension or finding in the words. MUST reflect what the article actually argues. FORBIDDEN: colons; 'X: When Y'; 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'. GOOD: 'Four Chameleons Named, Zero Habitats Protected' / 'Mathematicians Crack the 80-Year Randomness Problem'. Must differ from source headline.",
-  "summary": "2 punchy sentences — what the article argues and why it matters. Be specific. Written after reading the piece.",
-  "bullets": ["specific fact from the article ≤15 words", "specific fact ≤15 words", "specific fact ≤15 words"],
+  "summary": "2 sentences — what the article argues and what it means for someone trying to think more clearly about the world. Not a news summary. The specific payoff for a curious reader who is building a considered life.",
+  "bullets": ["One of the 3 facts or ideas a smart reader would want to remember — specific, surprising, or reframe-inducing ≤15 words", "Same standard — not plot summary, not the biggest number unless it reframes something ≤15 words", "Same standard ≤15 words"],
   "imageQuery": "${imageQueryInstruction}",
   "header": "3-5 words. Magazine sub-headline — specific, not generic. No colons. BAD: 'The Bigger Picture', 'What This Means'. GOOD: 'The Quiet Monopoly', 'Debt That Builds Nations'."${hasCta ? `,
   "cta": {
     "header": "2-4 words. Active verb phrase. E.g. 'Try This Tonight', 'Start Here', 'Read This Next'.",
-    "body": "1 sentence. A specific thing to DO, WATCH, READ, or TRY that connects directly to this article. Name the exact thing. Beginner-friendly, low-commitment."
+    "body": "1 sentence. A specific thing to DO, WATCH, READ, or TRY that connects directly to this article — something a thoughtful person building a considered life would actually find worth their time. Name the exact thing. Beginner-friendly, zero commitment required."
   }` : ""}
 }`,
     }],
