@@ -1227,7 +1227,7 @@ function rhythmForMode(mode: string): string {
 2. Name the unstated assumption explicitly. The thing the argument depends on but never defends.
 3. Show it's actually contested — not obviously true, not universally shared.
 4. Follow what happens to the argument if the assumption falls. What changes?
-5. End with the real question the source should have been asking.`,
+5. End with the question the piece has now opened — the one the reader has to sit with, not a critique of the source.`,
 
     "The Beneficiary Question": `Structure to aim for:
 1. Describe what happened — the event, decision, or outcome.
@@ -1247,7 +1247,7 @@ function rhythmForMode(mode: string): string {
 1. State the source's conclusion — the thing they arrived at.
 2. Show how that conclusion undermines its own premise. Where the argument turns on itself.
 3. Make the contradiction visible and specific. Name exactly where the logic breaks.
-4. Resist resolving it. The paradox is the point — sit in it.
+4. Hold both sides simultaneously — do not resolve the tension. The contradiction is load-bearing.
 5. End with what the paradox reveals. The thing you can only see by holding both sides at once.`,
 
     "The Missing Voice": `Structure to aim for:
