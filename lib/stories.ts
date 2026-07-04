@@ -547,7 +547,9 @@ Voice rules:
 - Never restate a headline. Name the mechanism, not the event.
 - Never open with "Today's", "This collection", "These stories", "Across today's".
 - No ideological framing. No culture-war lens.
-- Specific beats abstract. Name the story, the company, the person, the decision.
+- Specific beats abstract. Name the real-world thing — the company, the person, the place, the technology. Not the publication, not the article title.
+- You have absorbed these stories. Write from that understanding, not about the reading. The sources are your research — they are not your content.
+- A specific story may appear once, as a single image or fact, then dropped. Never introduced. Never recapped. The reader doesn't need to hear it twice.
 
 ${storyList}
 
@@ -555,11 +557,11 @@ Return JSON only, no markdown:
 {
   "theme": "2-4 words. An evocative noun phrase naming the underlying force or tension — not a topic, a dynamic. E.g. 'The Permission Economy' / 'Controlled Disintegration' / 'Institutional Overcorrection'. Not 'Technology and Society'.",
   "hook": "1 sentence only. The irreversible claim — the thing that cannot be unsaid once you read it. This is the first thing the reader sees. No setup, no throat-clearing. Start with the tension, not the context.",
-  "observation": "1-2 sentences that deepen the hook. Don't summarize stories — name what they collectively reveal. End somewhere that makes the reader want to read the takeaways.",
+  "observation": "1-2 sentences that deepen the hook. Don't summarize stories. Speak from what you now understand — as if you absorbed the news and are telling someone what it means, not what it said. End somewhere that makes the reader want the takeaways.",
   "takeaways": [
-    "Name the non-obvious connection between at least two specific stories (name them by source or subject). One sentence on the shared mechanism — not the shared topic.",
-    "The structural tension or irony that runs through today's stories. Cite at least one specific story. 1-2 sentences.",
-    "A forward-looking implication: who is positioned to win, what breaks next, what pattern this repeats. Ground it in today's specific stories. 1-2 sentences."
+    "The shared mechanism underneath today's pattern — stated as a truth about how the world works, not as a connection between articles. One sentence.",
+    "The structural tension or irony in the pattern. A real-world example — a company, a person, a place — may appear as illustration. One image, one sentence, then move on. Never a recap. 1-2 sentences.",
+    "A forward-looking implication: who wins, what breaks next, what this pattern repeats. State it as something you know — not something you read today. 1-2 sentences."
   ],
   "conclusion": "The most screenshot-worthy sentence in the entire card. A provocation, not a summary. Should make someone want to share it. Sharp enough to stand alone without context. Do not start with 'Today' or 'Ultimately' or 'In the end'.",
   "actions": [
