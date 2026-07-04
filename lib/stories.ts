@@ -569,9 +569,9 @@ Return JSON only, no markdown:
   ],
   "conclusion": "A sentence that feels true beyond today — about human behavior, systems, or power — stated with the confidence of someone who has seen this pattern before. Not a summary of the card. A line someone would underline in a book. Do not start with 'Today', 'Ultimately', or 'In the end'. No colons. No semicolons.",
   "actions": [
-    "Imperative sentence. Specific to this insight — something a reader could only do having understood today's pattern, not generic advice that applies to any day. Start with a strong verb. No preamble. Max 15 words.",
-    "Imperative sentence. Different angle on the same insight. Low-risk, this-week doable. Starts with a verb. Max 15 words.",
-    "Imperative sentence. The smallest possible move — under 10 minutes, costs nothing, directly connected to what was just understood. Starts with a verb. Max 15 words."
+    "Imperative sentence. Rooted in this insight — not generic advice that applies to any day. Beginner-friendly: no experience, tools, or money required. A step anyone could take this week. Start with a strong verb. No preamble. Max 15 words.",
+    "Imperative sentence. Different angle on the same insight. Equally accessible — zero barrier to entry, doable in a single sitting. Starts with a verb. Max 15 words.",
+    "Imperative sentence. The smallest possible move — under 10 minutes, costs nothing, directly connected to what was just understood. So small it would be embarrassing not to do. Starts with a verb. Max 15 words."
   ],
   "imageQuery": "4-6 concrete visual words for Unsplash that match the mood and texture of today's theme — a real scene or object, not an abstraction. E.g. for 'institutional friction': 'empty government hallway fluorescent light'; for 'surveillance creep': 'security camera corner urban shadow'. No abstract nouns. No brand names."
 }`,
