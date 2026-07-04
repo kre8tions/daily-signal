@@ -198,14 +198,20 @@ export const FC_ANGLES = [
   { key: "culture",  label: "The World It Makes", prompt: "Focus on the culture, fashion, lifestyle, social dynamics, or aesthetic of this fictional universe. What does it say about our desires and fears? What elements are already bleeding into the real world?" },
 ];
 
-const _fc = Math.floor(Date.now() / 14_400_000);
 export const FC_UNIVERSE: FCUniverse = new Proxy({} as FCUniverse, {
   get(_, key) {
-    const current = FC_UNIVERSES[Math.floor(Date.now() / 14_400_000) % FC_UNIVERSES.length];
+    const seed = _editionKeyHash > 0 ? _editionKeyHash : Math.floor(Date.now() / 14_400_000);
+    const current = FC_UNIVERSES[seed % FC_UNIVERSES.length];
     return current[key as keyof FCUniverse];
   },
 });
-export const FC_ANGLE = FC_ANGLES[Math.floor(_fc / FC_UNIVERSES.length) % FC_ANGLES.length];
+export const FC_ANGLE = new Proxy({} as typeof FC_ANGLES[number], {
+  get(_, key) {
+    const seed = _editionKeyHash > 0 ? _editionKeyHash : Math.floor(Date.now() / 14_400_000);
+    const angle = FC_ANGLES[Math.floor(seed / FC_UNIVERSES.length) % FC_ANGLES.length];
+    return angle[key as keyof typeof FC_ANGLES[number]];
+  },
+});
 
 // Returns #000 or #fff — whichever contrasts better against the given hex color
 export function contrastColor(hex: string): string {
