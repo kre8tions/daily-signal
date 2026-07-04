@@ -52,7 +52,8 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
   } catch { /* generation failed — render article without commentary */ }
 
   const sectionColor = SECTION_COLORS[story.section] ?? "#888";
-  const pubDate = new Date(story.pubDate).toLocaleDateString("en-US", {
+  const editionDateStr = editionKey.split("_")[0];
+  const pubDate = new Date(editionDateStr + "T12:00:00Z").toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
   });
 
@@ -136,7 +137,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
               <div key={i}>
                 {i === 3 && fullArticle.header2 && (
                   <div style={{ fontFamily: P.fontHeading, fontSize: "clamp(20px, 3.5vw, 30px)", fontWeight: P.dark ? 400 : 900, letterSpacing: P.dark ? 2 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, color: sectionColor, lineHeight: 1.1, marginBottom: 16, marginTop: 16 }}>
-                    {fullArticle.header2}
+                    {fullArticle.header2.replace(/^#+\s*/, "")}
                   </div>
                 )}
                 <p style={{ fontSize: 19, lineHeight: 1.9, color: P.ink, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720 }}

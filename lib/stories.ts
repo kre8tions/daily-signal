@@ -1253,9 +1253,9 @@ function rhythmForMode(mode: string): string {
     "The Missing Voice": `Structure to aim for:
 1. Name what the source discusses — and who it discusses without talking to them.
 2. Name the missing group specifically. Who should be in this piece but isn't?
-3. Surface what they would actually say — their documented, findable position, not projection.
+3. Surface what they would actually say — their documented, findable position, not projection. Name a specific person, project, or documented incident (e.g. a named initiative, a published account, a known case). Do not stay generic.
 4. Show why the gap matters. What changes when you hear the absent voice?
-5. End with what the piece would look like if it had started from their perspective.`,
+5. End with a provocation — not meta-commentary about what the piece should have done, but the sharpest implication of centering the missing voice.`,
 
     "The So What": `Structure to aim for:
 1. State what happened — the event, finding, or announcement. One sentence.
@@ -1504,7 +1504,7 @@ Structure for first 5 paragraphs:
 - remainder: everything after paragraph 5, preserved exactly as written. Empty string if nothing remains. Each paragraph in remainder will be capped at 3-5 sentences in post-processing.
 
 Also return:
-- header2: 3-5 words. Second sub-headline covering the second half of the argument. Specific, no colons, not generic.
+- header2: 3-5 words. Second sub-headline covering the second half of the argument. Specific, no colons, not generic. Plain text only — no markdown, no # character.
 - imageQuery2: 4-6 concrete atmospheric words for a second Unsplash search. No names, no text, no logos. Think: texture, environment, light, emotion.
 - pullQuoteAfterPara: 4 or 5 only. Which paragraph the pull quote should follow. Must be after header2 (which appears before para4). Choose 4 if the energy peaks in para4, choose 5 if para5 is the stronger landing.
 - pullQuote: 1 sentence lifted verbatim from the shaped body — the single most arresting line. Something a reader would screenshot. Word-for-word identical to what appears in the body.
@@ -1546,7 +1546,7 @@ Return JSON only:
           pullQuoteAfterPara = scaffold.pullQuoteAfterPara as number;
         }
       }
-    } catch { /* pass2 failed — use pass1 body as-is */ }
+    } catch (e) { console.error(`[pass2] failed for "${story.title}" — ${e instanceof Error ? e.message : String(e)}`); }
   }
 
   const imageUrl2 = (!isBrief && hasImg2)
