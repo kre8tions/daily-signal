@@ -530,7 +530,7 @@ export async function getSynthesis(items: RawItem[], editionKey: string): Promis
   const synthWriter = WRITERS[getSynthWriterIndex(editionKey)];
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const storyList = items.map((a, i) =>
-    `[${i}] ${a.section.toUpperCase()} — ${a.source}: ${a.title}\n${a.content.slice(0, 300)}`
+    `[${i}] ${a.section.toUpperCase()} — ${a.title}\n${a.content.slice(0, 300)}`
   ).join("\n\n");
 
   const msg = await client.messages.create({
@@ -538,9 +538,9 @@ export async function getSynthesis(items: RawItem[], editionKey: string): Promis
     max_tokens: 1800,
     messages: [{
       role: "user",
-      content: `You are the editorial voice of The Signal — a news digest that finds the load-bearing beam, not the surface pattern. Your job: look at today's stories and find what connects them underneath — not the obvious shared topic, but the shared mechanism, the shared anxiety, the shared structural shift.
+      content: `${synthWriter.style}
 
-Writer instinct for this edition: ${synthWriter.style}
+You are writing the synthesis for The Daily Signal — the card that finds the load-bearing beam underneath the day's news. Read today's stories until you understand something true about how the world works right now. Then say it. Not what you read — what you now know.
 
 Voice rules:
 - First-person editorial: opinions, interpretations, predictions — not reportage.
@@ -550,8 +550,12 @@ Voice rules:
 - Specific beats abstract. Name the real-world thing — the company, the person, the place, the technology. Not the publication, not the article title.
 - You have absorbed these stories. Write from that understanding, not about the reading. The sources are your research — they are not your content.
 - A specific story may appear once, as a single image or fact, then dropped. Never introduced. Never recapped. The reader doesn't need to hear it twice.
+- No colons or semicolons anywhere in the text fields.
 
+SOURCE MATERIAL (for context only — do not cite by publication name):
 ${storyList}
+
+${synthWriter.voiceReminder}
 
 Return JSON only, no markdown:
 {
@@ -559,15 +563,15 @@ Return JSON only, no markdown:
   "hook": "1 sentence only. The irreversible claim — the thing that cannot be unsaid once you read it. This is the first thing the reader sees. No setup, no throat-clearing. Start with the tension, not the context.",
   "observation": "1-2 sentences that deepen the hook. Don't summarize stories. Speak from what you now understand — as if you absorbed the news and are telling someone what it means, not what it said. End somewhere that makes the reader want the takeaways.",
   "takeaways": [
-    "The shared mechanism underneath today's pattern — stated as a truth about how the world works, not as a connection between articles. One sentence.",
-    "The structural tension or irony in the pattern. A real-world example — a company, a person, a place — may appear as illustration. One image, one sentence, then move on. Never a recap. 1-2 sentences.",
-    "A forward-looking implication: who wins, what breaks next, what this pattern repeats. State it as something you know — not something you read today. 1-2 sentences."
+    "The mechanism — why the world works this way right now. Not a connection between articles. A truth about human behavior, systems, or power that explains the pattern. One sentence.",
+    "The complication — what this costs, what the trap is, what the irony reveals. A real-world example (a company, a person, a place) may appear as a single image. One sentence, then move on. 1-2 sentences.",
+    "The implication — what breaks next, who is positioned to win, what this pattern means for anyone paying attention. State it as something you know, with the confidence of someone who has seen this before. 1-2 sentences."
   ],
-  "conclusion": "The most screenshot-worthy sentence in the entire card. A provocation, not a summary. Should make someone want to share it. Sharp enough to stand alone without context. Do not start with 'Today' or 'Ultimately' or 'In the end'.",
+  "conclusion": "A sentence that feels true beyond today — about human behavior, systems, or power — stated with the confidence of someone who has seen this pattern before. Not a summary of the card. A line someone would underline in a book. Do not start with 'Today', 'Ultimately', or 'In the end'. No colons. No semicolons.",
   "actions": [
-    "Imperative sentence. Start with a strong verb: Go, Make, Start, Write, Pick, Find, Ask, Build, Try, Post. No preamble, no 'given that', no 'based on today'. Reader already knows the context. Beginner-friendly, specific, zero experience needed. Max 15 words.",
-    "Imperative sentence. Different verb, different angle. Low-risk, this-week doable. Same rules: no setup, just the action. Max 15 words.",
-    "Imperative sentence. The smallest possible move — under 10 minutes, costs nothing. Starts with a verb. Max 15 words."
+    "Imperative sentence. Specific to this insight — something a reader could only do having understood today's pattern, not generic advice that applies to any day. Start with a strong verb. No preamble. Max 15 words.",
+    "Imperative sentence. Different angle on the same insight. Low-risk, this-week doable. Starts with a verb. Max 15 words.",
+    "Imperative sentence. The smallest possible move — under 10 minutes, costs nothing, directly connected to what was just understood. Starts with a verb. Max 15 words."
   ],
   "imageQuery": "4-6 concrete visual words for Unsplash that match the mood and texture of today's theme — a real scene or object, not an abstraction. E.g. for 'institutional friction': 'empty government hallway fluorescent light'; for 'surveillance creep': 'security camera corner urban shadow'. No abstract nouns. No brand names."
 }`,
