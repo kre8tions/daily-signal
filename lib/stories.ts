@@ -295,24 +295,9 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
     ? "portrait tribute memorial flowers"
     : (section && sectionFallback[section]) ?? "news media editorial";
 
-  // Detect named cultural works in the headline (film, show, book, game) — e.g. "Contact Made Us Afraid…"
-  // Pattern: 1-3 Title Case words at the start of the headline before a verb or connector
-  const culturalSections = new Set(["Film", "Entertainment", "Arts", "Culture", "Comics", "Anime"]);
-  let namedWorkQuery: string | undefined;
-  if (culturalSections.has(section ?? "")) {
-    const titleMatch = headline.match(/^((?:[A-Z][a-zA-Z']+(?:\s+|$)){1,4})/);
-    const candidate = titleMatch?.[1]?.trim();
-    // Only use if it's not just the same as a generic word and appears to be a proper title (≥1 capitalized word, ≤4 words)
-    if (candidate && candidate.split(" ").length <= 4 && /[A-Z]/.test(candidate[0])) {
-      const sectionHint = section === "Film" ? "film" : section === "Comics" ? "comic" : section === "Anime" ? "anime" : "series";
-      namedWorkQuery = `${candidate} ${sectionHint}`;
-    }
-  }
-
   const queries = [
     ...(personQuery ? [personQuery, `${personQuery} portrait`] : []),
     ...(imageQuery ? [imageQuery] : []),
-    ...(namedWorkQuery && !imageQuery ? [namedWorkQuery] : []),
     words.slice(0, 3).join(" "),
     words.slice(0, 2).join(" "),
     fallback,
@@ -349,7 +334,7 @@ async function getArticleImage(article: { link: string; title: string; section?:
 
   const unsplash = await fetchUnsplash(article.title, article.section, 1, article.imageQuery, blocked);
   if (unsplash) { cacheSet(cKey, unsplash.url, THREE_DAYS); return unsplash; }
-  cacheSet(cKey, "__none__", ONE_HOUR);
+  cacheSet(cKey, "__none__", 5 * 60 * 1000);
   return undefined;
 }
 
@@ -1430,9 +1415,12 @@ FORBIDDEN: throat-clearing openers; colons anywhere in the prose — rewrite as 
   const proseBody = (pass1msg.content[0]?.type === "text" ? pass1msg.content[0].text : "").trim();
 
   // ── Pass 1.5: metadata extraction — reads the finished prose, derives all fields ──
-  const imageQueryInstruction = analysis?.subject
-    ? `This article is about ${analysis.subject.type === "person" ? `the person "${analysis.subject.name}"` : `the ${analysis.subject.type.replace("_", " ")} "${analysis.subject.name}"${analysis.subject.year ? ` (${analysis.subject.year})` : ""}`}. Use that as your search — e.g. "${analysis.subject.name}${analysis.subject.type !== "person" ? " " + analysis.subject.type.replace("_", " ") : " portrait"}". 4-6 words max.`
-    : `4-6 words for Unsplash hero image. Named film/show/game/book → start with exact title + medium (e.g. 'Dune film', 'The Bear TV show'). Real person → role/setting not name. Everything else: concrete scene, no brand names, no text, no logos.`;
+  const isCulturalSection = ["Film", "Entertainment", "Arts", "Comics", "Anime"].includes(story.section ?? "");
+  const imageQueryInstruction = isCulturalSection
+    ? `4-6 concrete atmospheric words for Unsplash. Describe the mood, world, or visual feeling — NOT the title, character name, or brand. Unsplash has no licensed film stills or franchise imagery. Think: what real-world scene or texture captures the emotional register? E.g. for a superhero story: 'city rooftop night dramatic light'; for a dark anime: 'rain neon reflection urban night'; for a musical: 'concert stage spotlight crowd silhouette'. No names, no logos, no text.`
+    : analysis?.subject
+      ? `This article is about ${analysis.subject.type === "person" ? `the person "${analysis.subject.name}"` : `the ${analysis.subject.type.replace("_", " ")} "${analysis.subject.name}"${analysis.subject.year ? ` (${analysis.subject.year})` : ""}`}. Use that as your search — e.g. "${analysis.subject.name}${analysis.subject.type !== "person" ? " " + analysis.subject.type.replace("_", " ") : " portrait"}". 4-6 words max.`
+      : `4-6 words for Unsplash hero image. Real person → role/setting not name. Everything else: concrete scene, no brand names, no text, no logos.`;
 
   const metaMsg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
