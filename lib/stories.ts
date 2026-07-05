@@ -654,7 +654,7 @@ export function getWeeklyWriterIndex(weekDate: string): number {
 
 async function loadWeeklySyntheses(pastDates: string[]) {
   const SLOT_PRIORITY = ["evening", "afternoon", "morning", "early", "night"];
-  const results: { date: string; theme: string; hook: string; observation: string; takeaways: string[]; conclusion: string }[] = [];
+  const results: { date: string; theme: string; hook: string; observation: string; takeaways: string[]; conclusion: string; s1Title?: string; s2Title?: string }[] = [];
   for (const date of pastDates) {
     for (const slot of SLOT_PRIORITY) {
       try {
@@ -664,7 +664,21 @@ async function loadWeeklySyntheses(pastDates: string[]) {
         if (!res.ok) continue;
         const data = await res.json();
         if (data.theme && data.hook) {
-          results.push({ date, theme: data.theme, hook: data.hook, observation: data.observation ?? "", takeaways: data.takeaways ?? [], conclusion: data.conclusion ?? "" });
+          // Pull S1/S2 ownedTitles from the same slot's archive blob for concrete anchors
+          let s1Title: string | undefined;
+          let s2Title: string | undefined;
+          try {
+            const ab = await head(`archive/editions/${date}_${slot}.json`);
+            if (ab) {
+              const ar = await fetch(ab.url, { cache: "no-store" });
+              if (ar.ok) {
+                const archive = await ar.json();
+                s1Title = archive.stories?.[0]?.ownedTitle || archive.stories?.[0]?.title;
+                s2Title = archive.stories?.[1]?.ownedTitle || archive.stories?.[1]?.title;
+              }
+            }
+          } catch { /* titles optional */ }
+          results.push({ date, theme: data.theme, hook: data.hook, observation: data.observation ?? "", takeaways: data.takeaways ?? [], conclusion: data.conclusion ?? "", s1Title, s2Title });
           break;
         }
       } catch { /* try next slot */ }
@@ -697,7 +711,8 @@ export async function getWeeklySignal(editionKey: string, blocked?: Set<string>)
 
   const weeklyContext = syntheses.map(s => {
     const dayName = new Date(`${s.date}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
-    return `${dayName.toUpperCase()} — ${s.theme}\n"${s.hook}"\n${s.observation}\nInsights: ${s.takeaways.join(" | ")}`;
+    const topStories = [s.s1Title, s.s2Title].filter(Boolean).map(t => `• ${t}`).join("\n");
+    return `${dayName.toUpperCase()} — ${s.theme}\nTop stories: \n${topStories}\n"${s.hook}"\n${s.observation}\nInsights: ${s.takeaways.join(" | ")}`;
   }).join("\n\n---\n\n");
 
   const firstDate = new Date(`${pastDates[0]}T00:00:00Z`);
