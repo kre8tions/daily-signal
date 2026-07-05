@@ -4,6 +4,28 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
+## weekly-signal-and-noise (2026-07-05) — CURRENT STABLE
+
+**What changed:**
+- New `WeeklySignal` interface: `hook`, `signal`, `noise`, `lookingForward`, `oneMove`, `writerName`, `weekOf`, `imageUrl`
+- `getWeeklySignal()` — fires on Sunday evening warm only. Collects past 6 days of synthesis cards (Mon–Sat) + S1/S2 ownedTitles from archive blobs as concrete anchors. Requires ≥3 days of data.
+- Sunday evening synthesis slot replaced by Weekly Signal & Noise card in UI. Daily synthesis still generated (blob preserved), weekly card takes the display slot.
+- Writer rotated from 66 pool via `getWeeklyWriterIndex()` seeded independently.
+- Cached at `weekly-signal/v1/{sundayDate}.json`. `clearEditionCache` deletes it on Sunday evening re-warm.
+- Share button built in. Email send (Resend) deferred.
+- Prompt discipline: no day-by-day recap, no "this week we saw", name the mechanism not events, audience identity in `lookingForward`, noise defined as overblown story / manufactured outrage / agenda distraction.
+
+**Also fixed this session:**
+- `FC_UNIVERSE` edition key fix: `setEditionPaletteKey` was only called in `EditionView` (render-time). Added call at top of `buildPageData` so FC universe resolves correctly during warm generation.
+- Image system: `namedWorkQuery` removed (produced "Supergirl film"-style branded searches returning LEGO/merch). Cultural section `imageQueryInstruction` now requests atmospheric/mood queries. `"__none__"` TTL reduced 1hr → 5min.
+- Synthesis hook capped at 7-10 words.
+
+**Why:**
+- Weekly synthesis fills the "editor's letter" role — the thread visible only across 5 days that no single edition can show. S1/S2 titles give the weekly writer concrete specifics, preventing pure abstraction.
+- FC universe was always the same within a 4-hour warm window because the hash was never set at generation time.
+
+---
+
 ## voice-synthesis-image-overhaul (2026-07-04) — CURRENT STABLE
 
 **What changed:**
