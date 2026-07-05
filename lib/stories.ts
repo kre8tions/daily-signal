@@ -727,25 +727,28 @@ export async function getWeeklySignal(editionKey: string, blocked?: Set<string>)
       role: "user",
       content: `${writer.style}
 
-You have been reading The Daily Signal all week. Below is what each day's synthesis revealed — the themes, the hooks, the patterns the editors noticed.
+You have absorbed a week of news. Below is what each day revealed — the themes, the stories, the patterns.
 
-Your job: find the thread. Not a recap. Not a summary. The one thing that only becomes visible when you hold the whole week at once.
+Your job: find the thread. The one thing that only becomes visible when you hold the whole week at once. Not a day-by-day recap. Not "this week we saw." The mechanism underneath — the force that kept showing up in different clothes.
 
-THIS WEEK'S DAILY OBSERVATIONS:
+THIS WEEK'S MATERIAL:
 ${weeklyContext}
 
-Write now. From understanding, not from notes. You are not summarizing what you read — you are reporting what you now know about how the world works this week, and where it is headed.
-
-The reader is a curious, independently-minded adult building a life with intention — creatively, professionally, intellectually. Write for someone who wants to understand the week, not just survive it.
+Voice rules:
+- Never do a day-by-day recap. Never reference "Monday's story" or "what happened Wednesday."
+- Never open with "This week", "This week we saw", "Across this week", or any variant.
+- Specific beats abstract. Name the real-world thing — the company, the person, the place, the technology.
+- You absorbed this week. Write from that understanding, not about the reading.
+- No colons or semicolons anywhere.
 
 ${writer.voiceReminder}
 
-No colons or semicolons anywhere. Return JSON only, no markdown:
+Return JSON only, no markdown:
 {
   "hook": "7-10 words maximum — count them. The week's irreversible truth. Start mid-tension, no setup.",
-  "signal": "2-3 sentences. The thread that ran through this week — the pattern only visible across all the days. Specific. Grounded in something named. Not a vague generalization but the actual mechanism this week revealed.",
-  "noise": "1-2 sentences. What got amplified this week but won't matter in a month. Name it specifically — one concrete example — and dismiss it.",
-  "lookingForward": "2-3 sentences. Given what this week revealed, where should a curious, independently-minded adult put their attention next week? Not predictions — where the pattern leads. What to watch, what to question, what to prepare for.",
+  "signal": "2-3 sentences. The thread that ran through this week — the pattern only visible across all the days. Name the mechanism, not the events. Ground it in something specific — a named company, person, or technology that crystallizes the pattern. This is what the week actually meant.",
+  "noise": "1-2 sentences. One specific thing that got amplified this week but won't matter in a month — an overblown story, a manufactured outrage, a distraction that served someone's agenda. Name it. Dismiss it. The reader deserves to put it down.",
+  "lookingForward": "2-3 sentences. Given what this week revealed about how the world works, where should a curious, independently-minded adult building a considered life put their attention next week? Not predictions — where the pattern leads. What to watch, what to question, what to prepare for in their own work, decisions, and thinking.",
   "oneMove": "Single imperative sentence. The one thing someone building a considered life does with this week's understanding. Doable this week. Beginner-friendly. Starts with a verb. Max 15 words.",
   "imageQuery": "4-6 atmospheric words for Unsplash. The mood or texture of the week's thread — a real scene or object, not an abstraction."
 }`,
