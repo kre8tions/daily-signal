@@ -31,9 +31,21 @@ export interface Synthesis {
   imageUrl?: string; imageQuery?: string;
 }
 
+export interface WeeklySignal {
+  hook: string;
+  signal: string;
+  noise: string;
+  lookingForward: string;
+  oneMove: string;
+  writerName?: string;
+  weekOf: string;
+  imageUrl?: string;
+}
+
 export interface PageData {
   stories: Story[]; synthesis: Synthesis; editionLabel: string;
   featureCreature?: FeatureCreature;
+  weeklySignal?: WeeklySignal;
 }
 
 // ── Slug helpers ──────────────────────────────────────────────────────────────
@@ -617,6 +629,139 @@ async function appendImageHistory(urls: string[]): Promise<void> {
   } catch { /* non-fatal */ }
 }
 
+// ── Weekly Signal & Noise ─────────────────────────────────────────────────────
+
+function isSundayEvening(editionKey: string): boolean {
+  const [date, slot] = editionKey.split("_");
+  if (slot !== "evening") return false;
+  return new Date(`${date}T00:00:00Z`).getUTCDay() === 0;
+}
+
+function getPastWeekDates(sundayDate: string): string[] {
+  const sunday = new Date(`${sundayDate}T00:00:00Z`);
+  const dates: string[] = [];
+  for (let i = 6; i >= 1; i--) {
+    const d = new Date(sunday.getTime() - i * 24 * 60 * 60 * 1000);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  return dates; // Mon → Sat
+}
+
+export function getWeeklyWriterIndex(weekDate: string): number {
+  const seed = weekDate.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 11), 0);
+  return seed % WRITERS.length;
+}
+
+async function loadWeeklySyntheses(pastDates: string[]) {
+  const SLOT_PRIORITY = ["evening", "afternoon", "morning", "early", "night"];
+  const results: { date: string; theme: string; hook: string; observation: string; takeaways: string[]; conclusion: string }[] = [];
+  for (const date of pastDates) {
+    for (const slot of SLOT_PRIORITY) {
+      try {
+        const b = await head(`synthesis/v1/${date}_${slot}.json`);
+        if (!b) continue;
+        const res = await fetch(b.url, { cache: "no-store" });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data.theme && data.hook) {
+          results.push({ date, theme: data.theme, hook: data.hook, observation: data.observation ?? "", takeaways: data.takeaways ?? [], conclusion: data.conclusion ?? "" });
+          break;
+        }
+      } catch { /* try next slot */ }
+    }
+  }
+  return results;
+}
+
+export async function getWeeklySignal(editionKey: string, blocked?: Set<string>): Promise<WeeklySignal | null> {
+  const [sundayDate] = editionKey.split("_");
+  const blobKey = `weekly-signal/v1/${sundayDate}.json`;
+
+  try {
+    const existing = await head(blobKey);
+    if (existing) {
+      const res = await fetch(existing.url, { cache: "no-store" });
+      if (res.ok) {
+        const cached = await res.json() as WeeklySignal;
+        if (cached.hook) return cached;
+      }
+    }
+  } catch { /* generate fresh */ }
+
+  const pastDates = getPastWeekDates(sundayDate);
+  const syntheses = await loadWeeklySyntheses(pastDates);
+  if (syntheses.length < 3) return null;
+
+  const writerIndex = getWeeklyWriterIndex(sundayDate);
+  const writer = WRITERS[writerIndex];
+
+  const weeklyContext = syntheses.map(s => {
+    const dayName = new Date(`${s.date}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
+    return `${dayName.toUpperCase()} — ${s.theme}\n"${s.hook}"\n${s.observation}\nInsights: ${s.takeaways.join(" | ")}`;
+  }).join("\n\n---\n\n");
+
+  const firstDate = new Date(`${pastDates[0]}T00:00:00Z`);
+  const lastDate = new Date(`${sundayDate}T00:00:00Z`);
+  const weekOf = `${firstDate.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })} – ${lastDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
+
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const msg = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 1200,
+    messages: [{
+      role: "user",
+      content: `${writer.style}
+
+You have been reading The Daily Signal all week. Below is what each day's synthesis revealed — the themes, the hooks, the patterns the editors noticed.
+
+Your job: find the thread. Not a recap. Not a summary. The one thing that only becomes visible when you hold the whole week at once.
+
+THIS WEEK'S DAILY OBSERVATIONS:
+${weeklyContext}
+
+Write now. From understanding, not from notes. You are not summarizing what you read — you are reporting what you now know about how the world works this week, and where it is headed.
+
+The reader is a curious, independently-minded adult building a life with intention — creatively, professionally, intellectually. Write for someone who wants to understand the week, not just survive it.
+
+${writer.voiceReminder}
+
+No colons or semicolons anywhere. Return JSON only, no markdown:
+{
+  "hook": "7-10 words maximum — count them. The week's irreversible truth. Start mid-tension, no setup.",
+  "signal": "2-3 sentences. The thread that ran through this week — the pattern only visible across all the days. Specific. Grounded in something named. Not a vague generalization but the actual mechanism this week revealed.",
+  "noise": "1-2 sentences. What got amplified this week but won't matter in a month. Name it specifically — one concrete example — and dismiss it.",
+  "lookingForward": "2-3 sentences. Given what this week revealed, where should a curious, independently-minded adult put their attention next week? Not predictions — where the pattern leads. What to watch, what to question, what to prepare for.",
+  "oneMove": "Single imperative sentence. The one thing someone building a considered life does with this week's understanding. Doable this week. Beginner-friendly. Starts with a verb. Max 15 words.",
+  "imageQuery": "4-6 atmospheric words for Unsplash. The mood or texture of the week's thread — a real scene or object, not an abstraction."
+}`,
+    }],
+  }).catch(() => null);
+
+  if (!msg) return null;
+  const rawText = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
+  const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (!parsed.hook) return null;
+    const imgQuery = (parsed.imageQuery ?? "").replace(/[^a-zA-Z\s]/g, "").trim();
+    const imageUrl = imgQuery ? await fetchUnsplash(imgQuery, undefined, 1, imgQuery, blocked).then(r => r?.url).catch(() => undefined) : undefined;
+    const result: WeeklySignal = {
+      hook: parsed.hook ?? "",
+      signal: parsed.signal ?? "",
+      noise: parsed.noise ?? "",
+      lookingForward: parsed.lookingForward ?? "",
+      oneMove: parsed.oneMove ?? "",
+      writerName: writer.name,
+      weekOf,
+      imageUrl,
+    };
+    put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
+    return result;
+  } catch {
+    return null;
+  }
+}
+
 // ── Assemble page data (cached per edition via Next.js data cache) ────────────
 const CARD_STYLES: Story["cardStyle"][] = ["full", "pullquote", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief"];
 
@@ -629,9 +774,10 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   const writerSlots = getWriterAssignments(editionKey);
   const blocked = await loadImageHistory();
 
-  // Synthesis and FC run in background while articles are batched
+  // Synthesis, FC, and (on Sunday evenings) Weekly Signal run in background while articles are batched
   const synthesisPromise = getSynthesis(raw, editionKey);
   const fcPromise = getFeatureCreature(editionKey, blocked).catch(() => null);
+  const weeklySignalPromise = isSundayEvening(editionKey) ? getWeeklySignal(editionKey, blocked).catch(() => null) : Promise.resolve(null);
 
   // Generate articles in batches of 3 to avoid Claude rate-limit bursts.
   // 11 simultaneous × 4 passes each = ~44 concurrent calls; batching keeps it to ~12 at a time.
@@ -670,7 +816,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     }
   }
 
-  const [synthesis, featureCreature] = await Promise.all([synthesisPromise, fcPromise]);
+  const [synthesis, featureCreature, weeklySignal] = await Promise.all([synthesisPromise, fcPromise, weeklySignalPromise]);
 
   const artErrors = arts.map((a, i) => (!a && articleResults[i]?.status === "rejected") ? String((articleResults[i] as PromiseRejectedResult).reason) : undefined);
   const rawWithQuery = activeRaw.map((r, i) => ({ ...r, imageQuery: arts[i]?.imageQuery }));
@@ -700,7 +846,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     ...failed.map(s => ({ ...s, cardStyle: "brief" as const })),
   ];
 
-  const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined };
+  const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined, weeklySignal: weeklySignal ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
   await put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
     access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true,
@@ -1280,10 +1426,11 @@ export async function clearEditionCache(editionKey: string): Promise<void> {
       cursor = next;
     } while (cursor);
   } catch { /* non-fatal — warm will overwrite anyway */ }
-  // Also clear synthesis and FC so warm always regenerates fresh
+  // Also clear synthesis, FC, and (on Sunday evenings) weekly signal so warm always regenerates fresh
   const pointBlobs = [
     `synthesis/v1/${editionKey}.json`,
     `feature-creature/v20/${editionKey}.json`,
+    ...(isSundayEvening(editionKey) ? [`weekly-signal/v1/${editionKey.split("_")[0]}.json`] : []),
   ];
   for (const key of pointBlobs) {
     try {

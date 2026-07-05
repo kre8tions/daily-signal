@@ -31,7 +31,7 @@ export default async function ArchiveEditionPage({ params }: { params: Promise<{
     );
   }
 
-  const { stories, synthesis, editionLabel, featureCreature } = data;
+  const { stories, synthesis, editionLabel, featureCreature, weeklySignal } = data;
   const [datePart] = key.split("_");
   const dateStr = new Date(datePart + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
@@ -47,6 +47,7 @@ export default async function ArchiveEditionPage({ params }: { params: Promise<{
       stories={stories}
       synthesis={synthesis}
       featureCreature={featureCreature}
+      weeklySignal={weeklySignal}
       editionKey={key}
       editionLabel={editionLabel}
       dateStr={dateStr}

@@ -1,7 +1,8 @@
-import { urlToSlug, actionSlug, getSynthWriterIndex, type Story, type Synthesis, type FeatureCreature } from "@/lib/stories";
+import { urlToSlug, actionSlug, getSynthWriterIndex, type Story, type Synthesis, type FeatureCreature, type WeeklySignal } from "@/lib/stories";
 import { P, QUOTE_FONT, SECTION_COLORS, ACTION_LABEL, ACTION_EMOJI, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL, TAGLINE, contrastColor, setEditionPaletteKey } from "@/lib/palette";
 import { EditionCountdown } from "@/app/EditionCountdown";
 import { EmailCapture } from "@/app/EmailCapture";
+import { ShareButton } from "@/app/ShareButton";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -348,6 +349,73 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
 
 // ── Synthesis section ─────────────────────────────────────────────────────────
 
+function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
+  const sections = [
+    { label: "The Signal", text: weekly.signal, accent: P.accent },
+    { label: "The Noise", text: weekly.noise, accent: P.accent2 ?? P.inkMid },
+    { label: "Looking Forward", text: weekly.lookingForward, accent: P.accent },
+  ];
+  return (
+    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
+        {/* Header */}
+        <div style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ width: 55, height: 55, borderRadius: "50%", background: P.cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><SpaceInvaderSVG color={P.accent} /></div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>Weekly Signal & Noise</div>
+              <div style={{ fontSize: 13, color: P.inkLight, fontFamily: P.fontBody }}>{weekly.weekOf}</div>
+            </div>
+          </div>
+          <ShareButton title={`Weekly Signal & Noise — ${weekly.weekOf}`} url={typeof window !== "undefined" ? window.location.href : ""} color={P.accent} fontBody={P.fontBody} />
+        </div>
+        <div style={{ paddingLeft: 28, paddingRight: 28, marginBottom: 0 }}>
+          <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
+            <defs><filter id="sketchy-line-w" x="-5%" y="-100%" width="110%" height="300%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="9" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+            <line x1="0" y1="6" x2="100%" y2="6" stroke={P.accent} strokeWidth="2.5" filter="url(#sketchy-line-w)" />
+          </svg>
+        </div>
+        {/* Hook */}
+        <div style={{ paddingTop: 28, paddingBottom: 20, paddingLeft: 28, paddingRight: weekly.imageUrl ? 320 : 28, position: "relative", borderBottom: `1px solid ${P.tint}44` }}>
+          <p style={{ fontSize: 26, lineHeight: 1.3, fontWeight: 700, color: P.ink, marginTop: 0, marginBottom: 0, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 1 : -0.3 }}>{weekly.hook}</p>
+          {weekly.imageUrl && (
+            <div className="ds-synthesis-img" style={{ position: "absolute", top: 20, right: 80 }}>
+              <div style={{ position: "relative", width: 200, height: 200 }}>
+                <div style={{ width: 200, height: 200, borderRadius: "50%", overflow: "hidden" }}>
+                  <img src={weekly.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
+                </div>
+                <svg style={{ position: "absolute", top: -5, left: -5, width: 210, height: 210, overflow: "visible", pointerEvents: "none" }} viewBox="0 0 210 210">
+                  <defs><filter id="sketchy-circle-w" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="8" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+                  <circle cx="105" cy="105" r="101" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#sketchy-circle-w)" />
+                </svg>
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Signal / Noise / Looking Forward */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0, borderBottom: `1px solid ${P.tint}44` }}>
+          {sections.map((s, i) => (
+            <div key={i} style={{ paddingTop: 20, paddingBottom: 20, paddingLeft: 24, paddingRight: 24, borderRight: i < 2 ? `1px solid ${P.tint}44` : undefined }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: s.accent, marginBottom: 10, fontFamily: P.fontBody }}>{s.label}</div>
+              <p style={{ fontSize: 16, lineHeight: 1.7, color: P.inkMid, margin: 0, fontFamily: P.fontBody }}>{s.text}</p>
+            </div>
+          ))}
+        </div>
+        {/* One Move */}
+        <div style={{ paddingTop: 20, paddingBottom: 24, paddingLeft: 28, paddingRight: 28 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 10, fontFamily: P.fontBody }}>One Move This Week</div>
+          <div style={{ fontSize: 17, lineHeight: 1.6, color: P.ink, fontWeight: 600, fontFamily: P.fontBody }}>{weekly.oneMove}</div>
+          {weekly.writerName && <div style={{ marginTop: 12, fontSize: 12, color: P.inkLight, fontFamily: P.fontBody }}>Written by {weekly.writerName}</div>}
+        </div>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="sketchy-border-w" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="11" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-w)" />
+      </svg>
+    </div>
+  );
+}
+
 function SynthesisSection({ synthesis, stories, writerIndex }: { synthesis: Synthesis; stories: Story[]; writerIndex: number }) {
   return (
     <>
@@ -479,6 +547,7 @@ export async function EditionView({
   stories: allStories,
   synthesis,
   featureCreature,
+  weeklySignal,
   editionKey,
   editionLabel,
   dateStr,
@@ -489,6 +558,7 @@ export async function EditionView({
   stories: Story[];
   synthesis: Synthesis;
   featureCreature?: FeatureCreature;
+  weeklySignal?: WeeklySignal;
   editionKey: string;
   editionLabel: string;
   dateStr: string;
@@ -598,7 +668,7 @@ export async function EditionView({
       </div>
 
       {/* Synthesis — flipped editions: appears between S1 hero and FC+S2 */}
-      {synthFlip && synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />}
+      {synthFlip && (weeklySignal?.hook ? <WeeklySignalSection weekly={weeklySignal} /> : synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />)}
 
       {/* Bento row 2: FC + S2 */}
       <div className="ds-bento-fc" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
@@ -682,7 +752,7 @@ export async function EditionView({
       </div>
 
       {/* Synthesis — normal editions: appears after FC+S2 */}
-      {!synthFlip && synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />}
+      {!synthFlip && (weeklySignal?.hook ? <WeeklySignalSection weekly={weeklySignal} /> : synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} />)}
 
       {/* Row 2: s3–s11 */}
       {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).length > 0 && (() => {
