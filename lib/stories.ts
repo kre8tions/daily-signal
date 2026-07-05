@@ -546,7 +546,7 @@ ${synthWriter.voiceReminder}
 Return JSON only, no markdown:
 {
   "theme": "2-4 words. An evocative noun phrase naming the underlying force or tension — not a topic, a dynamic. E.g. 'The Permission Economy' / 'Controlled Disintegration' / 'Institutional Overcorrection'. Not 'Technology and Society'.",
-  "hook": "1 sentence only. The irreversible claim — the thing that cannot be unsaid once you read it. This is the first thing the reader sees. No setup, no throat-clearing. Start with the tension, not the context.",
+  "hook": "1 sentence only. 7-10 words maximum — count them. The irreversible claim — the thing that cannot be unsaid once you read it. This is the first thing the reader sees. No setup, no throat-clearing. Start with the tension, not the context.",
   "observation": "1-2 sentences that deepen the hook. Don't summarize stories. Speak from what you now understand — as if you absorbed the news and are telling someone what it means, not what it said. End somewhere that makes the reader want the takeaways.",
   "takeaways": [
     "The mechanism — why the world works this way right now. Not a connection between articles. A truth about human behavior, systems, or power that explains the pattern. One sentence.",
