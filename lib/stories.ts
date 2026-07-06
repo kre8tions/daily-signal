@@ -648,8 +648,7 @@ function getPastWeekDates(sundayDate: string): string[] {
 }
 
 export function getWeeklyWriterIndex(weekDate: string): number {
-  const seed = weekDate.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 11), 0);
-  return seed % WRITERS.length;
+  return getAccessiblePool(`${weekDate}_evening`)[4];
 }
 
 async function loadWeeklySyntheses(pastDates: string[]) {
@@ -1129,6 +1128,22 @@ function sampleReferencePool(seed: number): string {
 
 const SLOT_ORDER_MAP: Record<string, number> = { early: 0, morning: 1, afternoon: 2, evening: 3, night: 4 };
 
+// Accessibility-first writers: original 9 + new 9 = 18
+// These writers share a core trait: reader feels smart, not impressed.
+// They exclusively write S1, S2, FC, Synthesis, and Weekly Signal slots.
+const ACCESSIBLE_INDICES = new Set([1, 4, 8, 17, 19, 44, 45, 48, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74]);
+const ACCESSIBLE_POOL_BASE = [1, 4, 8, 17, 19, 44, 45, 48, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74];
+
+function getAccessiblePool(editionKey: string): number[] {
+  const seed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  const pool = [...ACCESSIBLE_POOL_BASE];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(seed + i * 13) * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool;
+}
+
 function getDayPool(date: string): number[] {
   const daySeed = date.split("").reduce((acc, c, i) => acc + c.charCodeAt(0) * (i + 1), 0);
   const pool = Array.from({ length: WRITERS.length }, (_, i) => i);
@@ -1142,22 +1157,36 @@ function getDayPool(date: string): number[] {
 export function getWriterAssignments(editionKey: string): number[] {
   const [date, slot = "early"] = editionKey.split("_");
   const slotIndex = SLOT_ORDER_MAP[slot] ?? 0;
-  // Each slot gets its own 11-writer slice (pool[0–54]) — no repeats within a day
-  return getDayPool(date).slice(slotIndex * 11, slotIndex * 11 + 11);
+  const accessiblePool = getAccessiblePool(editionKey);
+
+  // S1 = accessiblePool[0], S2 = accessiblePool[1]
+  // Pre-count Synthesis (pool[2]) and FC (pool[3]) as premium uses
+  const counts = new Map<number, number>();
+  for (let i = 0; i < 4; i++) counts.set(accessiblePool[i], (counts.get(accessiblePool[i]) ?? 0) + 1);
+
+  // S3–S11: 9 writers from full day pool, slot-offset for variety
+  // Accessible writers capped at max 2 total appearances per edition
+  const fullPool = getDayPool(date);
+  const startIdx = slotIndex * 11;
+  const s3Plus: number[] = [];
+  for (let i = 0; i < fullPool.length && s3Plus.length < 9; i++) {
+    const w = fullPool[(startIdx + i) % fullPool.length];
+    if (ACCESSIBLE_INDICES.has(w)) {
+      if ((counts.get(w) ?? 0) >= 2) continue;
+      counts.set(w, (counts.get(w) ?? 0) + 1);
+    }
+    s3Plus.push(w);
+  }
+
+  return [accessiblePool[0], accessiblePool[1], ...s3Plus];
 }
 
 export function getSynthWriterIndex(editionKey: string): number {
-  const [date, slot = "early"] = editionKey.split("_");
-  const slotIndex = SLOT_ORDER_MAP[slot] ?? 0;
-  // pool[55–59] reserved for synthesis — one unique writer per slot per day
-  return getDayPool(date)[55 + slotIndex];
+  return getAccessiblePool(editionKey)[2];
 }
 
 export function getFCWriterIndex(editionKey: string): number {
-  const [date, slot = "early"] = editionKey.split("_");
-  const slotIndex = SLOT_ORDER_MAP[slot] ?? 0;
-  // pool[60–64] reserved for FC — one unique writer per slot per day
-  return getDayPool(date)[60 + slotIndex];
+  return getAccessiblePool(editionKey)[3];
 }
 
 // ── Full editorial rewrite for article detail ─────────────────────────────────
