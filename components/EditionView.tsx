@@ -316,6 +316,187 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
     };
   });
 
+  // Vehicle + paired destination marker — rotated per edition via seed
+  const VEHICLES: Array<{
+    icon: (c: string) => React.ReactNode;
+    marker: (c: string) => React.ReactNode;
+  }> = [
+    { // Airplane → cloud
+      icon: (c) => <svg width="42" height="42" viewBox="0 0 24 24" fill={c} opacity={0.9} xmlns="http://www.w3.org/2000/svg"><path d="M21,16l-9-5V3.5C12,2.67,11.33,2,10.5,2S9,2.67,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z"/></svg>,
+      marker: (c) => <svg width="24" height="20" viewBox="0 0 32 26" xmlns="http://www.w3.org/2000/svg"><path d="M7,22C3,22 0,19 0,15C0,12 2,10 5,10C5,5 9,2 14,2C19,2 23,5 23,9L24,9C28,9 32,12 32,16C32,20 29,22 25,22Z" fill={c} opacity={0.88}/></svg>,
+    },
+    { // Bee → hive
+      icon: (c) => (
+        <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="18" cy="22" rx="7" ry="10"/>
+          <circle cx="18" cy="9" r="6"/>
+          <line x1="11" y1="18" x2="25" y2="18"/>
+          <line x1="11" y1="23" x2="25" y2="23"/>
+          <path d="M11,17 C1,10 0,20 11,21"/>
+          <path d="M25,17 C35,10 36,20 25,21"/>
+          <path d="M14,3 C12,0 10,-1 8,-2"/><circle cx="8" cy="-2" r="1.5" fill={c}/>
+          <path d="M22,3 C24,0 26,-1 28,-2"/><circle cx="28" cy="-2" r="1.5" fill={c}/>
+          <circle cx="15" cy="9" r="1.5" fill={c}/><circle cx="21" cy="9" r="1.5" fill={c}/>
+        </svg>
+      ),
+      marker: (c) => (
+        <svg width="22" height="22" viewBox="0 0 28 28" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4,20 C3,4 25,4 24,20"/>
+          <path d="M5,14 Q14,10 23,14"/>
+          <path d="M5,8 Q14,4 23,8"/>
+          <line x1="2" y1="20" x2="26" y2="20"/>
+          <path d="M10,20 Q14,17 18,20"/>
+        </svg>
+      ),
+    },
+    { // Ship → anchor
+      icon: (c) => (
+        <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+          <path d="M4,20 C4,28 32,28 32,20 L28,10 L8,10 Z"/>
+          <rect x="8" y="2" width="14" height="10" rx="2"/>
+          <rect x="10" y="4" width="4" height="4" rx="1"/><rect x="16" y="4" width="4" height="4" rx="1"/>
+          <line x1="24" y1="2" x2="24" y2="-4"/>
+          <path d="M24,-4 L31,-1 L24,2"/>
+          <rect x="20" y="-2" width="6" height="8" rx="1"/>
+        </svg>
+      ),
+      marker: (c) => (
+        <svg width="22" height="22" viewBox="0 0 28 28" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="14" cy="5" r="3.5"/>
+          <line x1="14" y1="8" x2="14" y2="22"/>
+          <line x1="6" y1="12" x2="22" y2="12"/>
+          <path d="M14,22 C6,22 2,17 2,13"/>
+          <path d="M14,22 C22,22 26,17 26,13"/>
+          <path d="M2,13 C0,11 4,9 5,12"/>
+          <path d="M26,13 C28,11 24,9 23,12"/>
+        </svg>
+      ),
+    },
+    { // Bicycle → road sign
+      icon: (c) => (
+        <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+          <circle cx="8" cy="24" r="9"/>
+          <circle cx="28" cy="24" r="9"/>
+          <line x1="8"  y1="24" x2="18" y2="8"/>
+          <line x1="18" y1="8"  x2="28" y2="24"/>
+          <line x1="18" y1="8"  x2="16" y2="24"/>
+          <line x1="13" y1="24" x2="19" y2="24"/>
+          <line x1="13" y1="24" x2="12" y2="16"/>
+          <line x1="9"  y1="16" x2="15" y2="16"/>
+          <line x1="18" y1="8"  x2="18" y2="2"/>
+          <line x1="13" y1="2"  x2="23" y2="2"/>
+          <line x1="23" y1="2"  x2="25" y2="-1"/><line x1="13" y1="2" x2="11" y2="-1"/>
+        </svg>
+      ),
+      marker: (c) => (
+        <svg width="22" height="22" viewBox="0 0 28 28" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
+          <line x1="14" y1="14" x2="14" y2="26"/>
+          <path d="M4,4 L18,4 L24,10 L18,16 L4,16 Z"/>
+          <line x1="8" y1="8"  x2="16" y2="8"/>
+          <line x1="8" y1="11" x2="14" y2="11"/>
+          <line x1="8" y1="14" x2="15" y2="14" strokeOpacity="0"/>
+        </svg>
+      ),
+    },
+    { // Submarine → periscope
+      icon: (c) => (
+        <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+          <path d="M2,18 C2,11 34,11 34,18 C34,25 2,25 2,18 Z"/>
+          <rect x="13" y="6" width="10" height="10" rx="2"/>
+          <path d="M20,6 L20,2 L26,2"/><circle cx="26" cy="2" r="2.5"/>
+          <circle cx="10" cy="19" r="3"/><circle cx="18" cy="19" r="3"/><circle cx="26" cy="19" r="3"/>
+          <path d="M2,18 C-2,14 -3,18 -1,19"/>
+          <path d="M2,18 C-2,22 -3,18 -1,17"/>
+          <path d="M28,24 Q32,26 30,28"/>
+          <line x1="26" y1="25" x2="28" y2="28"/>
+        </svg>
+      ),
+      marker: (c) => (
+        <svg width="22" height="22" viewBox="0 0 28 28" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
+          <line x1="10" y1="24" x2="10" y2="10"/>
+          <path d="M10,10 C10,4 18,4 18,10"/>
+          <line x1="18" y1="10" x2="18" y2="2"/>
+          <rect x="14" y="-1" width="8" height="5" rx="1"/>
+          <path d="M4,24 Q14,21 24,24"/>
+          <path d="M2,20 Q14,17 26,20" strokeOpacity="0.5"/>
+        </svg>
+      ),
+    },
+    { // Hot air balloon → mountain
+      icon: (c) => (
+        <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+          <path d="M18,-2 C6,-2 4,14 4,18 C4,26 10,32 18,32 C26,32 32,26 32,18 C32,14 30,-2 18,-2 Z"/>
+          <line x1="18" y1="-2" x2="18" y2="32"/>
+          <path d="M4,18 C10,14 26,14 32,18"/>
+          <line x1="10" y1="32" x2="14" y2="40"/>
+          <line x1="26" y1="32" x2="22" y2="40"/>
+          <rect x="12" y="40" width="12" height="8" rx="2"/>
+        </svg>
+      ),
+      marker: (c) => (
+        <svg width="22" height="22" viewBox="0 0 28 28" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2,24 L14,4 L26,24 Z"/>
+          <path d="M8,24 L18,10 L26,24"/>
+          <path d="M10,10 C12,4 16,4 18,10 L14,8 Z"/>
+          <line x1="0" y1="24" x2="28" y2="24"/>
+        </svg>
+      ),
+    },
+    { // Train → station clock
+      icon: (c) => (
+        <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="6" width="32" height="22" rx="4"/>
+          <path d="M2,6 L-4,12 L-4,22 L2,22"/>
+          <rect x="6"  y="10" width="6" height="7" rx="1"/>
+          <rect x="15" y="10" width="6" height="7" rx="1"/>
+          <rect x="24" y="10" width="6" height="7" rx="1"/>
+          <line x1="-4" y1="16" x2="34" y2="16"/>
+          <circle cx="10" cy="32" r="5"/><circle cx="26" cy="32" r="5"/>
+          <rect x="-5" y="6" width="4" height="4" rx="1" fill={c} stroke="none"/>
+        </svg>
+      ),
+      marker: (c) => (
+        <svg width="22" height="22" viewBox="0 0 28 28" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2,10 L14,2 L26,10 L26,24 L2,24 Z"/>
+          <circle cx="14" cy="15" r="6"/>
+          <line x1="14" y1="15" x2="14" y2="10"/>
+          <line x1="14" y1="15" x2="18" y2="15"/>
+          <path d="M6,24 L6,28"/><path d="M22,24 L22,28"/>
+          <line x1="2" y1="28" x2="26" y2="28"/>
+        </svg>
+      ),
+    },
+    { // Camel → palm tree
+      icon: (c) => (
+        <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+          <path d="M2,18 C2,10 8,6 14,6 C14,-1 20,-5 24,1 C28,-5 34,1 32,6 C38,7 40,14 36,18 C36,24 28,26 18,26 C8,26 2,24 2,18"/>
+          <path d="M14,6 C16,0 20,0 24,6"/>
+          <path d="M4,6 C2,0 6,-6 10,-4"/>
+          <path d="M10,-4 C10,-8 14,-10 16,-6 C18,-10 22,-8 20,-4 C24,-6 28,0 26,4"/>
+          <line x1="8"  y1="26" x2="6"  y2="36"/>
+          <line x1="14" y1="26" x2="14" y2="36"/>
+          <line x1="22" y1="26" x2="22" y2="36"/>
+          <line x1="28" y1="26" x2="30" y2="36"/>
+          <path d="M36,18 C40,20 38,28 34,28"/>
+        </svg>
+      ),
+      marker: (c) => (
+        <svg width="22" height="22" viewBox="0 0 28 28" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14,26 C15,18 13,12 15,4"/>
+          <path d="M15,4 C9,0 1,4 2,10"/>
+          <path d="M15,4 C15,-4 7,-8 4,-2"/>
+          <path d="M15,4 C21,0 28,6 24,12"/>
+          <path d="M15,4 C22,-2 28,4 26,10"/>
+          <circle cx="13" cy="6" r="2" fill={c} stroke="none"/>
+          <circle cx="17" cy="5" r="2" fill={c} stroke="none"/>
+          <path d="M8,26 Q14,24 20,26"/>
+        </svg>
+      ),
+    },
+  ];
+
+  const vehicle = VEHICLES[Math.floor(sr(99) * VEHICLES.length)];
+
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}>
       <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", inset: 0 }}>
@@ -329,18 +510,13 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
         ))}
       </svg>
       {planes.map((pl, i) => (
-        <div key={`plane-${i}`} style={{ position: "absolute", left: `${(pl.planeX / W * 100).toFixed(2)}%`, top: `${(pl.planeY / H * 100).toFixed(2)}%`, transform: `translate(-50%,-50%) rotate(${pl.planeAngle}deg)`, zIndex: 3, pointerEvents: "none" }}>
-          <svg width="42" height="42" viewBox="0 0 24 24" fill={color} opacity={0.9} xmlns="http://www.w3.org/2000/svg">
-            <path d="M21,16l-9-5V3.5C12,2.67,11.33,2,10.5,2S9,2.67,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z" />
-          </svg>
+        <div key={`vehicle-${i}`} style={{ position: "absolute", left: `${(pl.planeX / W * 100).toFixed(2)}%`, top: `${(pl.planeY / H * 100).toFixed(2)}%`, transform: `translate(-50%,-50%) rotate(${pl.planeAngle}deg)`, zIndex: 3, pointerEvents: "none" }}>
+          {vehicle.icon(color)}
         </div>
       ))}
       {planes.map((pl, i) => (
-        <div key={`x-${i}`} style={{ position: "absolute", left: `${(pl.endX / W * 100).toFixed(2)}%`, top: `${(pl.endY / H * 100).toFixed(2)}%`, transform: "translate(-50%,-50%)", zIndex: 3, pointerEvents: "none" }}>
-          <svg width="20" height="20" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
-            <line x1="3" y1="3" x2="25" y2="25" stroke={color} strokeWidth="5.5" strokeLinecap="round" opacity="0.92" />
-            <line x1="25" y1="3" x2="3" y2="25" stroke={color} strokeWidth="5.5" strokeLinecap="round" opacity="0.92" />
-          </svg>
+        <div key={`marker-${i}`} style={{ position: "absolute", left: `${(pl.endX / W * 100).toFixed(2)}%`, top: `${(pl.endY / H * 100).toFixed(2)}%`, transform: "translate(-50%,-50%)", zIndex: 3, pointerEvents: "none" }}>
+          {vehicle.marker(color)}
         </div>
       ))}
     </div>
