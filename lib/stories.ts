@@ -806,7 +806,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
         const i = b + bi;
         const storyShell: Story = { ...item, cardStyle: CARD_STYLES[i] ?? "brief" };
         const relatedShells = raw.filter((_, j) => j !== i).slice(0, 5).map(r => ({ ...r, cardStyle: "brief" as const }));
-        return getFullArticle(storyShell, relatedShells, editionKey, writerSlots[i]);
+        return getFullArticle(storyShell, relatedShells, editionKey, writerSlots[i], false, i);
       })
     );
     articleResults.push(...batchResults);
@@ -826,7 +826,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
       const storyShell: Story = { ...benchItem, cardStyle: CARD_STYLES[slot] ?? "brief" };
       const relatedShells = activeRaw.filter((_, j) => j !== slot).slice(0, 5).map(r2 => ({ ...r2, cardStyle: "brief" as const }));
       try {
-        const result = await getFullArticle(storyShell, relatedShells, editionKey, writerSlots[slot]);
+        const result = await getFullArticle(storyShell, relatedShells, editionKey, writerSlots[slot], false, slot);
         arts[slot] = result;
         activeRaw[slot] = benchItem;
       } catch { /* leave slot as failed */ }
@@ -1278,6 +1278,8 @@ interface SourceAnalysis {
   source_position: string; // what the source claims/argues, or "neutral"
   tension: string;         // what's unresolved or contested
   missed: string;          // angle the source didn't pursue
+  fitness: number;         // 1–5: source quality for this pipeline
+  fitness_reason: string;  // one sentence explaining the score
   subject?: { name: string; type: "film" | "tv_show" | "book" | "album" | "game" | "person" | "other"; year?: string };
 }
 
@@ -1288,7 +1290,7 @@ async function analyzeSource(client: Anthropic, story: Story): Promise<SourceAna
   try {
     const msg = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 220,
+      max_tokens: 300,
       messages: [{
         role: "user",
         content: `Read this article and return a brief editorial analysis. Be specific — one tight sentence each.
@@ -1298,8 +1300,15 @@ SOURCE: ${story.source}
 SECTION: ${story.section}
 ${content}
 
+FITNESS SCORING (1–5) — how strong is this source for an insight-driven editorial pipeline:
+5: Genuine finding, study result, or observed phenomenon. Tension is real. The argument lives in the source. Reader relevance is clear.
+4: Real counter-intuitive result or strong position. Some angle-finding needed but the source provides the core.
+3: Real subject with identifiable tension. Article must find its own angle but source is a legitimate starting point.
+2: PR, product launch, or announcement where the argument must be entirely manufactured. No finding — just a hook the writer must build from scratch. (e.g. Sony releasing $119 monitors with a democratization pitch = 2)
+1: Wire copy, obituary, deal, press release. No editorial substance. Nothing to engage with.
+
 Return JSON only:
-{"genre":"news_report|science_discovery|cultural_criticism|profile|policy_politics|entertainment|opinion|explainer","source_position":"what claim or stance the source takes, or neutral if wire copy","tension":"what is unresolved contested or glossed over","missed":"the angle or implication the source did not pursue","subject":{"name":"exact title or person name if the article is primarily about a specific named film/TV show/book/album/video game/person — omit this field entirely if the article is not about a specific named work or person","type":"film|tv_show|book|album|game|person|other","year":"release or birth year if known, otherwise omit"}}`,
+{"genre":"news_report|science_discovery|cultural_criticism|profile|policy_politics|entertainment|opinion|explainer","source_position":"what claim or stance the source takes, or neutral if wire copy","tension":"what is unresolved contested or glossed over","missed":"the angle or implication the source did not pursue","fitness":1-5,"fitness_reason":"one sentence — why this score, what makes it strong or weak as source material","subject":{"name":"exact title or person name if the article is primarily about a specific named film/TV show/book/album/video game/person — omit this field entirely if the article is not about a specific named work or person","type":"film|tv_show|book|album|game|person|other","year":"release or birth year if known, otherwise omit"}}`,
       }],
     });
     const raw = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
@@ -1496,7 +1505,7 @@ export async function clearEditionCache(editionKey: string): Promise<void> {
   }
 }
 
-export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number, readOnly = false): Promise<ArticleCommentary> {
+export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number, readOnly = false, slotIndex = 99): Promise<ArticleCommentary> {
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
   const hasCta = seededRandom(refSeed + 13) < 0.2;
@@ -1545,6 +1554,12 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
 
   // ── Pass 0: source analysis — genre, position, tension, missed angle ──
   const analysis = await analyzeSource(client, story);
+
+  // ── Fitness gate: protect S1/S2 from weak sources ────────────────────────────
+  if (analysis && typeof analysis.fitness === "number" && analysis.fitness <= 2 && slotIndex <= 1) {
+    console.warn(`[fitness-gate] slot ${slotIndex} rejected: score=${analysis.fitness} — ${analysis.fitness_reason} (${story.title})`);
+    throw new Error(`Fitness gate: score ${analysis.fitness} — ${analysis.fitness_reason}`);
+  }
 
   // ── Pass 0.5: mode selection — writer chooses engagement mode based on subject knowledge ──
   const writer = writerIndex !== undefined ? WRITERS[writerIndex % WRITERS.length] : null;
