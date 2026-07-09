@@ -1390,35 +1390,35 @@ function rhythmForMode(mode: string): string {
 2. Identify exactly where the source stopped. Name the edge of their argument.
 3. Follow the thread one step further. What does the logic require if you keep going?
 4. Ground the extension in something specific — a named case or mechanism, not speculation.
-5. End where the thread leads. Let the reader see the destination the source refused to reach.`,
+5. End where the thread leads. Let the reader see the destination the source refused to reach — and name one place they are likely to encounter it themselves.`,
 
     "The Complication": `Structure to aim for:
 1. State the source's claim as legitimate. It's not wrong — it's incomplete.
 2. Introduce the complication. The thing that is also true, that changes the picture.
 3. Hold both simultaneously — the original point AND the complication. Don't resolve them.
 4. Name the tension specifically. What makes these two true things hard to reconcile?
-5. End in the productive discomfort. No resolution — a clearer picture of the actual complexity.`,
+5. End in the productive discomfort. No resolution — a clearer picture of the actual complexity, and where the reader is likely to feel that complexity in their own situation.`,
 
     "The Rebuttal": `Structure to aim for:
 1. State what is being claimed — fairly, without strawmanning. One sentence.
 2. Name the specific flaw. Not the conclusion — the root. Where exactly does the reasoning break?
 3. Show what's actually true instead. Use something specific: a named case, a number, a mechanism.
 4. Acknowledge what the original claim gets right, if anything. Sharpens the rebuttal.
-5. End with the corrected picture — what the reader should hold instead.`,
+5. End with the corrected picture — what the reader should hold instead, and where it changes something they already believed about their own situation.`,
 
     "The Zoom Out": `Structure to aim for:
 1. Name the specific story — anchor the reader in the particular event or detail.
 2. Name the larger pattern it belongs to. Not a vague category — a specific recurring dynamic.
 3. Show at least one other instance of the same pattern. Named and specific.
 4. Name the mechanism: why does this pattern repeat? The structural reason, not surface similarity.
-5. End with what the pattern tells us about how things work — beyond this specific story.`,
+5. End with what the pattern tells us about how things work — and name one place the reader is likely to encounter this pattern themselves, outside this story.`,
 
     "The Zoom In": `Structure to aim for:
 1. State the abstract claim or trend the source describes.
 2. Choose one specific case where it becomes real — a person, place, moment, or number.
 3. Inhabit that case. What actually happens there? What does it look like on the ground?
 4. Show what the specific reveals that the abstract hid. The zoom-in should change something.
-5. End with what follows — for the specific case, and by implication for the larger claim.`,
+5. End with what follows — for the specific case, for the larger claim, and for the reader who recognizes this dynamic in their own situation.`,
 
     "The Unstated Assumption": `Structure to aim for:
 1. Establish the subject and what the argument takes for granted.
@@ -1439,21 +1439,21 @@ function rhythmForMode(mode: string): string {
 2. Name the historical parallel. Not "this has happened before" — the exact case, date, figure.
 3. Show the structural similarity — the underlying mechanism that repeats, not surface resemblance.
 4. Name what happened in the historical case. The outcome the echo suggests.
-5. End with what's different this time — the variable that might change the ending, or confirm it.`,
+5. End with what's different this time — the variable that might change the ending, or confirm it. Give the reader something specific to watch for in their own world.`,
 
     "The Paradox": `Structure to aim for:
 1. State the source's conclusion — the thing they arrived at.
 2. Show how that conclusion undermines its own premise. Where the argument turns on itself.
 3. Make the contradiction visible and specific. Name exactly where the logic breaks.
 4. Hold both sides simultaneously — do not resolve the tension. The contradiction is load-bearing.
-5. End with what the paradox reveals. The thing you can only see by holding both sides at once.`,
+5. End with what the paradox reveals. The thing you can only see by holding both sides at once — and where the reader might be holding the same tension without having named it.`,
 
     "The Missing Voice": `Structure to aim for:
 1. Name what the source discusses — and who it discusses without talking to them.
 2. Name the missing group specifically. Who should be in this piece but isn't?
 3. Surface what they would actually say — their documented, findable position, not projection. Name a specific person, project, or documented incident (e.g. a named initiative, a published account, a known case). Do not stay generic.
 4. Show why the gap matters. What changes when you hear the absent voice?
-5. End with a provocation — not meta-commentary about what the piece should have done, but the sharpest implication of centering the missing voice.`,
+5. End with a provocation — the sharpest implication of centering the missing voice, and what the reader should now notice differently in their own world.`,
 
     "The So What": `Structure to aim for:
 1. State what happened — the event, finding, or announcement. One sentence.
@@ -1580,7 +1580,7 @@ Draw on everything you know about this subject — not just what the source prov
 
 Never reference the source, the headline, the article, or your own process. You are writing about the subject. That is all the reader sees.
 
-Never write an article whose conclusion is "this is complicated" or "there are no simple answers" or "science doesn't know yet." That is not a piece — it is an absence of one. Have a position. Give the reader a lens — something that changes how they see this subject, or something adjacent to it, for the rest of the week.
+Never write an article whose conclusion is "this is complicated" or "there are no simple answers" or "science doesn't know yet." That is not a piece — it is an absence of one. Have a position. Give the reader a lens — use this subject as the vehicle, but land on something the reader can see in their own life: their creative practice, their career, their way of thinking. The subject is the entry point, not the destination.
 
 Write for someone who is intelligent, not ideological. No left or right lean. No woke framing. No moralising. Equally sceptical of institutions, activists, and reactionaries.
 
