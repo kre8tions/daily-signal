@@ -4,6 +4,25 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
+## ownedTitle-specificity-fix (2026-07-08) — CURRENT STABLE
+
+**What changed:**
+- `ownedTitle` instruction in Pass 1.5 rewritten to require a concrete detail from the article (number, name, place, year, mechanism, result)
+- Added explicit FORBIDDEN list of abstract category nouns: 'tools', 'context', 'access', 'systems', 'power', 'change'
+- Replaced opening framing ("Strong verb, concrete nouns") with actionable rule: "Name the specific finding — not the category it belongs to"
+- Added third GOOD example: 'Bedroom Producers Got the Headphones, Not the Ears'
+
+**Why:**
+- Diagnosed via live article: "Professional Tools Need Professional Context to Work" (Jem, July 9) passed every explicit check — 7 words, no forbidden phrases, no colon — yet named the category of finding rather than the finding itself
+- Root cause: the instruction's forbidden list blocked wrong moves but didn't require right ones. "Put the actual tension or finding in the words" is directional, not enforceable. Haiku met the letter and missed the intent.
+- Abstract category nouns are the specific failure mode — they allow the thesis to be restated at one level of abstraction too high
+
+**What to observe:**
+- Do titles now reach into the article's own material (numbers, names, mechanisms)?
+- Does the abstract-but-compliant pattern reappear, or does the explicit noun ban close it?
+
+---
+
 ## weekly-signal-and-noise (2026-07-05) — CURRENT STABLE
 
 **What changed:**
