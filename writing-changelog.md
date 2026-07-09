@@ -4,6 +4,35 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
+## source-fitness-gate (2026-07-08) — CURRENT STABLE
+
+**What changed:**
+- `SourceAnalysis` interface gains `fitness` (1–5) and `fitness_reason` fields
+- Pass 0 (`analyzeSource`) now scores each source for editorial fitness, with explicit criteria and a calibration example (Sony $119 monitors = 2)
+- `getFullArticle` gains a `slotIndex` parameter (defaults to 99 for non-slot calls)
+- Fitness gate: if `fitness <= 2` and `slotIndex <= 1` (S1 or S2), throws early — triggering existing bench backfill
+- Fitness score logged at `console.warn` for every rejection so it's observable in Vercel logs
+- Pass 0 `max_tokens` raised 220 → 300 to accommodate the new fields
+
+**Scoring criteria:**
+- 5: Genuine finding/study/observed phenomenon; tension real; argument lives in source
+- 4: Counter-intuitive result or strong position; some angle-finding needed
+- 3: Real subject with tension; article must find its own angle but source is legitimate
+- 2: PR, product launch, announcement — argument must be entirely manufactured (Sony IEM = 2)
+- 1: Wire copy, obituary, deal, press release — no editorial substance
+
+**Why:**
+- The pipeline had no way to evaluate source quality before writing. A Sony product announcement and a Quanta discovery got identical treatment.
+- Sony monitors article traced back to a fitness-2 source: Sony's democratization pitch was the manufacturer's framing, not a finding. The article had to manufacture the entire Shure parallel from scratch.
+- S1/S2 are prime real estate. A bench story with a real finding is better than a prime story built on PR.
+
+**What to observe:**
+- Are bench stories being promoted to S1/S2? Check Vercel logs for `[fitness-gate]` entries.
+- Is Haiku scoring conservatively (rejecting too much) or generously (letting weak sources through)?
+- Does S1/S2 content feel noticeably stronger after a week of filtered editions?
+
+---
+
 ## reader-life-reorientation (2026-07-08) — CURRENT STABLE
 
 **What changed:**
