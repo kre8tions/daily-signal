@@ -4,6 +4,26 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
+## reader-life-reorientation (2026-07-08) — CURRENT STABLE
+
+**What changed:**
+- Lens instruction rewritten: "use this subject as the vehicle, but land on something the reader can see in their own life — their creative practice, their career, their way of thinking. The subject is the entry point, not the destination."
+- 8 of 12 mode rhythms had subject-level step 5 endings (The Extension, Complication, Rebuttal, Zoom Out, Zoom In, Historical Echo, Paradox, Missing Voice). Each now closes with a reader-life requirement fitted to the mode's character — e.g. Zoom Out: "name one place the reader is likely to encounter this pattern themselves"; Paradox: "where the reader might be holding the same tension without having named it."
+- 4 modes already landed at the reader level (Reframe, Unstated Assumption, Beneficiary Question, So What) — unchanged.
+
+**Why:**
+- The pipeline had two goals it treated as one: write a good article about the subject (enforced) vs. give the reader a lens for their own life (stated once, then abandoned).
+- 8 of 12 rhythms ended at the subject or system level. The audience promise — "building a life with intention, a creative practice, a considered career" — requires ending at the reader-life level.
+- The Sony/Shure article made this visible: the "wrong domain" insight (you can buy the tool but not the knowledge system) is directly applicable to anyone building a creative practice. The article stayed in the audio world and never transferred. The mode rhythm (likely Zoom Out or Extension) told it to end at the system level. It did.
+- Synthesis gets this right because the audience is concretized everywhere in its prompt. Articles stated the audience once and then trusted the model to carry it — they didn't.
+
+**What to observe:**
+- Do articles now close on something the reader can apply to their own situation?
+- Does the reader-life requirement feel forced (name-dropping the reader) or organic (the subject genuinely opens into something transferable)?
+- Which modes handle the transfer well vs. awkwardly? The Rebuttal and Complication are the most at risk of feeling tacked-on.
+
+---
+
 ## claim-namedcase-ending-fix (2026-07-08) — CURRENT STABLE
 
 **What changed:**
