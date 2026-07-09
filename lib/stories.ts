@@ -1367,7 +1367,7 @@ MODES:
 - The So What: source reports the what — deliver the why-care, what changes, what the reader does with this
 
 Return JSON only:
-{"mode":"exact mode name","reasoning":"one sentence — specifically why this mode, what you know about this topic that makes it the right call","claim":"one specific falsifiable sentence that is the central argument of the piece — something that could be wrong, names something concrete, and is not obvious. Not a theme. Not a question. A claim."}`,
+{"mode":"exact mode name","reasoning":"one sentence — specifically why this mode, what you know about this topic that makes it the right call","claim":"one specific falsifiable sentence naming a concrete mechanism, case, or finding. FORBIDDEN: abstract category nouns ('tools', 'context', 'systems', 'access', 'power'); claims that apply to any industry or any decade. TEST: could a skeptic name a counterexample? If not, rewrite. GOOD: 'Shure's $99 headphone democratized gear but trained bedroom producers to trust a monitoring chain that car stereos expose as wrong' — NOT 'professional tools require professional context'."}`,
       }],
     });
     const raw = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
@@ -1589,6 +1589,8 @@ Use ONE reference — a specific idea, experiment, thinker, film, or moment — 
 REFERENCE POOL — pick something unexpected:
 ${sampleReferencePool(refSeed)}
 
+Ground your argument in at least one named case — a specific person, company, product, year, or documented incident. The named case is not optional. An abstract claim without a named anchor is an observation, not an article.
+
 Voice rules:
 - Vary sentence length. Short punches. Then one that earns it. Then short again.
 - Vivid and specific — name the thing, don't describe it abstractly.
@@ -1615,7 +1617,7 @@ ${rhythmForMode(modeSelection?.mode ?? "")}
 
 Total length: 250-350 words. Tight and complete — no padding, no filler, no repetition.
 
-FORBIDDEN: throat-clearing openers; colons anywhere in the prose — rewrite as two sentences, no exceptions; semicolons — rewrite as two sentences; vague lesson-gesturing ('this teaches us', 'there's a lesson here') — show the insight, don't announce it.`,
+FORBIDDEN: throat-clearing openers; colons anywhere in the prose — rewrite as two sentences, no exceptions; semicolons — rewrite as two sentences; vague lesson-gesturing ('this teaches us', 'there's a lesson here') — show the insight, don't announce it; vague endings that restate the opening without completing the thought ('something else entirely', 'more complicated than it seems', 'that's a different story') — the final paragraph must name the specific thing the reader now understands that they didn't at the start.`,
     }],
   });
 
