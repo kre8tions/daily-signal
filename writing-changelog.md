@@ -4,6 +4,26 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
+## claim-namedcase-ending-fix (2026-07-08) — CURRENT STABLE
+
+**What changed:**
+- Pass 0.5 `claim` instruction: added FORBIDDEN abstract category nouns, falsifiability test ("could a skeptic name a counterexample?"), GOOD/BAD example drawn from the live failure case
+- Pass 1 global: added explicit named-case requirement — every article must ground its argument in a specific person, company, product, year, or documented incident. Not optional.
+- Pass 1 FORBIDDEN list: added vague endings that restate the opening without completing the thought ('something else entirely', 'more complicated than it seems')
+
+**Why:**
+- Root cause analysis of "Professional Tools Need Professional Context to Work" (Jem, July 9): the pipeline passed every explicit check but produced an abstract article
+- Traced to Pass 0.5 — an abstract claim ("professional tools require professional context") propagates softness through every downstream pass. Pass 1 builds from whatever claim it receives.
+- Named-case requirement existed only in `explainer` and `opinion` genre briefs — if Pass 0 classified the genre differently, the requirement never fired. Moved to global so it applies unconditionally.
+- Vague endings ("something else entirely") passed the FORBIDDEN list because no rule explicitly banned restatement-without-completion
+
+**What to observe:**
+- Does the claim in Pass 0.5 now reach for a named mechanism or specific case?
+- Do articles land on something specific in the final paragraph rather than a restatement?
+- Does the named-case requirement produce grounded arguments or forced/awkward name-drops?
+
+---
+
 ## ownedTitle-specificity-fix (2026-07-08) — CURRENT STABLE
 
 **What changed:**
