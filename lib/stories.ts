@@ -1644,7 +1644,7 @@ ARTICLE:
 ${proseBody}
 
 {
-  "ownedTitle": "5-9 words. A human journalist wrote this, not an AI. Strong verb, concrete nouns — put the actual tension or finding in the words. MUST reflect what the article actually argues. FORBIDDEN: colons; 'X: When Y'; 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'. GOOD: 'Four Chameleons Named, Zero Habitats Protected' / 'Mathematicians Crack the 80-Year Randomness Problem'. Must differ from source headline.",
+  "ownedTitle": "5-9 words. Name the specific finding — not the category it belongs to. Use a detail from the article itself: a number, a name, a place, a year, a mechanism, a result. FORBIDDEN: abstract category nouns ('tools', 'context', 'access', 'systems', 'power', 'change'); colons; 'X: When Y'; 'reveals'/'exposes'/'underscores'; 'Why'/'How'/'The Truth About'/'Game-Changer'. GOOD: 'Four Chameleons Named, Zero Habitats Protected' / 'Mathematicians Crack the 80-Year Randomness Problem' / 'Bedroom Producers Got the Headphones, Not the Ears'. Must differ from source headline.",
   "summary": "2 sentences — what the article argues and what it means for someone trying to think more clearly about the world. Not a news summary. The specific payoff for a curious reader who is building a considered life.",
   "bullets": ["One of the 3 facts or ideas a smart reader would want to remember — specific, surprising, or reframe-inducing ≤15 words", "Same standard — not plot summary, not the biggest number unless it reframes something ≤15 words", "Same standard ≤15 words"],
   "imageQuery": "${imageQueryInstruction}",
