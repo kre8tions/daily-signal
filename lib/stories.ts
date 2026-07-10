@@ -1556,7 +1556,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const analysis = await analyzeSource(client, story);
 
   // ── Fitness gate: protect S1/S2 from weak sources ────────────────────────────
-  if (analysis && typeof analysis.fitness === "number" && analysis.fitness <= 2 && slotIndex <= 1) {
+  if (analysis && typeof analysis.fitness === "number" && analysis.fitness <= 3 && slotIndex <= 1) {
     console.warn(`[fitness-gate] slot ${slotIndex} rejected: score=${analysis.fitness} — ${analysis.fitness_reason} (${story.title})`);
     throw new Error(`Fitness gate: score ${analysis.fitness} — ${analysis.fitness_reason}`);
   }
@@ -1632,7 +1632,7 @@ ${rhythmForMode(modeSelection?.mode ?? "")}
 
 Total length: 250-350 words. Tight and complete — no padding, no filler, no repetition.
 
-FORBIDDEN: throat-clearing openers; colons anywhere in the prose — rewrite as two sentences, no exceptions; semicolons — rewrite as two sentences; vague lesson-gesturing ('this teaches us', 'there's a lesson here') — show the insight, don't announce it; vague endings that restate the opening without completing the thought ('something else entirely', 'more complicated than it seems', 'that's a different story') — the final paragraph must name the specific thing the reader now understands that they didn't at the start.`,
+FORBIDDEN: throat-clearing openers; colons anywhere in the prose — rewrite as two sentences, no exceptions; semicolons — rewrite as two sentences; vague lesson-gesturing ('this teaches us', 'there's a lesson here') — show the insight, don't announce it; vague endings that restate the opening without completing the thought ('something else entirely', 'more complicated than it seems', 'that's a different story') — the final paragraph must name the specific thing the reader now understands that they didn't at the start; endings that stay inside the subject world — the final paragraph must connect to something the reader can see in their own creative practice, career, or way of thinking, not just a conclusion about the subject itself; named cases that appear without setup — every specific person, company, or incident you name must be introduced and connected before the final sentence, not dropped in as a closing gesture.`,
     }],
   });
 
