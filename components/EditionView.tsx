@@ -69,12 +69,13 @@ function SpaceInvaderSVG({ color }: { color: string }) {
 const VEHICLES: Array<{
   icon: (c: string) => React.ReactNode;
   marker: (c: string) => React.ReactNode;
+  rotationOffset: number; // degrees to add to path angle (0 = SVG points up, -90 = SVG points right)
 }> = [
-  { // Airplane → cloud
+  { rotationOffset: 0, // Airplane → cloud (points up)
     icon: (c) => <svg width="42" height="42" viewBox="0 0 24 24" fill={c} opacity={0.9} xmlns="http://www.w3.org/2000/svg"><path d="M21,16l-9-5V3.5C12,2.67,11.33,2,10.5,2S9,2.67,9,3.5V11L0,16v2l9-2.5V21l-2,1.5V24l3.5-1l3.5,1v-1.5L12,21v-5.5l9,2.5V16z"/></svg>,
     marker: (c) => <svg width="24" height="20" viewBox="0 0 32 26" xmlns="http://www.w3.org/2000/svg"><path d="M7,22C3,22 0,19 0,15C0,12 2,10 5,10C5,5 9,2 14,2C19,2 23,5 23,9L24,9C28,9 32,12 32,16C32,20 29,22 25,22Z" fill={c} opacity={0.88}/></svg>,
   },
-  { // Bee → hive
+  { rotationOffset: 0, // Bee → hive (points up)
     icon: (c) => (
       <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
         <ellipse cx="18" cy="22" rx="7" ry="10"/>
@@ -98,7 +99,7 @@ const VEHICLES: Array<{
       </svg>
     ),
   },
-  { // Ship → anchor
+  { rotationOffset: -90, // Ship → anchor (points right)
     icon: (c) => (
       <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
         <path d="M4,20 C4,28 32,28 32,20 L28,10 L8,10 Z"/>
@@ -121,7 +122,7 @@ const VEHICLES: Array<{
       </svg>
     ),
   },
-  { // Bicycle → road sign
+  { rotationOffset: -90, // Bicycle → road sign (points right)
     icon: (c) => (
       <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
         <circle cx="8" cy="24" r="9"/>
@@ -147,7 +148,7 @@ const VEHICLES: Array<{
       </svg>
     ),
   },
-  { // Submarine → periscope
+  { rotationOffset: -90, // Submarine → periscope (points right)
     icon: (c) => (
       <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
         <path d="M2,18 C2,11 34,11 34,18 C34,25 2,25 2,18 Z"/>
@@ -171,7 +172,7 @@ const VEHICLES: Array<{
       </svg>
     ),
   },
-  { // Hot air balloon → mountain
+  { rotationOffset: 0, // Hot air balloon → mountain (points up)
     icon: (c) => (
       <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
         <path d="M18,-2 C6,-2 4,14 4,18 C4,26 10,32 18,32 C26,32 32,26 32,18 C32,14 30,-2 18,-2 Z"/>
@@ -191,7 +192,7 @@ const VEHICLES: Array<{
       </svg>
     ),
   },
-  { // Train → station clock
+  { rotationOffset: -90, // Train → station clock (points right)
     icon: (c) => (
       <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
         <rect x="2" y="6" width="32" height="22" rx="4"/>
@@ -215,7 +216,7 @@ const VEHICLES: Array<{
       </svg>
     ),
   },
-  { // Camel → palm tree
+  { rotationOffset: -90, // Camel → palm tree (points right)
     icon: (c) => (
       <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
         <path d="M2,18 C2,10 8,6 14,6 C14,-1 20,-5 24,1 C28,-5 34,1 32,6 C38,7 40,14 36,18 C36,24 28,26 18,26 C8,26 2,24 2,18"/>
@@ -332,7 +333,7 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
         </svg>
       </div>
       {/* Vehicle — HTML so it's never distorted */}
-      <div style={{ position: "absolute", left: ePx, top: ePy, transform: `translate(-50%, -50%) rotate(${planeAngle}deg)`, marginTop: -2, zIndex: 11, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", left: ePx, top: ePy, transform: `translate(-50%, -50%) rotate(${planeAngle + vehicle.rotationOffset}deg)`, marginTop: -2, zIndex: 11, pointerEvents: "none" }}>
         {vehicle.icon(color)}
       </div>
     </>
@@ -508,7 +509,7 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
         ))}
       </svg>
       {planes.map((pl, i) => (
-        <div key={`vehicle-${i}`} style={{ position: "absolute", left: `${(pl.planeX / W * 100).toFixed(2)}%`, top: `${(pl.planeY / H * 100).toFixed(2)}%`, transform: `translate(-50%,-50%) rotate(${pl.planeAngle}deg)`, zIndex: 3, pointerEvents: "none" }}>
+        <div key={`vehicle-${i}`} style={{ position: "absolute", left: `${(pl.planeX / W * 100).toFixed(2)}%`, top: `${(pl.planeY / H * 100).toFixed(2)}%`, transform: `translate(-50%,-50%) rotate(${pl.planeAngle + vehicle.rotationOffset}deg)`, zIndex: 3, pointerEvents: "none" }}>
           {vehicle.icon(color)}
         </div>
       ))}
