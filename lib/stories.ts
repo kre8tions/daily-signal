@@ -1249,6 +1249,20 @@ ${violations.map((v, i) => `${i + 1}. ${v}`).join("\n")}`,
   }
 }
 
+function removeDuplicateSentences(text: string): string {
+  const seen = new Set<string>();
+  return text.split("\n\n").map(para => {
+    const sentences = para.match(/[^.!?]+[.!?]+["']?\s*/g) ?? [para];
+    const deduped = sentences.filter(s => {
+      const key = s.trim().toLowerCase().replace(/\s+/g, " ");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    return deduped.join("").trim();
+  }).filter(p => p.length > 0).join("\n\n");
+}
+
 function breakLongSentences(text: string): string {
   const BREAK_AT = [" — ", "; ", ", and ", ", but ", ", because ", ", which ", ", so ", ", yet "];
   return text.split("\n\n").map(para => {
@@ -1701,6 +1715,11 @@ ${proseBody}
       header: extractStr("header"),
     };
   }
+  // Enforce no-colon rule on ownedTitle in code — prompts aren't reliable enough
+  if (pass1.ownedTitle?.includes(":")) {
+    pass1.ownedTitle = pass1.ownedTitle.replace(/\s*:\s*/, " — ");
+  }
+
   pass1.body = proseBody;
 
   // ── Pass 2: structure — always runs; isBrief only gates imageUrl2 (no mid-article image for brief cards) ──
@@ -1769,6 +1788,7 @@ Return JSON only:
           : "";
         const assembled = remainder ? `${shaped}\n\n${remainder}` : shaped;
         body = await repairPunctuation(client, assembled);
+        body = removeDuplicateSentences(body);
         if (scaffold.pullQuote) extractedPullQuote = scaffold.pullQuote as string;
         if (scaffold.header2) pass1Header2 = scaffold.header2 as string;
         if (scaffold.imageQuery2) pass1ImageQuery2 = scaffold.imageQuery2 as string;
