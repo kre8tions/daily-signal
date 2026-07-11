@@ -1,22 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
 
-// Edition boundaries are defined in UTC+14. Convert to UTC for countdown math.
-// UTC+14 boundaries: 5,9,13,17,21 → UTC: 15,19,23,3,7 (previous UTC day for 15,19,23)
-const NEXT_BOUNDARY_UTC_HOURS = [3, 7, 15, 19, 23]; // sorted
+// Slot boundaries in local time — matches slotFromHour in stories.ts
+const LOCAL_BOUNDARIES = [5, 9, 13, 17, 21];
 
 function getNextEditionStart(): Date {
   const now = new Date();
-  const h = now.getUTCHours();
+  const h = now.getHours();
   const next = new Date(now);
-  next.setUTCSeconds(0);
-  next.setUTCMilliseconds(0);
-  const boundary = NEXT_BOUNDARY_UTC_HOURS.find(b => b > h);
+  next.setSeconds(0, 0);
+  const boundary = LOCAL_BOUNDARIES.find(b => b > h);
   if (boundary !== undefined) {
-    next.setUTCHours(boundary, 0, 0, 0);
+    next.setHours(boundary, 0, 0, 0);
   } else {
-    next.setUTCDate(next.getUTCDate() + 1);
-    next.setUTCHours(NEXT_BOUNDARY_UTC_HOURS[0], 0, 0, 0);
+    next.setDate(next.getDate() + 1);
+    next.setHours(LOCAL_BOUNDARIES[0], 0, 0, 0);
   }
   return next;
 }
