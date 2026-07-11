@@ -498,7 +498,7 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
 
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}>
-      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", inset: 0 }}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", inset: 0 }}>
         {bandDividers.map((dv, i) => (
           <line key={`div-${i}`} x1={-W * 0.5} y1={dv.cy} x2={W * 1.5} y2={dv.cy}
             stroke={color} strokeWidth="1.5" strokeDasharray="4 9" strokeLinecap="round" opacity="0.3"
