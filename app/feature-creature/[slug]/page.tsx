@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { head } from "@vercel/blob";
 import type { FeatureCreature } from "@/lib/stories";
 import { P, contrastColor, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL } from "@/lib/palette";
+import { ShareButton } from "@/app/ShareButton";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -122,8 +123,9 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
         )}
 
         {/* Nav */}
-        <div style={{ borderTop: `1px solid ${P.tint}44`, paddingTop: 24 }}>
+        <div style={{ borderTop: `1px solid ${P.tint}44`, paddingTop: 24, display: "flex", alignItems: "center", gap: 12 }}>
           <a href="/" style={{ display: "inline-flex", alignItems: "center", background: P.accent, color: contrastColor(P.accent), textDecoration: "none", paddingTop: 12, paddingBottom: 12, paddingLeft: 24, paddingRight: 24, borderRadius: 50, fontSize: 13, fontWeight: 700, fontFamily: P.fontBody }}>Home</a>
+          <ShareButton title={fc.title} url={`/feature-creature/${slug}`} color={P.accent} fontBody={P.fontBody} />
         </div>
       </div>
     </div>

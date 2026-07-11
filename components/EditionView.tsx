@@ -574,7 +574,7 @@ function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
 function SynthesisSection({ synthesis, stories, writerIndex, editionKey }: { synthesis: Synthesis; stories: Story[]; writerIndex: number; editionKey: string }) {
   return (
     <>
-      <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+      <div id="signal" style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
         <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
           <div style={{ position: "absolute", top: 12, right: 16, fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: P.accent, opacity: 0.45, letterSpacing: 1, userSelect: "none" as const }}>W{writerIndex}</div>
           <div style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16 }}>
@@ -583,7 +583,7 @@ function SynthesisSection({ synthesis, stories, writerIndex, editionKey }: { syn
               <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>The Signal</div>
               <div style={{ fontSize: 22, fontWeight: 400, color: P.ink, lineHeight: 1.1, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 2 : 0 }}>{synthesis.theme}</div>
             </div>
-            <ShareButton title={synthesis.theme} url={`/archive/${editionKey}`} color={P.accent} fontBody={P.fontBody} />
+            <ShareButton title={synthesis.theme} url={`/archive/${editionKey}#signal`} color={P.accent} fontBody={P.fontBody} />
           </div>
           <div style={{ paddingLeft: 28, paddingRight: 28, marginBottom: 0 }}>
             <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
@@ -856,12 +856,9 @@ export async function EditionView({
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color, fontFamily: P.fontBody }}>{fc.angleLabel}</div>
                     <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 26, color: P.pageBg, lineHeight: 1.15, fontWeight: 700 }}>{fc.title}</div>
                     {fc.synopsis && <div style={{ fontSize: 15, lineHeight: 1.65, color: P.pageBg, fontFamily: P.fontBody, opacity: 0.75 }}>{fc.synopsis}</div>}
-                    <div style={{ position: "absolute", bottom: 18, right: 18, display: "flex", alignItems: "center", gap: 10 }}>
-                      <ShareButton title={fc.title} url={`/feature-creature/${slug}`} color={P.pageBg} fontBody={P.fontBody} />
-                      <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none" }}>
-                        <span style={{ fontSize: 15, fontWeight: 700, color: P.pageBg, background: P.pageBg + "22", border: `1px solid ${P.pageBg}55`, borderRadius: 50, paddingTop: 8, paddingBottom: 8, paddingLeft: 20, paddingRight: 20, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
-                      </a>
-                    </div>
+                    <a href={`/feature-creature/${slug}`} style={{ position: "absolute", bottom: 18, right: 18, textDecoration: "none" }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: P.pageBg, background: P.pageBg + "22", border: `1px solid ${P.pageBg}55`, borderRadius: 50, paddingTop: 8, paddingBottom: 8, paddingLeft: 20, paddingRight: 20, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
+                    </a>
                   </div>
                 </div>
               </a>
