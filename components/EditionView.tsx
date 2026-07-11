@@ -77,16 +77,16 @@ const VEHICLES: Array<{
   },
   { rotationOffset: 0, // Bee → hive (points up)
     icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
-        <ellipse cx="18" cy="22" rx="7" ry="10"/>
-        <circle cx="18" cy="9" r="6"/>
-        <line x1="11" y1="18" x2="25" y2="18"/>
-        <line x1="11" y1="23" x2="25" y2="23"/>
-        <path d="M11,17 C1,10 0,20 11,21"/>
-        <path d="M25,17 C35,10 36,20 25,21"/>
-        <path d="M14,3 C12,0 10,-1 8,-2"/><circle cx="8" cy="-2" r="1.5" fill={c}/>
-        <path d="M22,3 C24,0 26,-1 28,-2"/><circle cx="28" cy="-2" r="1.5" fill={c}/>
-        <circle cx="15" cy="9" r="1.5" fill={c}/><circle cx="21" cy="9" r="1.5" fill={c}/>
+      <svg width="42" height="42" viewBox="0 0 36 38" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+        <circle cx="18" cy="8" r="5"/>
+        <ellipse cx="18" cy="25" rx="6" ry="10"/>
+        <line x1="12" y1="19" x2="24" y2="19"/>
+        <line x1="12" y1="24" x2="24" y2="24"/>
+        <line x1="12" y1="29" x2="24" y2="29"/>
+        <ellipse cx="5" cy="18" rx="7" ry="4" transform="rotate(-12 5 18)"/>
+        <ellipse cx="31" cy="18" rx="7" ry="4" transform="rotate(12 31 18)"/>
+        <path d="M15,3 C13,0 10,-1 8,-2"/><circle cx="8" cy="-2" r="1.5" fill={c}/>
+        <path d="M21,3 C23,0 26,-1 28,-2"/><circle cx="28" cy="-2" r="1.5" fill={c}/>
       </svg>
     ),
     marker: (c) => (
@@ -99,43 +99,45 @@ const VEHICLES: Array<{
       </svg>
     ),
   },
-  { rotationOffset: -90, // Ship → anchor (points right)
+  { rotationOffset: -90, // Sailboat → anchor (points right)
     icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
-        <path d="M4,20 C4,28 32,28 32,20 L28,10 L8,10 Z"/>
-        <rect x="8" y="2" width="14" height="10" rx="2"/>
-        <rect x="10" y="4" width="4" height="4" rx="1"/><rect x="16" y="4" width="4" height="4" rx="1"/>
-        <line x1="24" y1="2" x2="24" y2="-4"/>
-        <path d="M24,-4 L31,-1 L24,2"/>
-        <rect x="20" y="-2" width="6" height="8" rx="1"/>
+      <svg width="42" height="42" viewBox="0 0 36 44" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+        <line x1="18" y1="32" x2="18" y2="2"/>
+        <path d="M18,2 C22,10 30,22 18,32"/>
+        <path d="M18,10 C14,16 8,26 18,32"/>
+        <path d="M6,32 Q18,36 30,32 L28,36 Q18,38 8,36 Z"/>
+        <path d="M0,38 C4,36 8,40 14,38 C20,36 26,40 32,38"/>
       </svg>
     ),
     marker: (c) => (
-      <svg width="22" height="22" viewBox="0 0 28 28" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="14" cy="5" r="3.5"/>
-        <line x1="14" y1="8" x2="14" y2="22"/>
-        <line x1="6" y1="12" x2="22" y2="12"/>
-        <path d="M14,22 C6,22 2,17 2,13"/>
-        <path d="M14,22 C22,22 26,17 26,13"/>
-        <path d="M2,13 C0,11 4,9 5,12"/>
-        <path d="M26,13 C28,11 24,9 23,12"/>
+      <svg width="22" height="22" viewBox="0 0 28 32" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="14" cy="4" r="3"/>
+        <line x1="14" y1="7" x2="14" y2="28"/>
+        <line x1="5" y1="12" x2="23" y2="12"/>
+        <circle cx="5" cy="12" r="1.5" fill={c} stroke="none"/>
+        <circle cx="23" cy="12" r="1.5" fill={c} stroke="none"/>
+        <path d="M14,28 C8,28 4,24 4,20"/>
+        <path d="M14,28 C20,28 24,24 24,20"/>
+        <path d="M4,20 L2,22 L6,22"/>
+        <path d="M24,20 L26,22 L22,22"/>
+        <path d="M21,8 C26,10 28,18 24,22"/>
       </svg>
     ),
   },
   { rotationOffset: -90, // Bicycle → road sign (points right)
     icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
-        <circle cx="8" cy="24" r="9"/>
-        <circle cx="28" cy="24" r="9"/>
-        <line x1="8"  y1="24" x2="18" y2="8"/>
-        <line x1="18" y1="8"  x2="28" y2="24"/>
-        <line x1="18" y1="8"  x2="16" y2="24"/>
-        <line x1="13" y1="24" x2="19" y2="24"/>
-        <line x1="13" y1="24" x2="12" y2="16"/>
-        <line x1="9"  y1="16" x2="15" y2="16"/>
-        <line x1="18" y1="8"  x2="18" y2="2"/>
-        <line x1="13" y1="2"  x2="23" y2="2"/>
-        <line x1="23" y1="2"  x2="25" y2="-1"/><line x1="13" y1="2" x2="11" y2="-1"/>
+      <svg width="42" height="42" viewBox="0 0 52 36" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+        <circle cx="11" cy="25" r="9"/>
+        <circle cx="41" cy="25" r="9"/>
+        <circle cx="26" cy="25" r="2.5"/>
+        <line x1="26" y1="25" x2="22" y2="13"/>
+        <line x1="22" y1="13" x2="11" y2="25"/>
+        <line x1="22" y1="13" x2="32" y2="13"/>
+        <line x1="32" y1="13" x2="26" y2="25"/>
+        <line x1="32" y1="13" x2="41" y2="25"/>
+        <line x1="18" y1="11" x2="26" y2="11"/>
+        <line x1="22" y1="13" x2="22" y2="11"/>
+        <path d="M32,13 C34,10 37,10 38,12 C39,14 38,15 37,14"/>
       </svg>
     ),
     marker: (c) => (
@@ -144,21 +146,22 @@ const VEHICLES: Array<{
         <path d="M4,4 L18,4 L24,10 L18,16 L4,16 Z"/>
         <line x1="8" y1="8"  x2="16" y2="8"/>
         <line x1="8" y1="11" x2="14" y2="11"/>
-        <line x1="8" y1="14" x2="15" y2="14" strokeOpacity="0"/>
       </svg>
     ),
   },
-  { rotationOffset: -90, // Submarine → periscope (points right)
+  { rotationOffset: 90, // Submarine → periscope (points left — bow on left)
     icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
-        <path d="M2,18 C2,11 34,11 34,18 C34,25 2,25 2,18 Z"/>
-        <rect x="13" y="6" width="10" height="10" rx="2"/>
-        <path d="M20,6 L20,2 L26,2"/><circle cx="26" cy="2" r="2.5"/>
-        <circle cx="10" cy="19" r="3"/><circle cx="18" cy="19" r="3"/><circle cx="26" cy="19" r="3"/>
-        <path d="M2,18 C-2,14 -3,18 -1,19"/>
-        <path d="M2,18 C-2,22 -3,18 -1,17"/>
-        <path d="M28,24 Q32,26 30,28"/>
-        <line x1="26" y1="25" x2="28" y2="28"/>
+      <svg width="42" height="42" viewBox="0 0 56 30" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+        <path d="M4,15 C4,9 8,6 18,6 L36,6 C46,6 50,10 50,15 C50,20 46,24 36,24 L18,24 C8,24 4,21 4,15 Z"/>
+        <rect x="16" y="1" width="14" height="7" rx="2"/>
+        <path d="M22,1 L22,-2 L16,-2"/>
+        <circle cx="15" cy="-2" r="2"/>
+        <circle cx="18" cy="15" r="2.5"/>
+        <circle cx="28" cy="15" r="2.5"/>
+        <circle cx="38" cy="15" r="2.5"/>
+        <path d="M50,15 C54,11 56,9 55,13"/>
+        <path d="M50,15 C54,19 56,21 55,17"/>
+        <path d="M50,24 Q53,27 51,28"/>
       </svg>
     ),
     marker: (c) => (
@@ -189,30 +192,6 @@ const VEHICLES: Array<{
         <path d="M8,24 L18,10 L26,24"/>
         <path d="M10,10 C12,4 16,4 18,10 L14,8 Z"/>
         <line x1="0" y1="24" x2="28" y2="24"/>
-      </svg>
-    ),
-  },
-  { rotationOffset: -90, // Train → station clock (points right)
-    icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="6" width="32" height="22" rx="4"/>
-        <path d="M2,6 L-4,12 L-4,22 L2,22"/>
-        <rect x="6"  y="10" width="6" height="7" rx="1"/>
-        <rect x="15" y="10" width="6" height="7" rx="1"/>
-        <rect x="24" y="10" width="6" height="7" rx="1"/>
-        <line x1="-4" y1="16" x2="34" y2="16"/>
-        <circle cx="10" cy="32" r="5"/><circle cx="26" cy="32" r="5"/>
-        <rect x="-5" y="6" width="4" height="4" rx="1" fill={c} stroke="none"/>
-      </svg>
-    ),
-    marker: (c) => (
-      <svg width="22" height="22" viewBox="0 0 28 28" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
-        <path d="M2,10 L14,2 L26,10 L26,24 L2,24 Z"/>
-        <circle cx="14" cy="15" r="6"/>
-        <line x1="14" y1="15" x2="14" y2="10"/>
-        <line x1="14" y1="15" x2="18" y2="15"/>
-        <path d="M6,24 L6,28"/><path d="M22,24 L22,28"/>
-        <line x1="2" y1="28" x2="26" y2="28"/>
       </svg>
     ),
   },
