@@ -175,15 +175,23 @@ const VEHICLES: Array<{
       </svg>
     ),
   },
-  { rotationOffset: 0, // Hot air balloon → mountain (points up)
+  { rotationOffset: 90, // Blimp → mountain (points left — nose on left)
     icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
-        <path d="M18,-2 C6,-2 4,14 4,18 C4,26 10,32 18,32 C26,32 32,26 32,18 C32,14 30,-2 18,-2 Z"/>
-        <line x1="18" y1="-2" x2="18" y2="32"/>
-        <path d="M4,18 C10,14 26,14 32,18"/>
-        <line x1="10" y1="32" x2="14" y2="40"/>
-        <line x1="26" y1="32" x2="22" y2="40"/>
-        <rect x="12" y="40" width="12" height="8" rx="2"/>
+      <svg width="42" height="42" viewBox="0 0 60 26" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+        {/* Envelope — rounded nose left, tapered tail right */}
+        <path d="M52,13 C52,6 42,1 28,1 C14,1 4,6 4,13 C4,20 14,25 28,25 C42,25 52,20 52,13 Z"/>
+        {/* Vertical tail fin top-right */}
+        <path d="M52,13 C54,8 58,4 55,9"/>
+        {/* Horizontal stabilizer bottom-right */}
+        <path d="M52,13 C55,17 58,21 55,18"/>
+        {/* Propeller at tail */}
+        <path d="M55,13 C58,10 61,8 59,12 M55,13 C58,16 61,18 59,14"/>
+        {/* Gondola hanging below center */}
+        <rect x="20" y="25" width="16" height="5" rx="1"/>
+        <line x1="24" y1="25" x2="22" y2="26"/>
+        <line x1="32" y1="25" x2="34" y2="26"/>
+        {/* Nose mooring ring */}
+        <circle cx="4" cy="13" r="1.5"/>
       </svg>
     ),
     marker: (c) => (
