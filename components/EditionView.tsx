@@ -203,18 +203,30 @@ const VEHICLES: Array<{
       </svg>
     ),
   },
-  { rotationOffset: -90, // Camel → palm tree (points right)
+  { rotationOffset: 90, // Camel → palm tree (points left — head on left)
     icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 36 36" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
-        <path d="M2,18 C2,10 8,6 14,6 C14,-1 20,-5 24,1 C28,-5 34,1 32,6 C38,7 40,14 36,18 C36,24 28,26 18,26 C8,26 2,24 2,18"/>
-        <path d="M14,6 C16,0 20,0 24,6"/>
-        <path d="M4,6 C2,0 6,-6 10,-4"/>
-        <path d="M10,-4 C10,-8 14,-10 16,-6 C18,-10 22,-8 20,-4 C24,-6 28,0 26,4"/>
-        <line x1="8"  y1="26" x2="6"  y2="36"/>
-        <line x1="14" y1="26" x2="14" y2="36"/>
-        <line x1="22" y1="26" x2="22" y2="36"/>
-        <line x1="28" y1="26" x2="30" y2="36"/>
-        <path d="M36,18 C40,20 38,28 34,28"/>
+      <svg width="42" height="42" viewBox="0 0 52 48" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+        {/* Head */}
+        <path d="M2,10 C2,6 5,4 8,4 C11,4 13,6 13,9 C13,12 11,14 8,14 C5,14 2,12 2,10"/>
+        {/* Snout/lip */}
+        <path d="M2,10 C0,11 0,13 2,12"/>
+        {/* Eye */}
+        <circle cx="8" cy="7" r="1" fill={c}/>
+        {/* Neck — two lines for width */}
+        <path d="M11,13 C13,17 13,20 13,22"/>
+        <path d="M6,14 C9,18 10,21 10,24"/>
+        {/* Body */}
+        <path d="M10,22 C10,18 14,16 22,16 C30,16 40,18 42,23 C44,28 42,34 36,36 C28,38 14,38 10,34 C8,30 8,26 10,22 Z"/>
+        {/* Hump */}
+        <path d="M16,16 C16,8 20,2 26,2 C32,2 36,8 36,16"/>
+        {/* Front legs */}
+        <path d="M14,37 L12,48"/>
+        <path d="M20,37 L18,48"/>
+        {/* Back legs */}
+        <path d="M30,37 L28,48"/>
+        <path d="M38,37 L40,48"/>
+        {/* Tail */}
+        <path d="M42,28 C46,26 48,30 46,34 C45,36 46,38 48,40"/>
       </svg>
     ),
     marker: (c) => (
