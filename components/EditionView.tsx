@@ -101,7 +101,7 @@ const VEHICLES: Array<{
   },
   { rotationOffset: -90, // Sailboat → anchor (points right)
     icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 36 44" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+      <svg width="53" height="53" viewBox="0 0 36 44" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
         <line x1="18" y1="32" x2="18" y2="2"/>
         <path d="M18,2 C22,10 30,22 18,32"/>
         <path d="M18,10 C14,16 8,26 18,32"/>
@@ -126,7 +126,7 @@ const VEHICLES: Array<{
   },
   { rotationOffset: -90, // Bicycle → road sign (points right)
     icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 52 36" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+      <svg width="53" height="53" viewBox="0 0 52 36" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
         <circle cx="11" cy="25" r="9"/>
         <circle cx="41" cy="25" r="9"/>
         <circle cx="26" cy="25" r="2.5"/>
@@ -151,7 +151,7 @@ const VEHICLES: Array<{
   },
   { rotationOffset: 90, // Submarine → periscope (points left — bow on left)
     icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 56 30" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+      <svg width="53" height="53" viewBox="0 0 56 30" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
         <path d="M4,15 C4,9 8,6 18,6 L36,6 C46,6 50,10 50,15 C50,20 46,24 36,24 L18,24 C8,24 4,21 4,15 Z"/>
         <rect x="16" y="1" width="14" height="7" rx="2"/>
         <path d="M22,1 L22,-2 L16,-2"/>
@@ -177,7 +177,7 @@ const VEHICLES: Array<{
   },
   { rotationOffset: 90, // Blimp → mountain (points left — nose on left)
     icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 60 26" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+      <svg width="53" height="53" viewBox="0 0 60 26" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
         {/* Envelope — rounded nose left, tapered tail right */}
         <path d="M52,13 C52,6 42,1 28,1 C14,1 4,6 4,13 C4,20 14,25 28,25 C42,25 52,20 52,13 Z"/>
         {/* Vertical tail fin top-right */}
@@ -200,47 +200,6 @@ const VEHICLES: Array<{
         <path d="M8,24 L18,10 L26,24"/>
         <path d="M10,10 C12,4 16,4 18,10 L14,8 Z"/>
         <line x1="0" y1="24" x2="28" y2="24"/>
-      </svg>
-    ),
-  },
-  { rotationOffset: 90, // Camel → palm tree (points left — head on left)
-    icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 60 54" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
-        {/* Head — horizontal elongated oval, snout left */}
-        <path d="M18,14 C18,10 14,8 10,8 C6,8 2,10 2,14 C2,18 6,20 10,20 C14,20 18,18 18,14"/>
-        {/* Upper lip protrusion */}
-        <path d="M2,14 C0,14 -1,16 1,17"/>
-        {/* Eye */}
-        <circle cx="12" cy="11" r="1.2" fill={c}/>
-        {/* Neck front — chin sweeps down to chest */}
-        <path d="M6,20 C8,24 12,28 16,30"/>
-        {/* Neck back — poll curves to withers */}
-        <path d="M18,10 C22,12 24,18 24,22"/>
-        {/* Body — chest → front legs → belly → rump → back → shoulder → chest */}
-        <path d="M16,30 C14,32 12,38 14,42 C16,46 22,48 32,48 C42,48 50,44 52,38 C54,32 52,26 48,22 C44,18 40,16 34,16 C28,16 24,18 24,22 C22,24 20,28 16,30 Z"/>
-        {/* Hump — arches prominently above body back */}
-        <path d="M26,16 C26,8 30,2 36,2 C42,2 46,8 46,16"/>
-        {/* Front legs */}
-        <line x1="18" y1="47" x2="16" y2="54"/>
-        <line x1="24" y1="48" x2="22" y2="54"/>
-        {/* Back legs */}
-        <line x1="38" y1="48" x2="36" y2="54"/>
-        <line x1="46" y1="46" x2="48" y2="54"/>
-        {/* Tail with tuft */}
-        <path d="M52,34 C56,32 58,36 56,40"/>
-        <path d="M56,40 C55,42 56,45 58,47"/>
-      </svg>
-    ),
-    marker: (c) => (
-      <svg width="22" height="22" viewBox="0 0 28 28" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
-        <path d="M14,26 C15,18 13,12 15,4"/>
-        <path d="M15,4 C9,0 1,4 2,10"/>
-        <path d="M15,4 C15,-4 7,-8 4,-2"/>
-        <path d="M15,4 C21,0 28,6 24,12"/>
-        <path d="M15,4 C22,-2 28,4 26,10"/>
-        <circle cx="13" cy="6" r="2" fill={c} stroke="none"/>
-        <circle cx="17" cy="5" r="2" fill={c} stroke="none"/>
-        <path d="M8,26 Q14,24 20,26"/>
       </svg>
     ),
   },
