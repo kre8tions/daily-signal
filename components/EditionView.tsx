@@ -205,28 +205,30 @@ const VEHICLES: Array<{
   },
   { rotationOffset: 90, // Camel → palm tree (points left — head on left)
     icon: (c) => (
-      <svg width="42" height="42" viewBox="0 0 52 48" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
-        {/* Head */}
-        <path d="M2,10 C2,6 5,4 8,4 C11,4 13,6 13,9 C13,12 11,14 8,14 C5,14 2,12 2,10"/>
-        {/* Snout/lip */}
-        <path d="M2,10 C0,11 0,13 2,12"/>
+      <svg width="42" height="42" viewBox="0 0 60 54" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity={0.9} xmlns="http://www.w3.org/2000/svg">
+        {/* Head — horizontal elongated oval, snout left */}
+        <path d="M18,14 C18,10 14,8 10,8 C6,8 2,10 2,14 C2,18 6,20 10,20 C14,20 18,18 18,14"/>
+        {/* Upper lip protrusion */}
+        <path d="M2,14 C0,14 -1,16 1,17"/>
         {/* Eye */}
-        <circle cx="8" cy="7" r="1" fill={c}/>
-        {/* Neck — two lines for width */}
-        <path d="M11,13 C13,17 13,20 13,22"/>
-        <path d="M6,14 C9,18 10,21 10,24"/>
-        {/* Body */}
-        <path d="M10,22 C10,18 14,16 22,16 C30,16 40,18 42,23 C44,28 42,34 36,36 C28,38 14,38 10,34 C8,30 8,26 10,22 Z"/>
-        {/* Hump */}
-        <path d="M16,16 C16,8 20,2 26,2 C32,2 36,8 36,16"/>
+        <circle cx="12" cy="11" r="1.2" fill={c}/>
+        {/* Neck front — chin sweeps down to chest */}
+        <path d="M6,20 C8,24 12,28 16,30"/>
+        {/* Neck back — poll curves to withers */}
+        <path d="M18,10 C22,12 24,18 24,22"/>
+        {/* Body — chest → front legs → belly → rump → back → shoulder → chest */}
+        <path d="M16,30 C14,32 12,38 14,42 C16,46 22,48 32,48 C42,48 50,44 52,38 C54,32 52,26 48,22 C44,18 40,16 34,16 C28,16 24,18 24,22 C22,24 20,28 16,30 Z"/>
+        {/* Hump — arches prominently above body back */}
+        <path d="M26,16 C26,8 30,2 36,2 C42,2 46,8 46,16"/>
         {/* Front legs */}
-        <path d="M14,37 L12,48"/>
-        <path d="M20,37 L18,48"/>
+        <line x1="18" y1="47" x2="16" y2="54"/>
+        <line x1="24" y1="48" x2="22" y2="54"/>
         {/* Back legs */}
-        <path d="M30,37 L28,48"/>
-        <path d="M38,37 L40,48"/>
-        {/* Tail */}
-        <path d="M42,28 C46,26 48,30 46,34 C45,36 46,38 48,40"/>
+        <line x1="38" y1="48" x2="36" y2="54"/>
+        <line x1="46" y1="46" x2="48" y2="54"/>
+        {/* Tail with tuft */}
+        <path d="M52,34 C56,32 58,36 56,40"/>
+        <path d="M56,40 C55,42 56,45 58,47"/>
       </svg>
     ),
     marker: (c) => (
