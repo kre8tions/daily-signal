@@ -110,7 +110,7 @@ const VEHICLES: Array<{
       </svg>
     ),
     marker: (c) => (
-      <svg width="22" height="22" viewBox="0 0 28 32" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
+      <svg width="28" height="28" viewBox="0 0 28 32" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
         <circle cx="14" cy="4" r="3"/>
         <line x1="14" y1="7" x2="14" y2="28"/>
         <line x1="5" y1="12" x2="23" y2="12"/>
@@ -259,8 +259,14 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
 
   const vehicle = VEHICLES[Math.floor(sr(99) * VEHICLES.length)];
   const closure = 0.50 + sr(0) * 0.45;
-  const startDist = sr(1) * totalLen;
-  const endDist = startDist + closure * totalLen;
+  let startDist = sr(1) * totalLen;
+  let endDist = startDist + closure * totalLen;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const s = ptAt(startDist); const e = ptAt(endDist);
+    if (Math.hypot(e.x - s.x, e.y - s.y) >= 150) break;
+    startDist = (startDist + totalLen / 8) % totalLen;
+    endDist = startDist + closure * totalLen;
+  }
 
   const DOT_SPACING = 26;
   const dots: { x: number; y: number }[] = [];
@@ -391,10 +397,17 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
       W * (ICON_M + sr(pi * 60) * (1 - 2 * ICON_M)),
       bandTop + sr(pi * 60 + 1) * (bandBot - bandTop),
     );
-    const endPt = clampEnd(
+    let endPt = clampEnd(
       W * (ICON_M + sr(pi * 60 + 20) * (1 - 2 * ICON_M)),
       bandTop + sr(pi * 60 + 21) * (bandBot - bandTop),
     );
+    // Ensure vehicle (near startPt) and marker (endPt) are at least 90px apart
+    const epDx = endPt.x - startPt.x; const epDy = endPt.y - startPt.y;
+    const epDist = Math.hypot(epDx, epDy);
+    if (epDist < 90) {
+      const scale = 90 / (epDist || 1);
+      endPt = clampEnd(startPt.x + epDx * scale, startPt.y + epDy * scale);
+    }
 
     const pts: Pt[] = [startPt];
 
