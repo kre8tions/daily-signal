@@ -1,20 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
 
-// Slot boundaries in local time — matches slotFromHour in stories.ts
-const LOCAL_BOUNDARIES = [5, 9, 13, 17, 21];
+// Editions publish on UTC+14 schedule at hours 5,9,13,17,21 — converted to UTC: 3,7,15,19,23
+const PUBLISH_UTC_HOURS = [3, 7, 15, 19, 23];
 
 function getNextEditionStart(): Date {
   const now = new Date();
-  const h = now.getHours();
+  const h = now.getUTCHours();
   const next = new Date(now);
-  next.setSeconds(0, 0);
-  const boundary = LOCAL_BOUNDARIES.find(b => b > h);
+  const boundary = PUBLISH_UTC_HOURS.find(b => b > h);
   if (boundary !== undefined) {
-    next.setHours(boundary, 0, 0, 0);
+    next.setUTCHours(boundary, 0, 0, 0);
   } else {
-    next.setDate(next.getDate() + 1);
-    next.setHours(LOCAL_BOUNDARIES[0], 0, 0, 0);
+    next.setUTCDate(next.getUTCDate() + 1);
+    next.setUTCHours(PUBLISH_UTC_HOURS[0], 0, 0, 0);
   }
   return next;
 }
