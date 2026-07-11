@@ -303,7 +303,9 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
   const sPy = `${(start.y / H * 100).toFixed(2)}%`;
   const ePx = `${(end.x / W * 100).toFixed(2)}%`;
   const ePy = `${(end.y / H * 100).toFixed(2)}%`;
-  const planeAngle = end.angle;
+  const rawAngle = end.angle + vehicle.rotationOffset;
+  const normAngle = ((rawAngle % 360) + 360) % 360;
+  const displayAngle = (normAngle > 90 && normAngle < 270) ? rawAngle + 180 : rawAngle;
 
   return (
     <>
@@ -320,7 +322,7 @@ function FlightPathBorder({ color, seed = 0 }: { color: string; seed?: number })
         </svg>
       </div>
       {/* Vehicle — HTML so it's never distorted */}
-      <div style={{ position: "absolute", left: ePx, top: ePy, transform: `translate(-50%, -50%) rotate(${planeAngle + vehicle.rotationOffset}deg)`, marginTop: -2, zIndex: 11, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", left: ePx, top: ePy, transform: `translate(-50%, -50%) rotate(${displayAngle}deg)`, marginTop: -2, zIndex: 11, pointerEvents: "none" }}>
         {vehicle.icon(color)}
       </div>
     </>
@@ -495,11 +497,16 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
           <path key={i} d={pl.d} fill="none" stroke={color} strokeWidth="2.5" strokeDasharray="4 9" strokeLinecap="round" opacity="0.65" />
         ))}
       </svg>
-      {planes.map((pl, i) => (
-        <div key={`vehicle-${i}`} style={{ position: "absolute", left: `${(pl.planeX / W * 100).toFixed(2)}%`, top: `${(pl.planeY / H * 100).toFixed(2)}%`, transform: `translate(-50%,-50%) rotate(${pl.planeAngle + vehicle.rotationOffset}deg)`, zIndex: 3, pointerEvents: "none" }}>
-          {vehicle.icon(color)}
-        </div>
-      ))}
+      {planes.map((pl, i) => {
+        const raw = pl.planeAngle + vehicle.rotationOffset;
+        const norm = ((raw % 360) + 360) % 360;
+        const angle = (norm > 90 && norm < 270) ? raw + 180 : raw;
+        return (
+          <div key={`vehicle-${i}`} style={{ position: "absolute", left: `${(pl.planeX / W * 100).toFixed(2)}%`, top: `${(pl.planeY / H * 100).toFixed(2)}%`, transform: `translate(-50%,-50%) rotate(${angle}deg)`, zIndex: 3, pointerEvents: "none" }}>
+            {vehicle.icon(color)}
+          </div>
+        );
+      })}
       {planes.map((pl, i) => (
         <div key={`marker-${i}`} style={{ position: "absolute", left: `${(pl.endX / W * 100).toFixed(2)}%`, top: `${(pl.endY / H * 100).toFixed(2)}%`, transform: "translate(-50%,-50%)", zIndex: 3, pointerEvents: "none" }}>
           {vehicle.marker(color)}
