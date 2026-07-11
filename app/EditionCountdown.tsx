@@ -1,19 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
 
-// Editions publish on UTC+14 schedule at hours 5,9,13,17,21 — converted to UTC: 3,7,15,19,23
-const PUBLISH_UTC_HOURS = [3, 7, 15, 19, 23];
+// Local slot boundaries — countdown hits zero when visitor's edition changes
+const LOCAL_BOUNDARIES = [5, 9, 13, 17, 21];
 
 function getNextEditionStart(): Date {
   const now = new Date();
-  const h = now.getUTCHours();
+  const h = now.getHours();
   const next = new Date(now);
-  const boundary = PUBLISH_UTC_HOURS.find(b => b > h);
+  const boundary = LOCAL_BOUNDARIES.find(b => b > h);
   if (boundary !== undefined) {
-    next.setUTCHours(boundary, 0, 0, 0);
+    next.setHours(boundary, 0, 0, 0);
   } else {
-    next.setUTCDate(next.getUTCDate() + 1);
-    next.setUTCHours(PUBLISH_UTC_HOURS[0], 0, 0, 0);
+    next.setDate(next.getDate() + 1);
+    next.setHours(LOCAL_BOUNDARIES[0], 0, 0, 0);
   }
   return next;
 }
