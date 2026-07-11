@@ -12,17 +12,21 @@ interface ShareButtonProps {
 export function ShareButton({ title, url, color, fontBody }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
 
+  const resolvedUrl = url.startsWith("/") && typeof window !== "undefined"
+    ? window.location.origin + url
+    : url;
+
   async function handleShare() {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await navigator.share({ title, url });
+        await navigator.share({ title, url: resolvedUrl });
         return;
       } catch {
         // user cancelled or API unsupported — fall through to clipboard
       }
     }
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(resolvedUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
