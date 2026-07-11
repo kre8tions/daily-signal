@@ -1,4 +1,4 @@
-import { getArchivedPageData, getArchiveList, getEditionForTimezone } from "@/lib/stories";
+import { getArchivedPageData, getArchiveList, getEditionForTimezone, labelFromKey } from "@/lib/stories";
 import { EditionView } from "@/components/EditionView";
 import { headers } from "next/headers";
 
@@ -31,7 +31,8 @@ export default async function ArchiveEditionPage({ params }: { params: Promise<{
     );
   }
 
-  const { stories, synthesis, editionLabel, featureCreature, weeklySignal } = data;
+  const { stories, synthesis, featureCreature, weeklySignal } = data;
+  const editionLabel = labelFromKey(key);
   const [datePart] = key.split("_");
   const dateStr = new Date(datePart + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 

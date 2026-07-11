@@ -211,6 +211,16 @@ function utc14Now(): { h: number; date: string } {
   return { h: d.getUTCHours(), date: d.toISOString().slice(0, 10) };
 }
 
+const KEY_SUFFIX_LABELS: Record<string, string> = {
+  early: "First Light", morning: "The Brief", afternoon: "Afternoon",
+  evening: "The Digest", night: "Night Dispatch",
+};
+
+export function labelFromKey(key: string): string {
+  const suffix = key.split("_")[1] ?? "";
+  return KEY_SUFFIX_LABELS[suffix] ?? "Edition";
+}
+
 function slotFromHour(h: number, date: string): { label: string; key: string } {
   if (h >= 5  && h < 9)  return { label: "First Light",    key: `${date}_early`    };
   if (h >= 9  && h < 13) return { label: "The Brief",      key: `${date}_morning`  };
@@ -908,11 +918,11 @@ export async function getPageData(edition?: { key: string; label: string }): Pro
     if (utcArchived) return { ...utcArchived, editionLabel }; // local label, fresh content
   }
   const archived = await getArchivedPageData(editionKey);
-  if (archived) return archived;
+  if (archived) return { ...archived, editionLabel };
   // Local-slot blob not built yet — fall back to current UTC+14 edition silently.
   if (edition && editionKey !== utcEdition.key) {
     const utcArchived = await getArchivedPageData(utcEdition.key);
-    if (utcArchived) return utcArchived;
+    if (utcArchived) return { ...utcArchived, editionLabel };
   }
   return { stories: [], synthesis: { theme: "", hook: "", observation: "", takeaways: [], conclusion: "", actions: [] }, editionLabel };
 }
