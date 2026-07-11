@@ -214,7 +214,7 @@ function utc14Now(): { h: number; date: string } {
 function slotFromHour(h: number, date: string): { label: string; key: string } {
   if (h >= 5  && h < 9)  return { label: "First Light",    key: `${date}_early`    };
   if (h >= 9  && h < 13) return { label: "The Brief",      key: `${date}_morning`  };
-  if (h >= 13 && h < 17) return { label: "Midday",         key: `${date}_afternoon`};
+  if (h >= 13 && h < 17) return { label: "Afternoon",       key: `${date}_afternoon`};
   if (h >= 17 && h < 21) return { label: "The Digest",     key: `${date}_evening`  };
   return                         { label: "Night Dispatch", key: `${date}_night`    };
 }
@@ -897,6 +897,16 @@ export async function getPageData(edition?: { key: string; label: string }): Pro
   const { label: editionLabel, key: editionKey } = edition ?? utcEdition;
   // No unstable_cache — page is force-dynamic, blob reads are fast, and caching
   // empty results caused stale blank pages when local-slot and UTC+14 slot diverge.
+  // If UTC+14 has published a newer slot for the same local date, serve that
+  // first — prevents a visitor from seeing a stale afternoon blob when the
+  // night dispatch has already been built (same date, higher slot rank).
+  const SLOT_RANK: Record<string, number> = { early: 0, morning: 1, afternoon: 2, evening: 3, night: 4 };
+  const slotOf = (key: string) => SLOT_RANK[key.split("_")[1] ?? ""] ?? -1;
+  const sameDate = editionKey.split("_")[0] === utcEdition.key.split("_")[0];
+  if (sameDate && slotOf(utcEdition.key) > slotOf(editionKey)) {
+    const utcArchived = await getArchivedPageData(utcEdition.key);
+    if (utcArchived) return { ...utcArchived, editionLabel }; // local label, fresh content
+  }
   const archived = await getArchivedPageData(editionKey);
   if (archived) return archived;
   // Local-slot blob not built yet — fall back to current UTC+14 edition silently.
