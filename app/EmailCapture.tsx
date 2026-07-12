@@ -1,9 +1,15 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export function EmailCapture({ accent, ink, cardBg, fontBody, pillHeight = 36 }: { accent: string; ink: string; cardBg: string; fontBody: string; pillHeight?: number }) {
+  const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,9 +36,26 @@ export function EmailCapture({ accent, ink, cardBg, fontBody, pillHeight = 36 }:
     );
   }
 
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          background: "transparent", color: accent, border: `1px solid ${accent}`, borderRadius: 50,
+          height: pillHeight, paddingLeft: 22, paddingRight: 22,
+          fontSize: 13, fontWeight: 700, fontFamily: fontBody, cursor: "pointer",
+          boxSizing: "border-box", whiteSpace: "nowrap" as const,
+        }}
+      >
+        Get the Signal
+      </button>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+    <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, alignItems: "center" }}>
       <input
+        ref={inputRef}
         type="email"
         placeholder="your@email.com"
         value={email}
@@ -48,15 +71,25 @@ export function EmailCapture({ accent, ink, cardBg, fontBody, pillHeight = 36 }:
         type="submit"
         disabled={status === "loading"}
         style={{
-          background: "transparent", color: accent, border: `1px solid ${accent}`, borderRadius: 50,
+          background: accent, color: cardBg, border: `1px solid ${accent}`, borderRadius: 50,
           height: pillHeight, paddingLeft: 22, paddingRight: 22,
           fontSize: 13, fontWeight: 700, fontFamily: fontBody, cursor: "pointer",
-          opacity: status === "loading" ? 0.6 : 1, boxSizing: "border-box",
+          opacity: status === "loading" ? 0.6 : 1, boxSizing: "border-box", whiteSpace: "nowrap" as const,
         }}
       >
-        {status === "loading" ? "..." : "Get the Signal"}
+        {status === "loading" ? "..." : "Subscribe"}
       </button>
-      {status === "error" && <span style={{ fontSize: 11, color: "#ff6b6b", fontFamily: fontBody }}>Something went wrong. Try again.</span>}
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        style={{
+          background: "transparent", border: "none", color: accent, cursor: "pointer",
+          fontSize: 18, lineHeight: 1, padding: "0 4px", opacity: 0.5, fontFamily: fontBody,
+        }}
+      >
+        ×
+      </button>
+      {status === "error" && <span style={{ fontSize: 11, color: "#ff6b6b", fontFamily: fontBody }}>Something went wrong.</span>}
     </form>
   );
 }
