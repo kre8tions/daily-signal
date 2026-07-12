@@ -505,11 +505,6 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
 // ── Synthesis section ─────────────────────────────────────────────────────────
 
 function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
-  const sections = [
-    { label: "The Signal", text: weekly.signal, accent: P.accent },
-    { label: "The Noise", text: weekly.noise, accent: P.accent2 ?? P.inkMid },
-    { label: "Looking Forward", text: weekly.lookingForward, accent: P.accent },
-  ];
   return (
     <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
       <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
@@ -522,20 +517,7 @@ function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
               <div style={{ fontSize: 13, color: P.inkLight, fontFamily: P.fontBody }}>{weekly.weekOf}</div>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            {weekly.imageUrl && (
-              <div style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
-                <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden" }}>
-                  <img src={weekly.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                </div>
-                <svg style={{ position: "absolute", top: -3, left: -3, width: 58, height: 58, overflow: "visible", pointerEvents: "none" }} viewBox="0 0 58 58">
-                  <defs><filter id="sketchy-circle-w" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="4" seed="8" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
-                  <circle cx="29" cy="29" r="27" fill="none" stroke={P.accent} strokeWidth="2.5" filter="url(#sketchy-circle-w)" />
-                </svg>
-              </div>
-            )}
-            <ShareButton title={`Weekly Signal & Noise — ${weekly.weekOf}`} url={typeof window !== "undefined" ? window.location.href : ""} color={P.accent} fontBody={P.fontBody} />
-          </div>
+          <ShareButton title={`Weekly Signal & Noise — ${weekly.weekOf}`} url={typeof window !== "undefined" ? window.location.href : ""} color={P.accent} fontBody={P.fontBody} />
         </div>
         <div style={{ paddingLeft: 28, paddingRight: 28, marginBottom: 0 }}>
           <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
@@ -543,14 +525,31 @@ function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
             <line x1="0" y1="6" x2="100%" y2="6" stroke={P.accent} strokeWidth="2.5" filter="url(#sketchy-line-w)" />
           </svg>
         </div>
-        {/* Hook */}
-        <div style={{ paddingTop: 28, paddingBottom: 24, paddingLeft: 28, paddingRight: 28, borderBottom: `1px solid ${P.tint}44` }}>
-          <p style={{ fontSize: 26, lineHeight: 1.3, fontWeight: 700, color: P.ink, marginTop: 0, marginBottom: 0, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 1 : -0.3 }}>{weekly.hook}</p>
+        {/* Hook + Signal — full width section with image floated right, mirrors synthesis observation */}
+        <div className="ds-synthesis-obs" style={{ position: "relative", paddingTop: 24, paddingBottom: 20, paddingLeft: 28, paddingRight: weekly.imageUrl ? 320 : 28, borderBottom: `1px solid ${P.tint}44` }}>
+          <p style={{ fontSize: 26, lineHeight: 1.3, fontWeight: 700, color: P.ink, marginTop: 0, marginBottom: weekly.signal ? 16 : 0, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 1 : -0.3 }}>{weekly.hook}</p>
+          {weekly.signal && <p style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: 0, fontFamily: P.fontBody }}>{weekly.signal}</p>}
+          {weekly.imageUrl && (
+            <div className="ds-synthesis-img" style={{ position: "absolute", top: 24, right: 80 }}>
+              <div style={{ position: "relative", width: 200, height: 200 }}>
+                <div style={{ width: 200, height: 200, borderRadius: "50%", overflow: "hidden" }}>
+                  <img src={weekly.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
+                </div>
+                <svg style={{ position: "absolute", top: -5, left: -5, width: 210, height: 210, overflow: "visible", pointerEvents: "none" }} viewBox="0 0 210 210">
+                  <defs><filter id="sketchy-circle-w" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="8" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+                  <circle cx="105" cy="105" r="101" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#sketchy-circle-w)" />
+                </svg>
+              </div>
+            </div>
+          )}
         </div>
-        {/* Signal / Noise / Looking Forward */}
-        <div className="ds-weekly-cols" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0, borderBottom: `1px solid ${P.tint}44` }}>
-          {sections.map((s, i) => s.text ? (
-            <div key={i} style={{ paddingTop: 20, paddingBottom: 20, paddingLeft: 24, paddingRight: 24, borderRight: i < 2 ? `1px solid ${P.tint}44` : undefined }}>
+        {/* Noise + Looking Forward — 2 columns */}
+        <div className="ds-weekly-cols" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, borderBottom: `1px solid ${P.tint}44` }}>
+          {[
+            { label: "The Noise", text: weekly.noise, accent: P.accent2 ?? P.inkMid },
+            { label: "Looking Forward", text: weekly.lookingForward, accent: P.accent },
+          ].map((s, i) => s.text ? (
+            <div key={i} style={{ paddingTop: 20, paddingBottom: 20, paddingLeft: 24, paddingRight: 24, borderRight: i === 0 ? `1px solid ${P.tint}44` : undefined }}>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: s.accent, marginBottom: 10, fontFamily: P.fontBody }}>{s.label}</div>
               <p style={{ fontSize: 16, lineHeight: 1.75, color: P.inkMid, margin: 0, fontFamily: P.fontBody }}>{s.text}</p>
             </div>
