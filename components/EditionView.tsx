@@ -522,7 +522,20 @@ function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
               <div style={{ fontSize: 13, color: P.inkLight, fontFamily: P.fontBody }}>{weekly.weekOf}</div>
             </div>
           </div>
-          <ShareButton title={`Weekly Signal & Noise — ${weekly.weekOf}`} url={typeof window !== "undefined" ? window.location.href : ""} color={P.accent} fontBody={P.fontBody} />
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            {weekly.imageUrl && (
+              <div style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
+                <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden" }}>
+                  <img src={weekly.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                </div>
+                <svg style={{ position: "absolute", top: -3, left: -3, width: 58, height: 58, overflow: "visible", pointerEvents: "none" }} viewBox="0 0 58 58">
+                  <defs><filter id="sketchy-circle-w" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="4" seed="8" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+                  <circle cx="29" cy="29" r="27" fill="none" stroke={P.accent} strokeWidth="2.5" filter="url(#sketchy-circle-w)" />
+                </svg>
+              </div>
+            )}
+            <ShareButton title={`Weekly Signal & Noise — ${weekly.weekOf}`} url={typeof window !== "undefined" ? window.location.href : ""} color={P.accent} fontBody={P.fontBody} />
+          </div>
         </div>
         <div style={{ paddingLeft: 28, paddingRight: 28, marginBottom: 0 }}>
           <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
@@ -531,36 +544,23 @@ function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
           </svg>
         </div>
         {/* Hook */}
-        <div style={{ paddingTop: 28, paddingBottom: 20, paddingLeft: 28, paddingRight: weekly.imageUrl ? 320 : 28, position: "relative", borderBottom: `1px solid ${P.tint}44` }}>
+        <div style={{ paddingTop: 28, paddingBottom: 24, paddingLeft: 28, paddingRight: 28, borderBottom: `1px solid ${P.tint}44` }}>
           <p style={{ fontSize: 26, lineHeight: 1.3, fontWeight: 700, color: P.ink, marginTop: 0, marginBottom: 0, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 1 : -0.3 }}>{weekly.hook}</p>
-          {weekly.imageUrl && (
-            <div className="ds-synthesis-img" style={{ position: "absolute", top: 20, right: 80 }}>
-              <div style={{ position: "relative", width: 200, height: 200 }}>
-                <div style={{ width: 200, height: 200, borderRadius: "50%", overflow: "hidden" }}>
-                  <img src={weekly.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
-                </div>
-                <svg style={{ position: "absolute", top: -5, left: -5, width: 210, height: 210, overflow: "visible", pointerEvents: "none" }} viewBox="0 0 210 210">
-                  <defs><filter id="sketchy-circle-w" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="8" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
-                  <circle cx="105" cy="105" r="101" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#sketchy-circle-w)" />
-                </svg>
-              </div>
-            </div>
-          )}
         </div>
         {/* Signal / Noise / Looking Forward */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0, borderBottom: `1px solid ${P.tint}44` }}>
-          {sections.map((s, i) => (
+        <div className="ds-weekly-cols" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0, borderBottom: `1px solid ${P.tint}44` }}>
+          {sections.map((s, i) => s.text ? (
             <div key={i} style={{ paddingTop: 20, paddingBottom: 20, paddingLeft: 24, paddingRight: 24, borderRight: i < 2 ? `1px solid ${P.tint}44` : undefined }}>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: s.accent, marginBottom: 10, fontFamily: P.fontBody }}>{s.label}</div>
-              <p style={{ fontSize: 16, lineHeight: 1.7, color: P.inkMid, margin: 0, fontFamily: P.fontBody }}>{s.text}</p>
+              <p style={{ fontSize: 16, lineHeight: 1.75, color: P.inkMid, margin: 0, fontFamily: P.fontBody }}>{s.text}</p>
             </div>
-          ))}
+          ) : null)}
         </div>
         {/* One Move */}
         <div style={{ paddingTop: 20, paddingBottom: 24, paddingLeft: 28, paddingRight: 28 }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 10, fontFamily: P.fontBody }}>One Move This Week</div>
           <div style={{ fontSize: 17, lineHeight: 1.6, color: P.ink, fontWeight: 600, fontFamily: P.fontBody }}>{weekly.oneMove}</div>
-          {weekly.writerName && <div style={{ marginTop: 12, fontSize: 12, color: P.inkLight, fontFamily: P.fontBody }}>Written by {weekly.writerName}</div>}
+          {weekly.writerName && <div style={{ marginTop: 12, fontSize: 12, color: P.inkLight, fontFamily: P.fontBody }}>— {weekly.writerName}</div>}
         </div>
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
@@ -742,6 +742,8 @@ export async function EditionView({
         @media (max-width: 700px) {
           .ds-bento-fc { grid-template-columns: 1fr !important; grid-template-rows: auto !important; }
           .ds-bento-fc > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
+          .ds-weekly-cols { grid-template-columns: 1fr !important; }
+          .ds-weekly-cols > * { border-right: none !important; border-bottom: 1px solid rgba(128,128,128,0.2); }
         }
       `}</style>
 
