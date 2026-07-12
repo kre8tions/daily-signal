@@ -525,12 +525,13 @@ function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
             <line x1="0" y1="6" x2="100%" y2="6" stroke={P.accent} strokeWidth="2.5" filter="url(#sketchy-line-w)" />
           </svg>
         </div>
-        {/* Hook + Signal — full width section with image floated right, mirrors synthesis observation */}
-        <div className="ds-synthesis-obs" style={{ position: "relative", paddingTop: 24, paddingBottom: 20, paddingLeft: 28, paddingRight: weekly.imageUrl ? 320 : 28, borderBottom: `1px solid ${P.tint}44` }}>
-          <p style={{ fontSize: 26, lineHeight: 1.3, fontWeight: 700, color: P.ink, marginTop: 0, marginBottom: weekly.signal ? 16 : 0, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 1 : -0.3 }}>{weekly.hook}</p>
+        {/* Hook + Signal — mirrors synthesis observation section */}
+        <div className="ds-synthesis-obs" style={{ position: "relative", paddingTop: 20, paddingBottom: 14, paddingLeft: 28, paddingRight: weekly.imageUrl ? 320 : 28, borderBottom: `1px solid ${P.tint}44` }}>
+          <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>The Signal</div>
+          <p style={{ fontSize: 19, lineHeight: 1.6, fontWeight: 600, color: P.ink, marginTop: 0, marginBottom: weekly.signal ? 14 : 0, fontFamily: P.fontBody }}>{weekly.hook}</p>
           {weekly.signal && <p style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: 0, fontFamily: P.fontBody }}>{weekly.signal}</p>}
           {weekly.imageUrl && (
-            <div className="ds-synthesis-img" style={{ position: "absolute", top: 24, right: 80 }}>
+            <div className="ds-synthesis-img" style={{ position: "absolute", top: 20, right: 80 }}>
               <div style={{ position: "relative", width: 200, height: 200 }}>
                 <div style={{ width: 200, height: 200, borderRadius: "50%", overflow: "hidden" }}>
                   <img src={weekly.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
@@ -543,23 +544,26 @@ function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
             </div>
           )}
         </div>
-        {/* Noise + Looking Forward — 2 columns */}
-        <div className="ds-weekly-cols" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, borderBottom: `1px solid ${P.tint}44` }}>
-          {[
-            { label: "The Noise", text: weekly.noise, accent: P.accent2 ?? P.inkMid },
-            { label: "Looking Forward", text: weekly.lookingForward, accent: P.accent },
-          ].map((s, i) => s.text ? (
-            <div key={i} style={{ paddingTop: 20, paddingBottom: 20, paddingLeft: 24, paddingRight: 24, borderRight: i === 0 ? `1px solid ${P.tint}44` : undefined }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: s.accent, marginBottom: 10, fontFamily: P.fontBody }}>{s.label}</div>
-              <p style={{ fontSize: 16, lineHeight: 1.75, color: P.inkMid, margin: 0, fontFamily: P.fontBody }}>{s.text}</p>
+        {/* Noise + Looking Forward — mirrors synthesis key insights / bottom line layout */}
+        <div className="ds-synthesis-body ds-weekly-cols" style={{ paddingTop: 18, paddingBottom: 24, paddingLeft: 28, paddingRight: 28, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 36, borderBottom: `1px solid ${P.tint}44` }}>
+          {weekly.noise && (
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 14, fontFamily: P.fontBody }}>The Noise</div>
+              <p style={{ fontSize: 17, lineHeight: 1.65, color: P.inkMid, margin: 0, fontFamily: P.fontBody }}>{weekly.noise}</p>
             </div>
-          ) : null)}
+          )}
+          {weekly.lookingForward && (
+            <div style={{ borderLeft: `1px solid ${P.tint}55`, paddingLeft: 28 }}>
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 14, fontFamily: P.fontBody }}>Looking Forward</div>
+              <p style={{ fontSize: 17, lineHeight: 1.65, color: P.inkMid, margin: 0, fontFamily: P.fontBody }}>{weekly.lookingForward}</p>
+            </div>
+          )}
         </div>
-        {/* One Move */}
+        {/* One Move — mirrors synthesis bottom line */}
         <div style={{ paddingTop: 20, paddingBottom: 24, paddingLeft: 28, paddingRight: 28 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 10, fontFamily: P.fontBody }}>One Move This Week</div>
-          <div style={{ fontSize: 17, lineHeight: 1.6, color: P.ink, fontWeight: 600, fontFamily: P.fontBody }}>{weekly.oneMove}</div>
-          {weekly.writerName && <div style={{ marginTop: 12, fontSize: 12, color: P.inkLight, fontFamily: P.fontBody }}>— {weekly.writerName}</div>}
+          <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 14, fontFamily: P.fontBody }}>One Move This Week</div>
+          <div style={{ fontSize: 19, lineHeight: 1.6, fontWeight: 600, color: P.ink, fontFamily: P.fontBody }}>{weekly.oneMove}</div>
+          {weekly.writerName && <div style={{ marginTop: 14, fontSize: 12, color: P.inkLight, fontFamily: P.fontBody }}>— {weekly.writerName}</div>}
         </div>
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
