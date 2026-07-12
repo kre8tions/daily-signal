@@ -911,7 +911,24 @@ export async function getPageData(edition?: { key: string; label: string }): Pro
   // No unstable_cache — page is force-dynamic, blob reads are fast, and caching
   // empty results caused stale blank pages when local-slot and UTC+14 slot diverge.
   const archived = await getArchivedPageData(editionKey);
-  if (archived) return { ...archived, editionLabel };
+  if (archived) {
+    // Patch missing FC — if the archive blob was saved when FC generation failed,
+    // attempt to regenerate it now so the card doesn't stay blank permanently.
+    if (!archived.featureCreature) {
+      const { setEditionPaletteKey } = await import("./palette");
+      setEditionPaletteKey(editionKey);
+      const fc = await getFeatureCreature(editionKey).catch(() => null);
+      if (fc) {
+        const patched = { ...archived, editionLabel, featureCreature: fc };
+        cacheSet(`edition_${editionKey}`, patched, SEVEN_DAYS);
+        put(`archive/editions/${editionKey}.json`, JSON.stringify(patched), {
+          access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true,
+        }).catch(() => {});
+        return patched;
+      }
+    }
+    return { ...archived, editionLabel };
+  }
   // Local-slot blob not built yet — fall back to current UTC+14 edition silently.
   if (edition && editionKey !== utcEdition.key) {
     const utcArchived = await getArchivedPageData(utcEdition.key);
