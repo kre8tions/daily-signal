@@ -123,12 +123,15 @@ export const FEEDS = [
   { url: "https://www.psychologytoday.com/us/front-page/feed",                source: "Psychology Today",    section: "Psychology"    },
   { url: "https://elemental.medium.com/feed",                                 source: "Elemental",           section: "Psychology"    },
   { url: "https://www.vox.com/future-perfect/rss",                            source: "Vox Future Perfect",  section: "Psychology"    },
+  { url: "https://nesslabs.com/feed",                                          source: "Ness Labs",           section: "Psychology"    },
   // Human Potential — Outliers-style, high achievers, overcomers, lessons from exceptional people
   { url: "https://fs.blog/feed/",                                             source: "Farnam Street",       section: "HumanPotential" },
   { url: "https://bigthink.com/feed/",                                        source: "Big Think",           section: "HumanPotential" },
   { url: "https://freakonomics.com/feed/",                                    source: "Freakonomics",        section: "HumanPotential" },
   { url: "https://www.inc.com/rss.xml",                                       source: "Inc.",                section: "HumanPotential" },
   { url: "https://www.fastcompany.com/leadership/rss",                        source: "Fast Company Ideas",  section: "HumanPotential" },
+  { url: "https://feeds.kottke.org/main",                                     source: "Kottke",              section: "HumanPotential" },
+  { url: "https://dariusforoux.com/feed",                                     source: "Darius Foroux",       section: "HumanPotential" },
   // Technology — emerging tech, innovation, futurism (no policy)
   { url: "https://www.theverge.com/rss/index.xml",                          source: "The Verge",           section: "Technology"    },
   { url: "https://feeds.arstechnica.com/arstechnica/index",                 source: "Ars Technica",        section: "Technology"    },
@@ -1583,6 +1586,12 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   if (analysis && typeof analysis.fitness === "number" && analysis.fitness <= 3 && slotIndex <= 1) {
     console.warn(`[fitness-gate] slot ${slotIndex} rejected: score=${analysis.fitness} — ${analysis.fitness_reason} (${story.title})`);
     throw new Error(`Fitness gate: score ${analysis.fitness} — ${analysis.fitness_reason}`);
+  }
+
+  // ── Section gate: S1/S2 must be uplift (Psychology or HumanPotential) ────────
+  if (slotIndex <= 1 && story.section !== "Psychology" && story.section !== "HumanPotential") {
+    console.warn(`[section-gate] slot ${slotIndex} rejected: section=${story.section} (${story.title})`);
+    throw new Error(`Section gate: S1/S2 requires uplift section, got ${story.section}`);
   }
 
   // ── Pass 0.5: mode selection — writer chooses engagement mode based on subject knowledge ──
