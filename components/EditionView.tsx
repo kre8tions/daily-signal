@@ -800,8 +800,8 @@ export async function EditionView({
             <div style={{ ...card, height: "100%", paddingTop: 28, paddingBottom: 32, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
               <Pill section={s1.section} />
               <h1 className="ds-card-h" style={hStyle}>{s1.ownedTitle || s1.title}</h1>
-              {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{s1.summary}</p>}
-              {s1.bullets?.length ? (
+              {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{(s1.summary.match(/^[^.!?]+[.!?]/) ?? [s1.summary])[0].trim()}</p>}
+              {false && s1.bullets?.length ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {s1.bullets.map((b, i) => (
                     <div key={i} className="ds-card-body" style={{ display: "flex", gap: 14, alignItems: "flex-start", ...bodyStyle }}>
@@ -916,12 +916,7 @@ export async function EditionView({
         return (
           <div className="ds-row2" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 0, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
             {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(s => s?.summary).map((s, i) => {
-              const showPullquote = seededRandom(editionSeed + i * 37) < 0.25;
-              const showBullets = !showPullquote && seededRandom(editionSeed + i * 59) < 0.25;
-              const twoSentences = seededRandom(editionSeed + i * 71) < 0.5;
-              const summaryText = twoSentences
-                ? s.summary!
-                : (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
+              const summaryText = (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
               return (
                 <a key={i} href={`/article/${urlToSlug(s.link)}?e=${editionKey}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
                   <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
@@ -937,19 +932,6 @@ export async function EditionView({
                       {!s.imageUrl && <Pill section={s.section} />}
                       <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
                       {summaryText && <div className="ds-card-body" style={bodyStyle}>{summaryText}</div>}
-                      {showPullquote && s.pullquote ? (
-                        <div style={{ borderLeft: `3px solid ${P.accent}`, paddingLeft: 14, marginTop: 2 }}>
-                          <div style={{ fontSize: 15, fontStyle: "italic", color: P.inkMid, lineHeight: 1.6, fontFamily: P.fontBody }}>{s.pullquote}</div>
-                        </div>
-                      ) : showBullets && s.bullets?.length ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {s.bullets.slice(0, 3).map((b, bi) => (
-                            <div key={bi} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, lineHeight: 1.55, color: P.inkMid, fontFamily: P.fontBody }}>
-                              <span style={{ color: P.accent, flexShrink: 0, fontWeight: 700 }}>*</span>{b}
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
                       <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
                       </div>
