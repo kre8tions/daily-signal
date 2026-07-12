@@ -699,7 +699,7 @@ async function loadWeeklySyntheses(pastDates: string[]) {
   return results;
 }
 
-export async function getWeeklySignal(editionKey: string, blocked?: Set<string>): Promise<WeeklySignal | null> {
+export async function getWeeklySignal(editionKey: string, blocked?: Set<string>, onGenerated?: () => void): Promise<WeeklySignal | null> {
   const [sundayDate] = editionKey.split("_");
   const blobKey = `weekly-signal/v1/${sundayDate}.json`;
 
@@ -786,10 +786,65 @@ Return JSON only, no markdown:
       imageUrl,
     };
     put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
+    onGenerated?.();
     return result;
   } catch {
     return null;
   }
+}
+
+// ── Weekly Signal broadcast ───────────────────────────────────────────────────
+async function sendWeeklySignalBroadcast(weekly: WeeklySignal, editionKey: string): Promise<void> {
+  const apiSecret = process.env.CONVERTKIT_API_SECRET;
+  if (!apiSecret) return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dailysignal.cc";
+  const archiveUrl = `${siteUrl}/archive/${editionKey}`;
+
+  const html = `
+<div style="max-width:600px;margin:0 auto;font-family:Georgia,serif;color:#1a1a2e;background:#f8f7f4;padding:40px 32px;border-radius:12px;">
+  <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#888;margin-bottom:8px;">The Weekly Signal</div>
+  ${weekly.weekOf ? `<div style="font-size:12px;color:#aaa;margin-bottom:32px;">${weekly.weekOf}</div>` : ""}
+
+  <div style="font-size:28px;font-weight:700;line-height:1.25;color:#1a1a2e;margin-bottom:24px;">${weekly.hook}</div>
+
+  <div style="font-size:17px;line-height:1.8;color:#444;margin-bottom:28px;">${weekly.signal}</div>
+
+  ${weekly.noise ? `
+  <div style="border-left:3px solid #ccc;padding-left:20px;margin-bottom:28px;">
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:6px;">Noise</div>
+    <div style="font-size:15px;line-height:1.7;color:#777;font-style:italic;">${weekly.noise}</div>
+  </div>` : ""}
+
+  ${weekly.lookingForward ? `
+  <div style="margin-bottom:28px;">
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:6px;">Looking Forward</div>
+    <div style="font-size:16px;line-height:1.75;color:#444;">${weekly.lookingForward}</div>
+  </div>` : ""}
+
+  ${weekly.oneMove ? `
+  <div style="background:#1a1a2e;color:#f8f7f4;border-radius:10px;padding:20px 24px;margin-bottom:32px;">
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:8px;">One Move</div>
+    <div style="font-size:16px;line-height:1.6;font-weight:600;">${weekly.oneMove}</div>
+  </div>` : ""}
+
+  <div style="text-align:center;margin-top:32px;">
+    <a href="${archiveUrl}" style="display:inline-block;background:#1a1a2e;color:#f8f7f4;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:13px;font-weight:700;letter-spacing:0.5px;">Read This Edition →</a>
+  </div>
+
+  ${weekly.writerName ? `<div style="font-size:12px;color:#aaa;text-align:center;margin-top:24px;">— ${weekly.writerName}</div>` : ""}
+</div>`;
+
+  await fetch("https://api.convertkit.com/v3/broadcasts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      api_secret: apiSecret,
+      subject: `The Weekly Signal — ${weekly.hook}`,
+      content: html,
+      public: false,
+    }),
+  });
 }
 
 // ── Assemble page data (cached per edition via Next.js data cache) ────────────
@@ -807,7 +862,10 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   // Synthesis, FC, and (on Sunday evenings) Weekly Signal run in background while articles are batched
   const synthesisPromise = getSynthesis(raw, editionKey);
   const fcPromise = getFeatureCreature(editionKey, blocked).catch(() => null);
-  const weeklySignalPromise = isSundayEvening(editionKey) ? getWeeklySignal(editionKey, blocked).catch(() => null) : Promise.resolve(null);
+  let weeklySignalIsNew = false;
+  const weeklySignalPromise = isSundayEvening(editionKey)
+    ? getWeeklySignal(editionKey, blocked, () => { weeklySignalIsNew = true; }).catch(() => null)
+    : Promise.resolve(null);
 
   // Generate articles in batches of 3 to avoid Claude rate-limit bursts.
   // 11 simultaneous × 4 passes each = ~44 concurrent calls; batching keeps it to ~12 at a time.
@@ -893,6 +951,11 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     ...(synthesis.imageUrl ? [synthesis.imageUrl] : []),
   ];
   appendImageHistory(usedImageUrls).catch(() => {});
+
+  // Send weekly signal email to ConvertKit subscribers on first generation
+  if (weeklySignal && weeklySignalIsNew) {
+    sendWeeklySignalBroadcast(weeklySignal, editionKey).catch(() => {});
+  }
 
   // Pre-generate how-to pages — awaited so they complete before waitUntil exits
   if (synthesis.actions?.length) {
