@@ -801,15 +801,6 @@ export async function EditionView({
               <Pill section={s1.section} />
               <h1 className="ds-card-h" style={hStyle}>{s1.ownedTitle || s1.title}</h1>
               {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{(s1.summary.match(/^[^.!?]+[.!?]/) ?? [s1.summary])[0].trim()}</p>}
-              {false && s1.bullets?.length ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {s1.bullets.map((b, i) => (
-                    <div key={i} className="ds-card-body" style={{ display: "flex", gap: 14, alignItems: "flex-start", ...bodyStyle }}>
-                      <span className="ds-bullet" style={{ color: P.accent, flexShrink: 0, fontSize: 34, lineHeight: 0.75, marginTop: 6, fontWeight: 900, fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive` }}>*</span>{b}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
               <MorePill story={s1} editionKey={editionKey} />
             </div>
           </a>
