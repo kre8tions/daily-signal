@@ -1,5 +1,5 @@
 import { urlToSlug, actionSlug, getSynthWriterIndex, type Story, type Synthesis, type FeatureCreature, type WeeklySignal } from "@/lib/stories";
-import { P, QUOTE_FONT, SECTION_COLORS, ACTION_LABEL, ACTION_EMOJI, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL, TAGLINE, contrastColor, setEditionPaletteKey } from "@/lib/palette";
+import { P, QUOTE_FONT, SECTION_COLORS, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL, TAGLINE, contrastColor, setEditionPaletteKey } from "@/lib/palette";
 import { EditionCountdown } from "@/app/EditionCountdown";
 import { EmailCapture } from "@/app/EmailCapture";
 import { ShareButton } from "@/app/ShareButton";
@@ -9,6 +9,15 @@ import { ShareButton } from "@/app/ShareButton";
 function seededRandom(seed: number): number {
   const x = Math.sin(seed + 1) * 10000;
   return x - Math.floor(x);
+}
+
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(seed + i * 97) * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 function Pill({ section }: { section: string }) {
@@ -574,116 +583,172 @@ function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
   );
 }
 
-function SynthesisSection({ synthesis, stories, writerIndex, editionKey }: { synthesis: Synthesis; stories: Story[]; writerIndex: number; editionKey: string }) {
+function ObservationCard({ synthesis, writerIndex, editionKey }: { synthesis: Synthesis; writerIndex: number; editionKey: string }) {
   return (
-    <>
-      <div id="signal" style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-        <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
-          <div style={{ position: "absolute", top: 12, right: 16, fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: P.accent, opacity: 0.45, letterSpacing: 1, userSelect: "none" as const }}>W{writerIndex}</div>
-          <div style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ width: 55, height: 55, borderRadius: "50%", background: P.cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><SpaceInvaderSVG color={P.accent} /></div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>The Signal</div>
-              <div style={{ fontSize: 22, fontWeight: 400, color: P.ink, lineHeight: 1.1, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 2 : 0 }}>{synthesis.theme}</div>
-            </div>
-            <ShareButton title={synthesis.theme} url={`/archive/${editionKey}#signal`} color={P.accent} fontBody={P.fontBody} />
+    <div id="signal" style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
+        <div style={{ position: "absolute", top: 12, right: 16, fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: P.accent, opacity: 0.45, letterSpacing: 1, userSelect: "none" as const }}>W{writerIndex}</div>
+        <div style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 55, height: 55, borderRadius: "50%", background: P.cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><SpaceInvaderSVG color={P.accent} /></div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>The Signal</div>
+            <div style={{ fontSize: 22, fontWeight: 400, color: P.ink, lineHeight: 1.1, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 2 : 0 }}>{synthesis.theme}</div>
           </div>
-          <div style={{ paddingLeft: 28, paddingRight: 28, marginBottom: 0 }}>
-            <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
-              <defs><filter id="sketchy-line" x="-5%" y="-100%" width="110%" height="300%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="3" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
-              <line x1="0" y1="6" x2="100%" y2="6" stroke={P.accent} strokeWidth="2.5" filter="url(#sketchy-line)" />
-            </svg>
-          </div>
-          {(synthesis.hook || synthesis.observation) && (
-            <div className="ds-synthesis-obs" style={{ position: "relative", paddingTop: 20, paddingBottom: 14, paddingLeft: 28, paddingRight: synthesis.imageUrl ? 320 : 28, borderBottom: `1px solid ${P.tint}44` }}>
-              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Observation</div>
-              {synthesis.hook && (
-                <p style={{ fontSize: 19, lineHeight: 1.6, fontWeight: 600, color: P.ink, marginTop: 0, marginBottom: synthesis.observation ? 14 : 0, fontFamily: P.fontBody }}>{synthesis.hook}</p>
-              )}
-              {synthesis.observation && synthesis.observation.split("\n\n").filter(Boolean).map((para, i, arr) => (
-                <p key={i} style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: i < arr.length - 1 ? 14 : 0, fontFamily: P.fontBody }}>{para}</p>
-              ))}
-              {synthesis.imageUrl && (
-                <div className="ds-synthesis-img" style={{ position: "absolute", top: 20, right: 80 }}>
-                  <div style={{ position: "relative", width: 200, height: 200 }}>
-                    <div style={{ width: 200, height: 200, borderRadius: "50%", overflow: "hidden" }}>
-                      <img src={synthesis.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
-                    </div>
-                    <svg style={{ position: "absolute", top: -5, left: -5, width: 210, height: 210, overflow: "visible", pointerEvents: "none" }} viewBox="0 0 210 210">
-                      <defs><filter id="sketchy-circle" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="5" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
-                      <circle cx="105" cy="105" r="101" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#sketchy-circle)" />
-                    </svg>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          <div className="ds-synthesis-body" style={{ paddingTop: 18, paddingBottom: 24, paddingLeft: 28, paddingRight: 28, display: "grid", gridTemplateColumns: "3fr 2fr", gap: 36 }}>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 14, fontFamily: P.fontBody }}>Key Insights</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {synthesis.takeaways?.map((t, i) => (
-                  <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                    <div style={{ flexShrink: 0, fontSize: 22, fontWeight: 900, color: P.accent, fontFamily: P.fontHeading, lineHeight: 1, minWidth: 22, paddingTop: 2 }}>{i + 1}</div>
-                    <div style={{ fontSize: 17, lineHeight: 1.65, color: P.inkMid, paddingTop: 3, fontFamily: P.fontBody }}>{t}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="ds-bottom-line" style={{ display: "flex", flexDirection: "column", justifyContent: "center", borderLeft: `1px solid ${P.tint}55`, paddingLeft: 28 }}>
-              <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>The Bottom Line</div>
-              <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 4 }}>"</div>
-              <div style={{ fontSize: 34, fontWeight: QUOTE_FONT.weight, lineHeight: 1.25, color: P.ink, fontStyle: QUOTE_FONT.style as "italic" | "normal", fontFamily: QUOTE_FONT.family, letterSpacing: -0.3 }}>{synthesis.conclusion}</div>
-              <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 4, textAlign: "right" as const }}>"</div>
-            </div>
-          </div>
+          <ShareButton title={synthesis.theme} url={`/archive/${editionKey}#signal`} color={P.accent} fontBody={P.fontBody} />
         </div>
-        <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
-          <defs><filter id="sketchy-border" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="7" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
-          <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border)" />
-        </svg>
-      </div>
-      {synthesis.actions?.length > 0 && (
-        <div style={{ maxWidth: 1200, marginTop: 16, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-          <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 28, paddingBottom: 32, paddingLeft: 32, paddingRight: 32 }}>
-            <style>{`@keyframes action-pop{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}.action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:700px){.action-grid{grid-template-columns:1fr}}`}</style>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
-              <span style={{ fontSize: 36, display: "inline-block", animation: "action-pop 1.2s ease-in-out infinite" }}>{ACTION_EMOJI}</span>
-              <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{ACTION_LABEL}</div>
-            </div>
-            <div className="action-grid">
-              {synthesis.actions.map((action, i) => {
-                const slug = actionSlug(action);
-                const encoded = Buffer.from(action).toString("base64");
-                const relStory = stories[i] ?? stories[0];
-                const relSlug = relStory ? urlToSlug(relStory.link) : "";
-                const relTitle = relStory ? encodeURIComponent(relStory.ownedTitle || relStory.title) : "";
-                const synthCtx = [
-                  synthesis.theme ? `st=${encodeURIComponent(synthesis.theme)}` : "",
-                  synthesis.hook ? `sh=${encodeURIComponent(synthesis.hook)}` : "",
-                ].filter(Boolean).join("&");
-                const href = `/how/${slug}?a=${encoded}&as=${relSlug}&at=${relTitle}${synthCtx ? "&" + synthCtx : ""}`;
-                return (
-                  <a key={i} href={href} style={{ textDecoration: "none", background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 16, paddingBottom: 16, paddingLeft: 18, paddingRight: 18, display: "flex", flexDirection: "column", gap: 12, minHeight: 120 }}>
-                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                      <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{i + 1}</div>
-                      <div style={{ fontSize: 15, lineHeight: 1.6, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
-                      <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, background: "transparent", border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 5, paddingBottom: 5, paddingLeft: 14, paddingRight: 14 }}>How?</span>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-          <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
-            <defs><filter id="sketchy-border-action" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="12" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
-            <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-action)" />
+        <div style={{ paddingLeft: 28, paddingRight: 28, marginBottom: 0 }}>
+          <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
+            <defs><filter id="sketchy-line-obs" x="-5%" y="-100%" width="110%" height="300%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="3" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+            <line x1="0" y1="6" x2="100%" y2="6" stroke={P.accent} strokeWidth="2.5" filter="url(#sketchy-line-obs)" />
           </svg>
         </div>
-      )}
-    </>
+        {(synthesis.hook || synthesis.observation) && (
+          <div className="ds-synthesis-obs" style={{ position: "relative", paddingTop: 20, paddingBottom: 28, paddingLeft: 28, paddingRight: synthesis.imageUrl ? 320 : 28 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>Observation</div>
+            {synthesis.hook && (
+              <p style={{ fontSize: 19, lineHeight: 1.6, fontWeight: 600, color: P.ink, marginTop: 0, marginBottom: synthesis.observation ? 14 : 0, fontFamily: P.fontBody }}>{synthesis.hook}</p>
+            )}
+            {synthesis.observation && synthesis.observation.split("\n\n").filter(Boolean).map((para, i, arr) => (
+              <p key={i} style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: i < arr.length - 1 ? 14 : 0, fontFamily: P.fontBody }}>{para}</p>
+            ))}
+            {synthesis.imageUrl && (
+              <div className="ds-synthesis-img" style={{ position: "absolute", top: 20, right: 80 }}>
+                <div style={{ position: "relative", width: 200, height: 200 }}>
+                  <div style={{ width: 200, height: 200, borderRadius: "50%", overflow: "hidden" }}>
+                    <img src={synthesis.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
+                  </div>
+                  <svg style={{ position: "absolute", top: -5, left: -5, width: 210, height: 210, overflow: "visible", pointerEvents: "none" }} viewBox="0 0 210 210">
+                    <defs><filter id="sketchy-circle-obs" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="5" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+                    <circle cx="105" cy="105" r="101" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#sketchy-circle-obs)" />
+                  </svg>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="sketchy-border-obs" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="7" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-obs)" />
+      </svg>
+    </div>
+  );
+}
+
+function KeyInsightsCard({ synthesis }: { synthesis: Synthesis }) {
+  if (!synthesis.takeaways?.length) return null;
+  return (
+    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 28, paddingBottom: 32, paddingLeft: 36, paddingRight: 36 }}>
+        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 22, fontFamily: P.fontBody }}>Key Insights</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {synthesis.takeaways.map((t, i) => (
+            <div key={i} style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
+              <div style={{ flexShrink: 0, fontSize: 24, fontWeight: 900, color: P.accent, fontFamily: P.fontHeading, lineHeight: 1, minWidth: 26, paddingTop: 2 }}>{i + 1}</div>
+              <div style={{ fontSize: 17, lineHeight: 1.65, color: P.inkMid, paddingTop: 3, fontFamily: P.fontBody }}>{t}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="sketchy-border-ki" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="13" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-ki)" />
+      </svg>
+    </div>
+  );
+}
+
+function BottomLineCard({ synthesis }: { synthesis: Synthesis }) {
+  if (!synthesis.conclusion) return null;
+  return (
+    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 32, paddingBottom: 36, paddingLeft: 44, paddingRight: 44 }}>
+        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>The Bottom Line</div>
+        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 4 }}>"</div>
+        <div style={{ fontSize: 34, fontWeight: QUOTE_FONT.weight, lineHeight: 1.25, color: P.ink, fontStyle: QUOTE_FONT.style as "italic" | "normal", fontFamily: QUOTE_FONT.family, letterSpacing: -0.3 }}>{synthesis.conclusion}</div>
+        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 4, textAlign: "right" as const }}>"</div>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="sketchy-border-bl" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="14" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-bl)" />
+      </svg>
+    </div>
+  );
+}
+
+const ACTION_CARD_EMOJIS = ["🎯", "⚡", "🔥"];
+const ACTION_CARD_SEEDS = [15, 16, 17];
+
+function StandaloneActionCard({ action, actionIndex, stories, synthesis, editionKey }: { action: string; actionIndex: number; stories: Story[]; synthesis: Synthesis; editionKey: string }) {
+  const slug = actionSlug(action);
+  const encoded = Buffer.from(action).toString("base64");
+  const relStory = stories[actionIndex] ?? stories[0];
+  const relSlug = relStory ? urlToSlug(relStory.link) : "";
+  const relTitle = relStory ? encodeURIComponent(relStory.ownedTitle || relStory.title) : "";
+  const synthCtx = [
+    synthesis.theme ? `st=${encodeURIComponent(synthesis.theme)}` : "",
+    synthesis.hook ? `sh=${encodeURIComponent(synthesis.hook)}` : "",
+  ].filter(Boolean).join("&");
+  const href = `/how/${slug}?a=${encoded}&as=${relSlug}&at=${relTitle}${synthCtx ? "&" + synthCtx : ""}`;
+  const seed = ACTION_CARD_SEEDS[actionIndex % ACTION_CARD_SEEDS.length];
+  const emoji = ACTION_CARD_EMOJIS[actionIndex % ACTION_CARD_EMOJIS.length];
+  const animName = `sac-pop-${actionIndex}`;
+  return (
+    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+      <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
+      <a href={href} style={{ textDecoration: "none", display: "block" }}>
+        <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 24, paddingBottom: 28, paddingLeft: 32, paddingRight: 32, display: "flex", alignItems: "center", gap: 28 }}>
+          <span style={{ fontSize: 52, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite`, flexShrink: 0 }}>{emoji}</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>One Move</div>
+            <div style={{ fontSize: 18, lineHeight: 1.6, color: P.ink, fontFamily: P.fontBody, fontWeight: 500 }}>{action}</div>
+          </div>
+          <div style={{ flexShrink: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, background: "transparent", border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 8, paddingBottom: 8, paddingLeft: 20, paddingRight: 20, display: "inline-block", whiteSpace: "nowrap" as const }}>How?</span>
+          </div>
+        </div>
+      </a>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id={`sketchy-border-a${actionIndex}`} x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed={seed} result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter={`url(#sketchy-border-a${actionIndex})`} />
+      </svg>
+    </div>
+  );
+}
+
+function StoryRow({ stories, seedOffset, editionKey }: { stories: Story[]; seedOffset: number; editionKey: string }) {
+  if (stories.length === 0) return null;
+  const hStyle: React.CSSProperties = { fontFamily: P.fontHeading, fontSize: 22, fontWeight: 800, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0 };
+  const bodyStyle: React.CSSProperties = { fontSize: 15, lineHeight: 1.7, color: P.inkMid, fontFamily: P.fontBody };
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
+      {stories.map((s, i) => {
+        const si = seedOffset + i;
+        const summaryText = (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
+        return (
+          <a key={si} href={`/article/${urlToSlug(s.link)}?e=${editionKey}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
+            <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
+              {s.imageUrl && (
+                <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
+                  <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
+                  <PixelEdge color={P.cardBg} seed={si + 2} height={52} />
+                  <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
+                </div>
+              )}
+              <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
+                {s.imageUrl && <PixelEdgeTop color={P.pageBg} seed={si + 2} height={28} />}
+                {!s.imageUrl && <Pill section={s.section} />}
+                <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
+                {summaryText && <div className="ds-card-body" style={bodyStyle}>{summaryText}</div>}
+                <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
+                </div>
+              </div>
+            </div>
+          </a>
+        );
+      })}
+    </div>
   );
 }
 
@@ -728,9 +793,7 @@ export async function EditionView({
   setEditionPaletteKey(editionKey);
   const synthWriterIndex = getSynthWriterIndex(editionKey);
   const [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11] = allStories;
-  // Flip row 1 (S1) and row 2 (FC) on morning + evening editions for layout variety
-  const _slot = editionKey.split("_")[1];
-  const synthFlip = seededRandom(editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 41), 0)) < 0.4;
+  const editionSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
 
   const card: React.CSSProperties = { background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, position: "relative" };
   const imgCard: React.CSSProperties = { ...card, position: "relative", background: P.tint + "44" };
@@ -819,8 +882,11 @@ export async function EditionView({
         )}
       </div>
 
-      {/* Synthesis — flipped editions: appears between S1 hero and FC+S2 */}
-      {synthFlip && (weeklySignal?.hook ? <WeeklySignalSection weekly={weeklySignal} /> : synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} editionKey={editionKey} />)}
+      {/* Observation card (or Weekly Signal on Sunday) — always anchored after S1 */}
+      {weeklySignal?.hook
+        ? <WeeklySignalSection weekly={weeklySignal} />
+        : synthesis?.theme && <ObservationCard synthesis={synthesis} writerIndex={synthWriterIndex} editionKey={editionKey} />
+      }
 
       {/* Bento row 2: FC + S2 */}
       <div className="ds-bento-fc" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
@@ -903,40 +969,38 @@ export async function EditionView({
         )}
       </div>
 
-      {/* Synthesis — normal editions: appears after FC+S2 */}
-      {!synthFlip && (weeklySignal?.hook ? <WeeklySignalSection weekly={weeklySignal} /> : synthesis?.theme && <SynthesisSection synthesis={synthesis} stories={allStories} writerIndex={synthWriterIndex} editionKey={editionKey} />)}
+      {/* S3–S11 interleaved with shuffled synthesis cards */}
+      {(() => {
+        type CardId = "ki" | "bl" | "a0" | "a1" | "a2";
+        const pool = synthesis?.theme
+          ? seededShuffle<CardId>(["ki", "bl", "a0", "a1", "a2"], editionSeed)
+          : [] as CardId[];
 
-      {/* Row 2: s3–s11 */}
-      {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(Boolean).length > 0 && (() => {
-        const editionSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+        function renderCard(id: CardId) {
+          if (!synthesis?.theme) return null;
+          if (id === "ki") return synthesis.takeaways?.length ? <KeyInsightsCard key="ki" synthesis={synthesis} /> : null;
+          if (id === "bl") return synthesis.conclusion ? <BottomLineCard key="bl" synthesis={synthesis} /> : null;
+          const ai = parseInt(id[1]);
+          const action = synthesis.actions?.[ai];
+          return action ? <StandaloneActionCard key={id} action={action} actionIndex={ai} stories={allStories} synthesis={synthesis} editionKey={editionKey} /> : null;
+        }
+
+        const stories9 = [s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(s => s?.summary) as Story[];
+        const row1 = stories9.slice(0, 3);
+        const row2 = stories9.slice(3, 6);
+        const row3 = stories9.slice(6, 9);
+
         return (
-          <div className="ds-row2" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 0, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
-            {[s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(s => s?.summary).map((s, i) => {
-              const summaryText = (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
-              return (
-                <a key={i} href={`/article/${urlToSlug(s.link)}?e=${editionKey}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
-                  <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
-                    {s.imageUrl && (
-                      <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
-                        <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
-                        <PixelEdge color={P.cardBg} seed={i + 2} height={52} />
-                        <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
-                      </div>
-                    )}
-                    <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
-                      {s.imageUrl && <PixelEdgeTop color={P.pageBg} seed={i + 2} height={28} />}
-                      {!s.imageUrl && <Pill section={s.section} />}
-                      <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
-                      {summaryText && <div className="ds-card-body" style={bodyStyle}>{summaryText}</div>}
-                      <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
-                      </div>
-                    </div>
-                  </div>
-                </a>
-              );
-            })}
-          </div>
+          <>
+            {pool[0] && renderCard(pool[0])}
+            <StoryRow stories={row1} seedOffset={0} editionKey={editionKey} />
+            {pool[1] && renderCard(pool[1])}
+            <StoryRow stories={row2} seedOffset={3} editionKey={editionKey} />
+            {pool[2] && renderCard(pool[2])}
+            <StoryRow stories={row3} seedOffset={6} editionKey={editionKey} />
+            {pool[3] && renderCard(pool[3])}
+            {pool[4] && renderCard(pool[4])}
+          </>
         );
       })()}
 
