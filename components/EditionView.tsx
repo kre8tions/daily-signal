@@ -588,13 +588,13 @@ function ObservationCard({ synthesis, writerIndex, editionKey }: { synthesis: Sy
     <div id="signal" style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
       <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
         <div style={{ position: "absolute", top: 12, right: 16, fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: P.accent, opacity: 0.45, letterSpacing: 1, userSelect: "none" as const }}>W{writerIndex}</div>
-        <div className="ds-obs-header" style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16 }}>
+        <div className="ds-obs-header" style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           <div style={{ width: 55, height: 55, borderRadius: "50%", background: P.cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><SpaceInvaderSVG color={P.accent} /></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>The Signal</div>
             <div style={{ fontSize: 22, fontWeight: 400, color: P.ink, lineHeight: 1.1, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 2 : 0 }}>{synthesis.theme}</div>
           </div>
-          <ShareButton title={synthesis.theme} url={`/archive/${editionKey}#signal`} color={P.accent} fontBody={P.fontBody} />
+          <div className="ds-obs-share"><ShareButton title={synthesis.theme} url={`/archive/${editionKey}#signal`} color={P.accent} fontBody={P.fontBody} /></div>
         </div>
         <div style={{ paddingLeft: 28, paddingRight: 28, marginBottom: 0 }}>
           <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
@@ -774,12 +774,13 @@ function BottomLineGridCell({ synthesis, editionKey }: { synthesis: Synthesis; e
   if (!synthesis.conclusion) return null;
   const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
   const takeawayLabel = TAKEAWAY_LABELS[Math.floor(seededRandom(eSeed + 88) * TAKEAWAY_LABELS.length)];
+  const qFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 66) * QUOTE_FONTS.length)];
   return (
     <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
       <div style={{ background: P.cardBg, borderRadius: 20, boxShadow: P.shadow, paddingTop: 22, paddingBottom: 26, paddingLeft: 26, paddingRight: 26, display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
         <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 12, fontFamily: P.fontBody }}>{takeawayLabel}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 2 }}>"</div>
-        <div style={{ fontSize: 26, fontWeight: QUOTE_FONT.weight, lineHeight: 1.3, color: P.ink, fontStyle: QUOTE_FONT.style as "italic" | "normal", fontFamily: QUOTE_FONT.family, letterSpacing: -0.2 }}>{synthesis.conclusion}</div>
+        <div style={{ fontSize: 26, fontWeight: qFont.weight, lineHeight: 1.3, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.2 }}>{synthesis.conclusion}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 2, textAlign: "right" as const }}>"</div>
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
@@ -899,7 +900,7 @@ export async function EditionView({
           .ds-weekly-cols { grid-template-columns: 1fr !important; }
           .ds-weekly-cols > * { border-right: none !important; border-bottom: 1px solid rgba(128,128,128,0.2); }
           .ds-story-row { grid-template-columns: 1fr !important; }
-          .ds-obs-header { flex-wrap: wrap !important; }
+          .ds-obs-share { flex-basis: 100%; display: flex; justify-content: flex-end; margin-top: 6px; }
         }
       `}</style>
 
