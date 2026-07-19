@@ -586,10 +586,10 @@ function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
 function ObservationCard({ synthesis, writerIndex, editionKey }: { synthesis: Synthesis; writerIndex: number; editionKey: string }) {
   return (
     <div id="signal" style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
+      <div style={{ background: P.accent + "40", borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
         <div style={{ position: "absolute", top: 12, right: 16, fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: P.accent, opacity: 0.45, letterSpacing: 1, userSelect: "none" as const }}>W{writerIndex}</div>
         <div className="ds-obs-header" style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ width: 55, height: 55, borderRadius: "50%", background: P.cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><SpaceInvaderSVG color={P.accent} /></div>
+          <div style={{ width: 55, height: 55, borderRadius: "50%", background: P.pageBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><SpaceInvaderSVG color={P.accent} /></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>The Signal</div>
             <div style={{ fontSize: 22, fontWeight: 400, color: P.ink, lineHeight: 1.1, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 2 : 0 }}>{synthesis.theme}</div>
@@ -639,7 +639,7 @@ function KeyInsightsCard({ synthesis }: { synthesis: Synthesis }) {
   if (!synthesis.takeaways?.length) return null;
   return (
     <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 28, paddingBottom: 32, paddingLeft: 36, paddingRight: 36 }}>
+      <div style={{ background: P.accent + "40", borderRadius: 24, boxShadow: P.shadow, paddingTop: 28, paddingBottom: 32, paddingLeft: 36, paddingRight: 36 }}>
         <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 22, fontFamily: P.fontBody }}>Key Insights</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           {synthesis.takeaways.map((t, i) => (
@@ -665,7 +665,7 @@ function BottomLineCard({ synthesis, editionKey }: { synthesis: Synthesis; editi
   const qFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 66) * QUOTE_FONTS.length)];
   return (
     <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 32, paddingBottom: 36, paddingLeft: 44, paddingRight: 44 }}>
+      <div style={{ background: P.accent + "40", borderRadius: 24, boxShadow: P.shadow, paddingTop: 32, paddingBottom: 36, paddingLeft: 44, paddingRight: 44 }}>
         <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>{takeawayLabel}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 4 }}>"</div>
         <div style={{ fontSize: 34, fontWeight: qFont.weight, lineHeight: 1.25, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.3, textAlign: "left" as const }}>{synthesis.conclusion}</div>
@@ -701,7 +701,7 @@ function StandaloneActionCard({ action, actionIndex, stories, synthesis, edition
   return (
     <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
       <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
-      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 24, paddingBottom: 28, paddingLeft: 28, paddingRight: 28 }}>
+      <div style={{ background: P.accent + "40", borderRadius: 24, boxShadow: P.shadow, paddingTop: 24, paddingBottom: 28, paddingLeft: 28, paddingRight: 28 }}>
         {/* Header: emoji + label on the same line */}
         {(() => {
           const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
@@ -758,7 +758,7 @@ function ActionGridCell({ action, actionIndex, stories, synthesis, editionKey }:
   return (
     <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
       <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
-      <div style={{ background: P.cardBg, borderRadius: 20, boxShadow: P.shadow, paddingTop: 18, paddingBottom: 20, paddingLeft: 20, paddingRight: 20, display: "flex", flexDirection: "column", flex: 1 }}>
+      <div style={{ background: P.accent + "40", borderRadius: 20, boxShadow: P.shadow, paddingTop: 18, paddingBottom: 20, paddingLeft: 20, paddingRight: 20, display: "flex", flexDirection: "column", flex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <span style={{ fontSize: 28, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite` }}>{emoji}</span>
           <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{moveLabel}</div>
@@ -785,7 +785,7 @@ function BottomLineGridCell({ synthesis, editionKey }: { synthesis: Synthesis; e
   const qFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 66) * QUOTE_FONTS.length)];
   return (
     <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
-      <div style={{ background: P.cardBg, borderRadius: 20, boxShadow: P.shadow, paddingTop: 22, paddingBottom: 26, paddingLeft: 26, paddingRight: 26, display: "flex", flexDirection: "column", flex: 1, justifyContent: "flex-start" }}>
+      <div style={{ background: P.accent + "40", borderRadius: 20, boxShadow: P.shadow, paddingTop: 22, paddingBottom: 26, paddingLeft: 26, paddingRight: 26, display: "flex", flexDirection: "column", flex: 1, justifyContent: "flex-start" }}>
         <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 12, fontFamily: P.fontBody }}>{takeawayLabel}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 2 }}>"</div>
         <div style={{ fontSize: 26, fontWeight: qFont.weight, lineHeight: 1.3, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.2, textAlign: "left" as const }}>{synthesis.conclusion}</div>
