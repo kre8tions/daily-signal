@@ -658,12 +658,14 @@ function KeyInsightsCard({ synthesis }: { synthesis: Synthesis }) {
   );
 }
 
-function BottomLineCard({ synthesis }: { synthesis: Synthesis }) {
+function BottomLineCard({ synthesis, editionKey }: { synthesis: Synthesis; editionKey: string }) {
   if (!synthesis.conclusion) return null;
+  const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  const takeawayLabel = TAKEAWAY_LABELS[Math.floor(seededRandom(eSeed + 88) * TAKEAWAY_LABELS.length)];
   return (
     <div style={{ maxWidth: 800, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
       <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 32, paddingBottom: 36, paddingLeft: 44, paddingRight: 44 }}>
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>The Bottom Line</div>
+        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>{takeawayLabel}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 4 }}>"</div>
         <div style={{ fontSize: 34, fontWeight: QUOTE_FONT.weight, lineHeight: 1.25, color: P.ink, fontStyle: QUOTE_FONT.style as "italic" | "normal", fontFamily: QUOTE_FONT.family, letterSpacing: -0.3 }}>{synthesis.conclusion}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 4, textAlign: "right" as const }}>"</div>
@@ -678,6 +680,8 @@ function BottomLineCard({ synthesis }: { synthesis: Synthesis }) {
 
 const ACTION_CARD_EMOJIS = ["🎯", "⚡", "🔥"];
 const ACTION_CARD_SEEDS = [15, 16, 17];
+const MOVE_LABELS = ["Your Next Move", "One Move", "Take Action", "Begin Here", "First Step", "Act On It"];
+const TAKEAWAY_LABELS = ["Today's Takeaway", "The Bottom Line", "Core Insight", "What It Means", "Key Takeaway", "The Upshot"];
 
 function StandaloneActionCard({ action, actionIndex, stories, synthesis, editionKey }: { action: string; actionIndex: number; stories: Story[]; synthesis: Synthesis; editionKey: string }) {
   const slug = actionSlug(action);
@@ -698,10 +702,16 @@ function StandaloneActionCard({ action, actionIndex, stories, synthesis, edition
       <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
       <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 24, paddingBottom: 28, paddingLeft: 28, paddingRight: 28 }}>
         {/* Header: emoji + label on the same line */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
-          <span style={{ fontSize: 36, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite` }}>{emoji}</span>
-          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>One Move</div>
-        </div>
+        {(() => {
+          const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+          const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77) * MOVE_LABELS.length)];
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+              <span style={{ fontSize: 36, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite` }}>{emoji}</span>
+              <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{moveLabel}</div>
+            </div>
+          );
+        })()}
         {/* Dashed box: number + text + HOW? */}
         <a href={href} style={{ textDecoration: "none", display: "flex", flexDirection: "column", gap: 16, background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 18, paddingRight: 18, minHeight: 120 }}>
           <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
@@ -721,38 +731,66 @@ function StandaloneActionCard({ action, actionIndex, stories, synthesis, edition
   );
 }
 
-function StoryRow({ stories, seedOffset, editionKey }: { stories: Story[]; seedOffset: number; editionKey: string }) {
-  if (stories.length === 0) return null;
-  const hStyle: React.CSSProperties = { fontFamily: P.fontHeading, fontSize: 22, fontWeight: 800, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0 };
-  const bodyStyle: React.CSSProperties = { fontSize: 15, lineHeight: 1.7, color: P.inkMid, fontFamily: P.fontBody };
+// ── Synth cards in grid-cell format (compact, fills grid column) ──────────────
+
+function ActionGridCell({ action, actionIndex, stories, synthesis, editionKey }: { action: string; actionIndex: number; stories: Story[]; synthesis: Synthesis; editionKey: string }) {
+  const slug = actionSlug(action);
+  const encoded = Buffer.from(action).toString("base64");
+  const relStory = stories[actionIndex] ?? stories[0];
+  const relSlug = relStory ? urlToSlug(relStory.link) : "";
+  const relTitle = relStory ? encodeURIComponent(relStory.ownedTitle || relStory.title) : "";
+  const synthCtx = [
+    synthesis.theme ? `st=${encodeURIComponent(synthesis.theme)}` : "",
+    synthesis.hook ? `sh=${encodeURIComponent(synthesis.hook)}` : "",
+  ].filter(Boolean).join("&");
+  const href = `/how/${slug}?a=${encoded}&as=${relSlug}&at=${relTitle}${synthCtx ? "&" + synthCtx : ""}`;
+  const seed = ACTION_CARD_SEEDS[actionIndex % ACTION_CARD_SEEDS.length];
+  const emoji = ACTION_CARD_EMOJIS[actionIndex % ACTION_CARD_EMOJIS.length];
+  const animName = `sac-g-pop-${actionIndex}`;
+  const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77) * MOVE_LABELS.length)];
   return (
-    <div className="ds-story-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
-      {stories.map((s, i) => {
-        const si = seedOffset + i;
-        const summaryText = (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
-        return (
-          <a key={si} href={`/article/${urlToSlug(s.link)}?e=${editionKey}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
-            <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
-              {s.imageUrl && (
-                <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
-                  <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
-                  <PixelEdge color={P.cardBg} seed={si + 2} height={52} />
-                  <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
-                </div>
-              )}
-              <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
-                {s.imageUrl && <PixelEdgeTop color={P.pageBg} seed={si + 2} height={28} />}
-                {!s.imageUrl && <Pill section={s.section} />}
-                <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
-                {summaryText && <div className="ds-card-body" style={bodyStyle}>{summaryText}</div>}
-                <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
-                </div>
-              </div>
-            </div>
-          </a>
-        );
-      })}
+    <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
+      <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
+      <div style={{ background: P.cardBg, borderRadius: 20, boxShadow: P.shadow, paddingTop: 18, paddingBottom: 20, paddingLeft: 20, paddingRight: 20, display: "flex", flexDirection: "column", flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          <span style={{ fontSize: 28, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite` }}>{emoji}</span>
+          <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{moveLabel}</div>
+        </div>
+        <a href={href} style={{ textDecoration: "none", display: "flex", flexDirection: "column", gap: 14, background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 12, paddingTop: 14, paddingBottom: 14, paddingLeft: 14, paddingRight: 14, flex: 1 }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{actionIndex + 1}</div>
+            <div style={{ fontSize: 14, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
+            <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 5, paddingBottom: 5, paddingLeft: 14, paddingRight: 14, display: "inline-block", whiteSpace: "nowrap" as const }}>How?</span>
+          </div>
+        </a>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id={`skg-a${actionIndex}`} x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed={seed} result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="2" y="2" width="99%" height="99%" rx="18" ry="18" fill="none" stroke={P.accent} strokeWidth="3.5" filter={`url(#skg-a${actionIndex})`} />
+      </svg>
+    </div>
+  );
+}
+
+function BottomLineGridCell({ synthesis, editionKey }: { synthesis: Synthesis; editionKey: string }) {
+  if (!synthesis.conclusion) return null;
+  const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  const takeawayLabel = TAKEAWAY_LABELS[Math.floor(seededRandom(eSeed + 88) * TAKEAWAY_LABELS.length)];
+  return (
+    <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
+      <div style={{ background: P.cardBg, borderRadius: 20, boxShadow: P.shadow, paddingTop: 22, paddingBottom: 26, paddingLeft: 26, paddingRight: 26, display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
+        <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 12, fontFamily: P.fontBody }}>{takeawayLabel}</div>
+        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 2 }}>"</div>
+        <div style={{ fontSize: 26, fontWeight: QUOTE_FONT.weight, lineHeight: 1.3, color: P.ink, fontStyle: QUOTE_FONT.style as "italic" | "normal", fontFamily: QUOTE_FONT.family, letterSpacing: -0.2 }}>{synthesis.conclusion}</div>
+        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 2, textAlign: "right" as const }}>"</div>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="skg-bl" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="14" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="2" y="2" width="99%" height="99%" rx="18" ry="18" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#skg-bl)" />
+      </svg>
     </div>
   );
 }
@@ -831,10 +869,18 @@ export async function EditionView({
     }
     if (!synthesis?.theme) return null;
     if (id === "ki") return synthesis.takeaways?.length ? <KeyInsightsCard key="ki" synthesis={synthesis} /> : null;
-    if (id === "bl") return synthesis.conclusion ? <BottomLineCard key="bl" synthesis={synthesis} /> : null;
+    if (id === "bl") return synthesis.conclusion ? <BottomLineCard key="bl" synthesis={synthesis} editionKey={editionKey} /> : null;
     const ai = parseInt(id[1]);
     const action = synthesis.actions?.[ai];
     return action ? <StandaloneActionCard key={id} action={action} actionIndex={ai} stories={allStories} synthesis={synthesis} editionKey={editionKey} /> : null;
+  }
+
+  function renderSynthGridItem(id: CardId): React.ReactNode {
+    if (!synthesis?.theme) return null;
+    if (id === "bl") return synthesis.conclusion ? <BottomLineGridCell key="blg" synthesis={synthesis} editionKey={editionKey} /> : null;
+    const ai = parseInt(id[1]);
+    const action = synthesis.actions?.[ai];
+    return action ? <ActionGridCell key={`ag${ai}`} action={action} actionIndex={ai} stories={allStories} synthesis={synthesis} editionKey={editionKey} /> : null;
   }
 
   return (
@@ -1013,14 +1059,58 @@ export async function EditionView({
       {/* Story rows interleaved with remaining cards — all cards appear before S9-S11 */}
       {(() => {
         const stories9 = [s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(s => s?.summary) as Story[];
+        const isCompactId = (id: CardId) => id === "bl" || id.startsWith("a");
+        const rowSlots = [synthSlots.afterRow1, synthSlots.afterRow2, ...synthSlots.tail].filter(Boolean) as CardId[];
+        const compactSlots = rowSlots.filter(isCompactId);
+        const standaloneSlots = rowSlots.filter(id => !isCompactId(id));
+
+        // Weave compact synth cards into the 3-col story grid: 2 stories, 1 synth, repeat
+        type FlatItem = { kind: "synth"; id: CardId } | { kind: "story"; s: Story; si: number };
+        const flat: FlatItem[] = [];
+        let si = 0, ci = 0;
+        while (si < stories9.length || ci < compactSlots.length) {
+          for (let k = 0; k < 2 && si < stories9.length; k++) flat.push({ kind: "story", s: stories9[si], si: si++ });
+          if (ci < compactSlots.length) flat.push({ kind: "synth", id: compactSlots[ci++] });
+          else if (si < stories9.length) flat.push({ kind: "story", s: stories9[si], si: si++ });
+        }
+
+        const hStyle: React.CSSProperties = { fontFamily: P.fontHeading, fontSize: 22, fontWeight: 800, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, marginTop: 0, marginBottom: 0 };
+        const bodyStyle: React.CSSProperties = { fontSize: 15, lineHeight: 1.7, color: P.inkMid, fontFamily: P.fontBody };
+
         return (
           <>
-            <StoryRow stories={stories9.slice(0, 3)} seedOffset={0} editionKey={editionKey} />
-            {synthSlots.afterRow1 && renderSynthCard(synthSlots.afterRow1)}
-            <StoryRow stories={stories9.slice(3, 6)} seedOffset={3} editionKey={editionKey} />
-            {synthSlots.afterRow2 && renderSynthCard(synthSlots.afterRow2)}
-            {synthSlots.tail.map(id => renderSynthCard(id))}
-            <StoryRow stories={stories9.slice(6, 9)} seedOffset={6} editionKey={editionKey} />
+            {standaloneSlots.map((id, i) => <div key={`ss-${i}`}>{renderSynthCard(id)}</div>)}
+            <div className="ds-story-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
+              {flat.map((item, idx) => {
+                if (item.kind === "synth") {
+                  return <div key={`sg-${idx}`} style={{ display: "flex" }}>{renderSynthGridItem(item.id)}</div>;
+                }
+                const { s, si: seedIdx } = item;
+                const summaryText = (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
+                return (
+                  <a key={`sc-${seedIdx}`} href={`/article/${urlToSlug(s.link)}?e=${editionKey}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
+                    <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
+                      {s.imageUrl && (
+                        <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
+                          <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
+                          <PixelEdge color={P.cardBg} seed={seedIdx + 2} height={52} />
+                          <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
+                        </div>
+                      )}
+                      <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
+                        {s.imageUrl && <PixelEdgeTop color={P.pageBg} seed={seedIdx + 2} height={28} />}
+                        {!s.imageUrl && <Pill section={s.section} />}
+                        <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
+                        {summaryText && <div className="ds-card-body" style={bodyStyle}>{summaryText}</div>}
+                        <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
           </>
         );
       })()}
