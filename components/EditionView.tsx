@@ -800,6 +800,38 @@ export async function EditionView({
   const hStyle: React.CSSProperties = { fontFamily: P.fontHeading, fontSize: 22, fontWeight: 800, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0 };
   const bodyStyle: React.CSSProperties = { fontSize: 15, lineHeight: 1.7, color: P.inkMid, fontFamily: P.fontBody };
 
+  // ── Synthesis card pool: shuffle all 6 cards, optionally lift one before S1 ──
+  type CardId = "obs" | "ki" | "bl" | "a0" | "a1" | "a2";
+  const hasAnySynth = !!(synthesis?.theme || weeklySignal?.hook);
+  const fullPool = hasAnySynth
+    ? seededShuffle<CardId>(["obs", "ki", "bl", "a0", "a1", "a2"], editionSeed)
+    : [] as CardId[];
+  const hasPreS1 = hasAnySynth && seededRandom(editionSeed + 999) < 0.4;
+  const preS1Card = hasPreS1 ? fullPool[0] : null;
+  const remainingPool = hasPreS1 ? fullPool.slice(1) : fullPool;
+  // Assign remaining cards to fixed slots; last slot absorbs overflow
+  const synthSlots = {
+    afterS1:   remainingPool[0] ?? null,
+    afterFC:   remainingPool[1] ?? null,
+    afterRow1: remainingPool[2] ?? null,
+    afterRow2: remainingPool[3] ?? null,
+    tail:      remainingPool.slice(4),   // 1 card (hasPreS1) or 2 cards (!hasPreS1)
+  };
+
+  function renderSynthCard(id: CardId) {
+    if (id === "obs") {
+      return weeklySignal?.hook
+        ? <WeeklySignalSection key="obs" weekly={weeklySignal} />
+        : synthesis?.theme ? <ObservationCard key="obs" synthesis={synthesis} writerIndex={synthWriterIndex} editionKey={editionKey} /> : null;
+    }
+    if (!synthesis?.theme) return null;
+    if (id === "ki") return synthesis.takeaways?.length ? <KeyInsightsCard key="ki" synthesis={synthesis} /> : null;
+    if (id === "bl") return synthesis.conclusion ? <BottomLineCard key="bl" synthesis={synthesis} /> : null;
+    const ai = parseInt(id[1]);
+    const action = synthesis.actions?.[ai];
+    return action ? <StandaloneActionCard key={id} action={action} actionIndex={ai} stories={allStories} synthesis={synthesis} editionKey={editionKey} /> : null;
+  }
+
   return (
     <div className="ds-page" style={{ minHeight: "100vh", background: P.pageBg, fontFamily: P.fontBody, paddingTop: 24, paddingBottom: 60, paddingLeft: 20, paddingRight: 20, color: P.ink }}>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
@@ -860,6 +892,9 @@ export async function EditionView({
         {!isArchive && <EmailCapture accent={P.accent} ink={P.ink} cardBg={P.cardBg} fontBody={P.fontBody} pillHeight={36} />}
       </div>
 
+      {/* Pre-S1 card (~40% of editions, seeded) */}
+      {preS1Card && renderSynthCard(preS1Card)}
+
       {/* Bento row 1: S1 hero */}
       <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(320px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
 
@@ -882,11 +917,8 @@ export async function EditionView({
         )}
       </div>
 
-      {/* Observation card (or Weekly Signal on Sunday) — always anchored after S1 */}
-      {weeklySignal?.hook
-        ? <WeeklySignalSection weekly={weeklySignal} />
-        : synthesis?.theme && <ObservationCard synthesis={synthesis} writerIndex={synthWriterIndex} editionKey={editionKey} />
-      }
+      {/* Post-S1 synthesis card (slot 1 of 6, or slot 2 when pre-S1 is active) */}
+      {synthSlots.afterS1 && renderSynthCard(synthSlots.afterS1)}
 
       {/* Bento row 2: FC + S2 */}
       <div className="ds-bento-fc" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
@@ -969,37 +1001,20 @@ export async function EditionView({
         )}
       </div>
 
-      {/* S3–S11 interleaved with shuffled synthesis cards */}
+      {/* After FC: one shuffled card */}
+      {synthSlots.afterFC && renderSynthCard(synthSlots.afterFC)}
+
+      {/* Story rows interleaved with remaining cards — all cards appear before S9-S11 */}
       {(() => {
-        type CardId = "ki" | "bl" | "a0" | "a1" | "a2";
-        const pool = synthesis?.theme
-          ? seededShuffle<CardId>(["ki", "bl", "a0", "a1", "a2"], editionSeed)
-          : [] as CardId[];
-
-        function renderCard(id: CardId) {
-          if (!synthesis?.theme) return null;
-          if (id === "ki") return synthesis.takeaways?.length ? <KeyInsightsCard key="ki" synthesis={synthesis} /> : null;
-          if (id === "bl") return synthesis.conclusion ? <BottomLineCard key="bl" synthesis={synthesis} /> : null;
-          const ai = parseInt(id[1]);
-          const action = synthesis.actions?.[ai];
-          return action ? <StandaloneActionCard key={id} action={action} actionIndex={ai} stories={allStories} synthesis={synthesis} editionKey={editionKey} /> : null;
-        }
-
         const stories9 = [s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(s => s?.summary) as Story[];
-        const row1 = stories9.slice(0, 3);
-        const row2 = stories9.slice(3, 6);
-        const row3 = stories9.slice(6, 9);
-
         return (
           <>
-            {pool[0] && renderCard(pool[0])}
-            <StoryRow stories={row1} seedOffset={0} editionKey={editionKey} />
-            {pool[1] && renderCard(pool[1])}
-            <StoryRow stories={row2} seedOffset={3} editionKey={editionKey} />
-            {pool[2] && renderCard(pool[2])}
-            <StoryRow stories={row3} seedOffset={6} editionKey={editionKey} />
-            {pool[3] && renderCard(pool[3])}
-            {pool[4] && renderCard(pool[4])}
+            <StoryRow stories={stories9.slice(0, 3)} seedOffset={0} editionKey={editionKey} />
+            {synthSlots.afterRow1 && renderSynthCard(synthSlots.afterRow1)}
+            <StoryRow stories={stories9.slice(3, 6)} seedOffset={3} editionKey={editionKey} />
+            {synthSlots.afterRow2 && renderSynthCard(synthSlots.afterRow2)}
+            {synthSlots.tail.map(id => renderSynthCard(id))}
+            <StoryRow stories={stories9.slice(6, 9)} seedOffset={6} editionKey={editionKey} />
           </>
         );
       })()}
