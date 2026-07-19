@@ -903,12 +903,15 @@ export async function EditionView({
       <link rel="stylesheet" href={CURSIVE_FONT_URL} />
       <style>{`
         @media (max-width: 700px) {
+          .ds-bento { grid-template-columns: 1fr !important; grid-template-rows: auto !important; }
+          .ds-bento > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
           .ds-bento-fc { grid-template-columns: 1fr !important; grid-template-rows: auto !important; }
           .ds-bento-fc > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
           .ds-weekly-cols { grid-template-columns: 1fr !important; }
           .ds-weekly-cols > * { border-right: none !important; border-bottom: 1px solid rgba(128,128,128,0.2); }
           .ds-story-row { grid-template-columns: 1fr !important; }
           .ds-obs-share { flex-basis: 100%; display: flex; justify-content: flex-end; margin-top: 6px; }
+          .ds-compact-first { order: -1; }
         }
       `}</style>
 
@@ -984,7 +987,7 @@ export async function EditionView({
         )}
 
         {hasS1Compact && preS1Card && (
-          <div style={{ gridColumn: s1CompactFirst ? "1 / 5" : "9 / 13", gridRow: "1", display: "flex" }}>
+          <div className={s1CompactFirst ? "ds-compact-first" : undefined} style={{ gridColumn: s1CompactFirst ? "1 / 5" : "9 / 13", gridRow: "1", display: "flex" }}>
             {renderSynthGridItem(preS1Card)}
           </div>
         )}
@@ -1074,7 +1077,7 @@ export async function EditionView({
         )}
 
         {hasFCCompact && synthSlots.afterS1 && (
-          <div style={{ gridColumn: fcCompactFirst ? "1 / 5" : "9 / 13", gridRow: "1 / 3", display: "flex" }}>
+          <div className={fcCompactFirst ? "ds-compact-first" : undefined} style={{ gridColumn: fcCompactFirst ? "1 / 5" : "9 / 13", gridRow: "1 / 3", display: "flex" }}>
             {renderSynthGridItem(synthSlots.afterS1)}
           </div>
         )}
