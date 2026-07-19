@@ -706,6 +706,7 @@ function StandaloneActionCard({ action, actionIndex, stories, synthesis, edition
         {(() => {
           const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
           const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77 + actionIndex * 11) * MOVE_LABELS.length)];
+          const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44 + actionIndex * 7) * QUOTE_FONTS.length)];
           return (
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
               <span style={{ fontSize: 36, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite` }}>{emoji}</span>
@@ -714,12 +715,18 @@ function StandaloneActionCard({ action, actionIndex, stories, synthesis, edition
           );
         })()}
         {/* Dashed box: text + HOW? */}
-        <a href={href} style={{ textDecoration: "none", display: "flex", flexDirection: "column", gap: 16, background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 18, paddingRight: 18, minHeight: 120 }}>
-          <div style={{ fontSize: 16, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
-            <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, background: "transparent", border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, display: "inline-block", whiteSpace: "nowrap" as const }}>How?</span>
-          </div>
-        </a>
+        {(() => {
+          const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+          const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44 + actionIndex * 7) * QUOTE_FONTS.length)];
+          return (
+            <a href={href} style={{ textDecoration: "none", display: "flex", flexDirection: "column", gap: 16, background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 18, paddingRight: 18, minHeight: 120 }}>
+              <div style={{ fontSize: 24, lineHeight: 1.4, color: P.ink, fontFamily: aFont.family, fontStyle: aFont.style as "italic" | "normal", fontWeight: aFont.weight }}>{action}</div>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
+                <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, background: "transparent", border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, display: "inline-block", whiteSpace: "nowrap" as const }}>How?</span>
+              </div>
+            </a>
+          );
+        })()}
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
         <defs><filter id={`sketchy-border-a${actionIndex}`} x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed={seed} result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
@@ -747,6 +754,7 @@ function ActionGridCell({ action, actionIndex, stories, synthesis, editionKey }:
   const animName = `sac-g-pop-${actionIndex}`;
   const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
   const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77 + actionIndex * 11) * MOVE_LABELS.length)];
+  const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44 + actionIndex * 7) * QUOTE_FONTS.length)];
   return (
     <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
       <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
@@ -756,7 +764,7 @@ function ActionGridCell({ action, actionIndex, stories, synthesis, editionKey }:
           <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{moveLabel}</div>
         </div>
         <a href={href} style={{ textDecoration: "none", display: "flex", flexDirection: "column", gap: 14, background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 12, paddingTop: 14, paddingBottom: 14, paddingLeft: 14, paddingRight: 14, flex: 1 }}>
-          <div style={{ fontSize: 14, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
+          <div style={{ fontSize: 21, lineHeight: 1.4, color: P.ink, fontFamily: aFont.family, fontStyle: aFont.style as "italic" | "normal", fontWeight: aFont.weight }}>{action}</div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
             <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 5, paddingBottom: 5, paddingLeft: 14, paddingRight: 14, display: "inline-block", whiteSpace: "nowrap" as const }}>How?</span>
           </div>
