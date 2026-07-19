@@ -857,8 +857,14 @@ export async function EditionView({
   };
 
   const isCompactId = (id: CardId) => id === "bl" || id.startsWith("a");
-  const hasS1Compact = !!(preS1Card && isCompactId(preS1Card));
-  const hasFCCompact = !!(synthSlots.afterS1 && isCompactId(synthSlots.afterS1));
+  // At most one bento row gets a compact card per edition; seed decides which one wins
+  const bothBentoCompact = !!(preS1Card && isCompactId(preS1Card) && synthSlots.afterS1 && isCompactId(synthSlots.afterS1));
+  const s1BentoWins = !bothBentoCompact || seededRandom(editionSeed + 300) < 0.5;
+  const hasS1Compact = !!(preS1Card && isCompactId(preS1Card) && s1BentoWins);
+  const hasFCCompact = !!(synthSlots.afterS1 && isCompactId(synthSlots.afterS1) && (!bothBentoCompact || !s1BentoWins));
+  // Seeded position: compact card goes first (col 1) or last (col 3) in its bento row
+  const s1CompactFirst = seededRandom(editionSeed + 301) < 0.5;
+  const fcCompactFirst = seededRandom(editionSeed + 302) < 0.5;
 
   function renderSynthCard(id: CardId) {
     if (id === "obs") {
@@ -944,14 +950,14 @@ export async function EditionView({
         {!isArchive && <EmailCapture accent={P.accent} ink={P.ink} cardBg={P.cardBg} fontBody={P.fontBody} pillHeight={36} />}
       </div>
 
-      {/* Pre-S1 full cards (obs/ki) stay standalone; compact cards go inside the S1 bento below */}
-      {preS1Card && !hasS1Compact && renderSynthCard(preS1Card)}
+      {/* Pre-S1: full cards (obs/ki) only — compact cards go into S1 bento or flat grid */}
+      {preS1Card && !isCompactId(preS1Card) && renderSynthCard(preS1Card)}
 
       {/* Bento row 1: S1 hero */}
       <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(320px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
 
         {s1 && (
-          <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ gridColumn: hasS1Compact ? "1 / 5" : "1 / 6", gridRow: "1", textDecoration: "none", color: "inherit" }}>
+          <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ gridColumn: hasS1Compact ? (s1CompactFirst ? "5 / 9" : "1 / 5") : "1 / 6", gridRow: "1", textDecoration: "none", color: "inherit" }}>
             <div style={{ ...card, height: "100%", paddingTop: 28, paddingBottom: 32, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
               <Pill section={s1.section} />
               <h1 className="ds-card-h" style={hStyle}>{s1.ownedTitle || s1.title}</h1>
@@ -962,21 +968,21 @@ export async function EditionView({
         )}
 
         {s1 && (
-          <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ ...imgCard, gridColumn: hasS1Compact ? "5 / 9" : "6 / 13", gridRow: "1", textDecoration: "none" }}>
+          <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ ...imgCard, gridColumn: hasS1Compact ? (s1CompactFirst ? "9 / 13" : "5 / 9") : "6 / 13", gridRow: "1", textDecoration: "none" }}>
             {s1.imageUrl ? <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.gradFrom}, ${P.gradTo})` }} />}
             <S1FlightPaths seed={editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 7), 0)} color={P.accent} imageColor={s1.imageColor} />
           </a>
         )}
 
         {hasS1Compact && preS1Card && (
-          <div style={{ gridColumn: "9 / 13", gridRow: "1", display: "flex" }}>
+          <div style={{ gridColumn: s1CompactFirst ? "1 / 5" : "9 / 13", gridRow: "1", display: "flex" }}>
             {renderSynthGridItem(preS1Card)}
           </div>
         )}
       </div>
 
-      {/* Post-S1 full cards (obs/ki) stay standalone; compact cards go inside the FC bento below */}
-      {synthSlots.afterS1 && !hasFCCompact && renderSynthCard(synthSlots.afterS1)}
+      {/* Post-S1: full cards (obs/ki) only — compact cards go into FC bento or flat grid */}
+      {synthSlots.afterS1 && !isCompactId(synthSlots.afterS1) && renderSynthCard(synthSlots.afterS1)}
 
       {/* Bento row 2: FC + S2 */}
       <div className="ds-bento-fc" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
@@ -991,7 +997,7 @@ export async function EditionView({
           const borderSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 3), 0);
           const borderColor = color;
           return (
-            <div style={{ gridColumn: hasFCCompact ? "1 / 5" : "1 / 7", gridRow: "1 / 3", position: "relative" }}>
+            <div style={{ gridColumn: hasFCCompact ? (fcCompactFirst ? "5 / 9" : "1 / 5") : "1 / 7", gridRow: "1 / 3", position: "relative" }}>
               <FlightPathBorder color={borderColor} seed={borderSeed} />
               <a href={`/feature-creature/${slug}`} style={{ textDecoration: "none", color: "inherit", display: "flex", height: "100%" }}>
                 <div style={{ background: P.ink, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, display: "flex", flexDirection: "column", flex: 1 }}>
@@ -1019,7 +1025,7 @@ export async function EditionView({
         })()}
 
         {!featureCreature && (
-          <div style={{ gridColumn: hasFCCompact ? "1 / 5" : "1 / 7", gridRow: "1 / 3", position: "relative" }}>
+          <div style={{ gridColumn: hasFCCompact ? (fcCompactFirst ? "5 / 9" : "1 / 5") : "1 / 7", gridRow: "1 / 3", position: "relative" }}>
             <FlightPathBorder color={P.inkLight} seed={0} />
             <div style={{ background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "40px 32px" }}>
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.inkLight, fontFamily: P.fontBody, opacity: 0.5 }}>Feature Creature</div>
@@ -1030,7 +1036,7 @@ export async function EditionView({
         )}
 
         {s2 && (
-          <a href={`/article/${urlToSlug(s2.link)}?e=${editionKey}`} style={{ gridColumn: hasFCCompact ? "5 / 9" : "7 / 13", gridRow: "1", textDecoration: "none", color: "inherit", display: "flex" }}>
+          <a href={`/article/${urlToSlug(s2.link)}?e=${editionKey}`} style={{ gridColumn: hasFCCompact ? (fcCompactFirst ? "9 / 13" : "5 / 9") : "7 / 13", gridRow: "1", textDecoration: "none", color: "inherit", display: "flex" }}>
             <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
               {s2.imageUrl && (
                 <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
@@ -1050,7 +1056,7 @@ export async function EditionView({
         )}
 
         {s2 && (
-          <a href={`/article/${urlToSlug(s2.link)}?e=${editionKey}`} style={{ ...card, gridColumn: hasFCCompact ? "5 / 9" : "7 / 13", gridRow: "2", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 28, gap: 18, textDecoration: "none", color: "inherit" }}>
+          <a href={`/article/${urlToSlug(s2.link)}?e=${editionKey}`} style={{ ...card, gridColumn: hasFCCompact ? (fcCompactFirst ? "9 / 13" : "5 / 9") : "7 / 13", gridRow: "2", display: "flex", alignItems: "center", paddingTop: 0, paddingBottom: 0, paddingLeft: 28, paddingRight: 28, gap: 18, textDecoration: "none", color: "inherit" }}>
             <div style={{ fontSize: 52, color: P.accent, fontFamily: P.fontHeading, flexShrink: 0, lineHeight: 0.8, opacity: 0.35, marginTop: 6 }}>"</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 17, fontStyle: "italic", color: P.ink, lineHeight: 1.5, fontFamily: P.fontBody, fontWeight: 500 }}>{s2.pullquote || s2.summary || s2.title}</div>
@@ -1059,7 +1065,7 @@ export async function EditionView({
         )}
 
         {hasFCCompact && synthSlots.afterS1 && (
-          <div style={{ gridColumn: "9 / 13", gridRow: "1 / 3", display: "flex" }}>
+          <div style={{ gridColumn: fcCompactFirst ? "1 / 5" : "9 / 13", gridRow: "1 / 3", display: "flex" }}>
             {renderSynthGridItem(synthSlots.afterS1)}
           </div>
         )}
@@ -1071,8 +1077,10 @@ export async function EditionView({
       {/* Story rows interleaved with remaining cards — all cards appear before S9-S11 */}
       {(() => {
         const stories9 = [s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(s => s?.summary) as Story[];
-        // afterFC compact cards join the flat grid; pre-S1/afterS1 are rendered standalone above
+        // Compact cards that didn't win a bento slot join the flat grid
         const rowSlots = [
+          ...(preS1Card && isCompactId(preS1Card) && !hasS1Compact ? [preS1Card] : []),
+          ...(synthSlots.afterS1 && isCompactId(synthSlots.afterS1) && !hasFCCompact ? [synthSlots.afterS1] : []),
           ...(synthSlots.afterFC && isCompactId(synthSlots.afterFC) ? [synthSlots.afterFC] : []),
           synthSlots.afterRow1, synthSlots.afterRow2, ...synthSlots.tail,
         ].filter(Boolean) as CardId[];
