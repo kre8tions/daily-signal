@@ -661,7 +661,7 @@ function KeyInsightsCard({ synthesis }: { synthesis: Synthesis }) {
 function BottomLineCard({ synthesis }: { synthesis: Synthesis }) {
   if (!synthesis.conclusion) return null;
   return (
-    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+    <div style={{ maxWidth: 800, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
       <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 32, paddingBottom: 36, paddingLeft: 44, paddingRight: 44 }}>
         <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>The Bottom Line</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 4 }}>"</div>
@@ -694,20 +694,25 @@ function StandaloneActionCard({ action, actionIndex, stories, synthesis, edition
   const emoji = ACTION_CARD_EMOJIS[actionIndex % ACTION_CARD_EMOJIS.length];
   const animName = `sac-pop-${actionIndex}`;
   return (
-    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+    <div style={{ maxWidth: 800, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
       <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
-      <a href={href} style={{ textDecoration: "none", display: "block" }}>
-        <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 24, paddingBottom: 28, paddingLeft: 32, paddingRight: 32, display: "flex", alignItems: "center", gap: 28 }}>
-          <span style={{ fontSize: 52, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite`, flexShrink: 0 }}>{emoji}</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>One Move</div>
-            <div style={{ fontSize: 18, lineHeight: 1.6, color: P.ink, fontFamily: P.fontBody, fontWeight: 500 }}>{action}</div>
-          </div>
-          <div style={{ flexShrink: 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, background: "transparent", border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 8, paddingBottom: 8, paddingLeft: 20, paddingRight: 20, display: "inline-block", whiteSpace: "nowrap" as const }}>How?</span>
-          </div>
+      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 24, paddingBottom: 28, paddingLeft: 28, paddingRight: 28 }}>
+        {/* Header: emoji + label on the same line */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+          <span style={{ fontSize: 36, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite` }}>{emoji}</span>
+          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>One Move</div>
         </div>
-      </a>
+        {/* Dashed box: number + text + HOW? */}
+        <a href={href} style={{ textDecoration: "none", display: "flex", flexDirection: "column", gap: 16, background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 18, paddingRight: 18, minHeight: 120 }}>
+          <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+            <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{actionIndex + 1}</div>
+            <div style={{ fontSize: 16, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
+            <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, background: "transparent", border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, display: "inline-block", whiteSpace: "nowrap" as const }}>How?</span>
+          </div>
+        </a>
+      </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
         <defs><filter id={`sketchy-border-a${actionIndex}`} x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed={seed} result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
         <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter={`url(#sketchy-border-a${actionIndex})`} />
