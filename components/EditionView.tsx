@@ -668,8 +668,8 @@ function BottomLineCard({ synthesis, editionKey }: { synthesis: Synthesis; editi
       <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 32, paddingBottom: 36, paddingLeft: 44, paddingRight: 44 }}>
         <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>{takeawayLabel}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 4 }}>"</div>
-        <div style={{ fontSize: 34, fontWeight: qFont.weight, lineHeight: 1.25, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.3 }}>{synthesis.conclusion}</div>
-        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 4, textAlign: "right" as const }}>"</div>
+        <div style={{ fontSize: 34, fontWeight: qFont.weight, lineHeight: 1.25, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.3, textAlign: "left" as const }}>{synthesis.conclusion}</div>
+        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 4, textAlign: "left" as const }}>"</div>
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
         <defs><filter id="sketchy-border-bl" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="14" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
@@ -706,7 +706,7 @@ function StandaloneActionCard({ action, actionIndex, stories, synthesis, edition
         {(() => {
           const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
           const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77 + actionIndex * 11) * MOVE_LABELS.length)];
-          const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44 + actionIndex * 7) * QUOTE_FONTS.length)];
+          const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44) * QUOTE_FONTS.length)];
           return (
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
               <span style={{ fontSize: 36, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite` }}>{emoji}</span>
@@ -717,7 +717,7 @@ function StandaloneActionCard({ action, actionIndex, stories, synthesis, edition
         {/* Dashed box: text + HOW? */}
         {(() => {
           const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
-          const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44 + actionIndex * 7) * QUOTE_FONTS.length)];
+          const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44) * QUOTE_FONTS.length)];
           return (
             <a href={href} style={{ textDecoration: "none", display: "flex", flexDirection: "column", gap: 16, background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 18, paddingRight: 18, minHeight: 120 }}>
               <div style={{ fontSize: 24, lineHeight: 1.4, color: P.ink, fontFamily: aFont.family, fontStyle: aFont.style as "italic" | "normal", fontWeight: aFont.weight }}>{action}</div>
@@ -754,7 +754,7 @@ function ActionGridCell({ action, actionIndex, stories, synthesis, editionKey }:
   const animName = `sac-g-pop-${actionIndex}`;
   const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
   const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77 + actionIndex * 11) * MOVE_LABELS.length)];
-  const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44 + actionIndex * 7) * QUOTE_FONTS.length)];
+  const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44) * QUOTE_FONTS.length)];
   return (
     <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
       <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
@@ -785,11 +785,11 @@ function BottomLineGridCell({ synthesis, editionKey }: { synthesis: Synthesis; e
   const qFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 66) * QUOTE_FONTS.length)];
   return (
     <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
-      <div style={{ background: P.cardBg, borderRadius: 20, boxShadow: P.shadow, paddingTop: 22, paddingBottom: 26, paddingLeft: 26, paddingRight: 26, display: "flex", flexDirection: "column", flex: 1, justifyContent: "center" }}>
+      <div style={{ background: P.cardBg, borderRadius: 20, boxShadow: P.shadow, paddingTop: 22, paddingBottom: 26, paddingLeft: 26, paddingRight: 26, display: "flex", flexDirection: "column", flex: 1, justifyContent: "flex-start" }}>
         <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 12, fontFamily: P.fontBody }}>{takeawayLabel}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 2 }}>"</div>
-        <div style={{ fontSize: 26, fontWeight: qFont.weight, lineHeight: 1.3, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.2 }}>{synthesis.conclusion}</div>
-        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 2, textAlign: "right" as const }}>"</div>
+        <div style={{ fontSize: 26, fontWeight: qFont.weight, lineHeight: 1.3, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.2, textAlign: "left" as const }}>{synthesis.conclusion}</div>
+        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 2, textAlign: "left" as const }}>"</div>
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
         <defs><filter id="skg-bl" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="14" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
