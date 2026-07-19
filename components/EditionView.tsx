@@ -1,5 +1,5 @@
 import { urlToSlug, actionSlug, getSynthWriterIndex, type Story, type Synthesis, type FeatureCreature, type WeeklySignal } from "@/lib/stories";
-import { P, QUOTE_FONT, SECTION_COLORS, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL, TAGLINE, contrastColor, setEditionPaletteKey } from "@/lib/palette";
+import { P, QUOTE_FONT, QUOTE_FONTS, SECTION_COLORS, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL, TAGLINE, contrastColor, setEditionPaletteKey } from "@/lib/palette";
 import { EditionCountdown } from "@/app/EditionCountdown";
 import { EmailCapture } from "@/app/EmailCapture";
 import { ShareButton } from "@/app/ShareButton";
@@ -588,7 +588,7 @@ function ObservationCard({ synthesis, writerIndex, editionKey }: { synthesis: Sy
     <div id="signal" style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
       <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
         <div style={{ position: "absolute", top: 12, right: 16, fontSize: 10, fontWeight: 700, fontFamily: "monospace", color: P.accent, opacity: 0.45, letterSpacing: 1, userSelect: "none" as const }}>W{writerIndex}</div>
-        <div style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16 }}>
+        <div className="ds-obs-header" style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ width: 55, height: 55, borderRadius: "50%", background: P.cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><SpaceInvaderSVG color={P.accent} /></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>The Signal</div>
@@ -662,12 +662,13 @@ function BottomLineCard({ synthesis, editionKey }: { synthesis: Synthesis; editi
   if (!synthesis.conclusion) return null;
   const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
   const takeawayLabel = TAKEAWAY_LABELS[Math.floor(seededRandom(eSeed + 88) * TAKEAWAY_LABELS.length)];
+  const qFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 66) * QUOTE_FONTS.length)];
   return (
-    <div style={{ maxWidth: 800, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
       <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 32, paddingBottom: 36, paddingLeft: 44, paddingRight: 44 }}>
         <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>{takeawayLabel}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 4 }}>"</div>
-        <div style={{ fontSize: 34, fontWeight: QUOTE_FONT.weight, lineHeight: 1.25, color: P.ink, fontStyle: QUOTE_FONT.style as "italic" | "normal", fontFamily: QUOTE_FONT.family, letterSpacing: -0.3 }}>{synthesis.conclusion}</div>
+        <div style={{ fontSize: 34, fontWeight: qFont.weight, lineHeight: 1.25, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.3 }}>{synthesis.conclusion}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 4, textAlign: "right" as const }}>"</div>
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
@@ -704,7 +705,7 @@ function StandaloneActionCard({ action, actionIndex, stories, synthesis, edition
         {/* Header: emoji + label on the same line */}
         {(() => {
           const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
-          const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77) * MOVE_LABELS.length)];
+          const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77 + actionIndex * 11) * MOVE_LABELS.length)];
           return (
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
               <span style={{ fontSize: 36, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite` }}>{emoji}</span>
@@ -712,12 +713,9 @@ function StandaloneActionCard({ action, actionIndex, stories, synthesis, edition
             </div>
           );
         })()}
-        {/* Dashed box: number + text + HOW? */}
+        {/* Dashed box: text + HOW? */}
         <a href={href} style={{ textDecoration: "none", display: "flex", flexDirection: "column", gap: 16, background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 18, paddingRight: 18, minHeight: 120 }}>
-          <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-            <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{actionIndex + 1}</div>
-            <div style={{ fontSize: 16, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
-          </div>
+          <div style={{ fontSize: 16, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
             <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, background: "transparent", border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, display: "inline-block", whiteSpace: "nowrap" as const }}>How?</span>
           </div>
@@ -748,7 +746,7 @@ function ActionGridCell({ action, actionIndex, stories, synthesis, editionKey }:
   const emoji = ACTION_CARD_EMOJIS[actionIndex % ACTION_CARD_EMOJIS.length];
   const animName = `sac-g-pop-${actionIndex}`;
   const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
-  const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77) * MOVE_LABELS.length)];
+  const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77 + actionIndex * 11) * MOVE_LABELS.length)];
   return (
     <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
       <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
@@ -758,10 +756,7 @@ function ActionGridCell({ action, actionIndex, stories, synthesis, editionKey }:
           <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{moveLabel}</div>
         </div>
         <a href={href} style={{ textDecoration: "none", display: "flex", flexDirection: "column", gap: 14, background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 12, paddingTop: 14, paddingBottom: 14, paddingLeft: 14, paddingRight: 14, flex: 1 }}>
-          <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-            <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: P.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: P.cardBg, fontFamily: P.fontBody }}>{actionIndex + 1}</div>
-            <div style={{ fontSize: 14, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
-          </div>
+          <div style={{ fontSize: 14, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody }}>{action}</div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
             <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 5, paddingBottom: 5, paddingLeft: 14, paddingRight: 14, display: "inline-block", whiteSpace: "nowrap" as const }}>How?</span>
           </div>
@@ -896,6 +891,7 @@ export async function EditionView({
           .ds-weekly-cols { grid-template-columns: 1fr !important; }
           .ds-weekly-cols > * { border-right: none !important; border-bottom: 1px solid rgba(128,128,128,0.2); }
           .ds-story-row { grid-template-columns: 1fr !important; }
+          .ds-obs-header { flex-wrap: wrap !important; }
         }
       `}</style>
 
@@ -946,8 +942,8 @@ export async function EditionView({
         {!isArchive && <EmailCapture accent={P.accent} ink={P.ink} cardBg={P.cardBg} fontBody={P.fontBody} pillHeight={36} />}
       </div>
 
-      {/* Pre-S1 card (~40% of editions, seeded) */}
-      {preS1Card && renderSynthCard(preS1Card)}
+      {/* Pre-S1 card (~40% of editions, seeded) — only full cards (obs/ki) stay here; compact cards go into the story grid */}
+      {preS1Card && !isCompactId(preS1Card) && renderSynthCard(preS1Card)}
 
       {/* Bento row 1: S1 hero */}
       <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(320px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
@@ -1061,7 +1057,14 @@ export async function EditionView({
       {/* Story rows interleaved with remaining cards — all cards appear before S9-S11 */}
       {(() => {
         const stories9 = [s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(s => s?.summary) as Story[];
-        const rowSlots = [synthSlots.afterS1, synthSlots.afterFC, synthSlots.afterRow1, synthSlots.afterRow2, ...synthSlots.tail].filter(Boolean) as CardId[];
+        // Only include afterS1/afterFC/preS1Card in the flat grid if they're compact;
+        // full cards (obs/ki) in those positions are rendered standalone in the JSX above
+        const rowSlots = [
+          ...(preS1Card && isCompactId(preS1Card) ? [preS1Card] : []),
+          ...(synthSlots.afterS1 && isCompactId(synthSlots.afterS1) ? [synthSlots.afterS1] : []),
+          ...(synthSlots.afterFC && isCompactId(synthSlots.afterFC) ? [synthSlots.afterFC] : []),
+          synthSlots.afterRow1, synthSlots.afterRow2, ...synthSlots.tail,
+        ].filter(Boolean) as CardId[];
         const compactSlots = rowSlots.filter(isCompactId);
         const standaloneSlots = rowSlots.filter(id => !isCompactId(id));
 

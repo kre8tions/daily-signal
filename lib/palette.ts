@@ -81,6 +81,7 @@ const QUOTE_FONTS = [
   { family: "'Bebas Neue', sans-serif",                    style: "normal", weight: 400 },
 ];
 
+export { QUOTE_FONTS };
 export const QUOTE_FONT = QUOTE_FONTS[Math.floor(Date.now() / 86_400_000) % QUOTE_FONTS.length];
 
 const TAGLINE_PHRASES = [
