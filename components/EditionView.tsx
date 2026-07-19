@@ -721,7 +721,7 @@ function StoryRow({ stories, seedOffset, editionKey }: { stories: Story[]; seedO
   const hStyle: React.CSSProperties = { fontFamily: P.fontHeading, fontSize: 22, fontWeight: 800, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0 };
   const bodyStyle: React.CSSProperties = { fontSize: 15, lineHeight: 1.7, color: P.inkMid, fontFamily: P.fontBody };
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
+    <div className="ds-story-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
       {stories.map((s, i) => {
         const si = seedOffset + i;
         const summaryText = (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
@@ -842,6 +842,7 @@ export async function EditionView({
           .ds-bento-fc > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
           .ds-weekly-cols { grid-template-columns: 1fr !important; }
           .ds-weekly-cols > * { border-right: none !important; border-bottom: 1px solid rgba(128,128,128,0.2); }
+          .ds-story-row { grid-template-columns: 1fr !important; }
         }
       `}</style>
 
