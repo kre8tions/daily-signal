@@ -861,6 +861,8 @@ export async function EditionView({
     tail:      remainingPool.slice(4),   // 1 card (hasPreS1) or 2 cards (!hasPreS1)
   };
 
+  const isCompactId = (id: CardId) => id === "bl" || id.startsWith("a");
+
   function renderSynthCard(id: CardId) {
     if (id === "obs") {
       return weeklySignal?.hook
@@ -969,8 +971,8 @@ export async function EditionView({
         )}
       </div>
 
-      {/* Post-S1 synthesis card (slot 1 of 6, or slot 2 when pre-S1 is active) */}
-      {synthSlots.afterS1 && renderSynthCard(synthSlots.afterS1)}
+      {/* Post-S1 synthesis card — only full cards (obs/ki) stay standalone here; compact cards go into the story grid */}
+      {synthSlots.afterS1 && !isCompactId(synthSlots.afterS1) && renderSynthCard(synthSlots.afterS1)}
 
       {/* Bento row 2: FC + S2 */}
       <div className="ds-bento-fc" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
@@ -1053,14 +1055,13 @@ export async function EditionView({
         )}
       </div>
 
-      {/* After FC: one shuffled card */}
-      {synthSlots.afterFC && renderSynthCard(synthSlots.afterFC)}
+      {/* After FC: only full cards (obs/ki) stay standalone here; compact cards go into the story grid */}
+      {synthSlots.afterFC && !isCompactId(synthSlots.afterFC) && renderSynthCard(synthSlots.afterFC)}
 
       {/* Story rows interleaved with remaining cards — all cards appear before S9-S11 */}
       {(() => {
         const stories9 = [s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(s => s?.summary) as Story[];
-        const isCompactId = (id: CardId) => id === "bl" || id.startsWith("a");
-        const rowSlots = [synthSlots.afterRow1, synthSlots.afterRow2, ...synthSlots.tail].filter(Boolean) as CardId[];
+        const rowSlots = [synthSlots.afterS1, synthSlots.afterFC, synthSlots.afterRow1, synthSlots.afterRow2, ...synthSlots.tail].filter(Boolean) as CardId[];
         const compactSlots = rowSlots.filter(isCompactId);
         const standaloneSlots = rowSlots.filter(id => !isCompactId(id));
 
