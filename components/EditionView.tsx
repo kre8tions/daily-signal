@@ -699,7 +699,7 @@ function StandaloneActionCard({ action, actionIndex, stories, synthesis, edition
   const emoji = ACTION_CARD_EMOJIS[actionIndex % ACTION_CARD_EMOJIS.length];
   const animName = `sac-pop-${actionIndex}`;
   return (
-    <div style={{ maxWidth: 800, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
       <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
       <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, paddingTop: 24, paddingBottom: 28, paddingLeft: 28, paddingRight: 28 }}>
         {/* Header: emoji + label on the same line */}
@@ -942,8 +942,8 @@ export async function EditionView({
         {!isArchive && <EmailCapture accent={P.accent} ink={P.ink} cardBg={P.cardBg} fontBody={P.fontBody} pillHeight={36} />}
       </div>
 
-      {/* Pre-S1 card (~40% of editions, seeded) — only full cards (obs/ki) stay here; compact cards go into the story grid */}
-      {preS1Card && !isCompactId(preS1Card) && renderSynthCard(preS1Card)}
+      {/* Pre-S1 card (~40% of editions, seeded) */}
+      {preS1Card && renderSynthCard(preS1Card)}
 
       {/* Bento row 1: S1 hero */}
       <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(320px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
@@ -967,8 +967,8 @@ export async function EditionView({
         )}
       </div>
 
-      {/* Post-S1 synthesis card — only full cards (obs/ki) stay standalone here; compact cards go into the story grid */}
-      {synthSlots.afterS1 && !isCompactId(synthSlots.afterS1) && renderSynthCard(synthSlots.afterS1)}
+      {/* Post-S1 synthesis card */}
+      {synthSlots.afterS1 && renderSynthCard(synthSlots.afterS1)}
 
       {/* Bento row 2: FC + S2 */}
       <div className="ds-bento-fc" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(300px, auto) minmax(120px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
@@ -1057,25 +1057,35 @@ export async function EditionView({
       {/* Story rows interleaved with remaining cards — all cards appear before S9-S11 */}
       {(() => {
         const stories9 = [s3, s4, s5, s6, s7, s8, s9, s10, s11].filter(s => s?.summary) as Story[];
-        // Only include afterS1/afterFC/preS1Card in the flat grid if they're compact;
-        // full cards (obs/ki) in those positions are rendered standalone in the JSX above
+        // afterFC compact cards join the flat grid; pre-S1/afterS1 are rendered standalone above
         const rowSlots = [
-          ...(preS1Card && isCompactId(preS1Card) ? [preS1Card] : []),
-          ...(synthSlots.afterS1 && isCompactId(synthSlots.afterS1) ? [synthSlots.afterS1] : []),
           ...(synthSlots.afterFC && isCompactId(synthSlots.afterFC) ? [synthSlots.afterFC] : []),
           synthSlots.afterRow1, synthSlots.afterRow2, ...synthSlots.tail,
         ].filter(Boolean) as CardId[];
         const compactSlots = rowSlots.filter(isCompactId);
         const standaloneSlots = rowSlots.filter(id => !isCompactId(id));
 
-        // Weave compact synth cards into the 3-col story grid: 2 stories, 1 synth, repeat
+        // Weave compact synth cards into the 3-col story grid.
+        // Per synth card, pick a random column (0/1/2) using edition seed so position varies per edition.
         type FlatItem = { kind: "synth"; id: CardId } | { kind: "story"; s: Story; si: number };
         const flat: FlatItem[] = [];
         let si = 0, ci = 0;
         while (si < stories9.length || ci < compactSlots.length) {
-          for (let k = 0; k < 2 && si < stories9.length; k++) flat.push({ kind: "story", s: stories9[si], si: si++ });
-          if (ci < compactSlots.length) flat.push({ kind: "synth", id: compactSlots[ci++] });
-          else if (si < stories9.length) flat.push({ kind: "story", s: stories9[si], si: si++ });
+          if (ci < compactSlots.length) {
+            // How many stories can fill this row alongside the synth?
+            const storiesLeft = stories9.length - si;
+            const storySlots = Math.min(storiesLeft, 2); // 0, 1, or 2
+            const totalSlots = storySlots + 1;
+            // Pick synth position 0..totalSlots-1, seeded per synth index
+            const synthPos = Math.floor(seededRandom(editionSeed + 200 + ci) * totalSlots);
+            for (let pos = 0; pos < totalSlots; pos++) {
+              if (pos === synthPos) flat.push({ kind: "synth", id: compactSlots[ci++] });
+              else flat.push({ kind: "story", s: stories9[si], si: si++ });
+            }
+          } else {
+            // No more synth cards — pure story rows
+            for (let k = 0; k < 3 && si < stories9.length; k++) flat.push({ kind: "story", s: stories9[si], si: si++ });
+          }
         }
 
         const hStyle: React.CSSProperties = { fontFamily: P.fontHeading, fontSize: 22, fontWeight: 800, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, marginTop: 0, marginBottom: 0 };
