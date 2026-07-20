@@ -842,7 +842,7 @@ export async function EditionView({
   const [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11] = allStories;
   const editionSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
   // 50% chance per edition to split obs+ki with a story row between them
-  const splitSynthRow = seededRandom(editionSeed + 555) < 0.5;
+  const splitSynthRow = seededRandom(editionSeed + 555) < 0.75;
 
   const card: React.CSSProperties = { background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, position: "relative" };
   const imgCard: React.CSSProperties = { ...card, position: "relative", background: P.tint + "44" };
