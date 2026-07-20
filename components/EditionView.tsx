@@ -841,6 +841,8 @@ export async function EditionView({
   const synthWriterIndex = getSynthWriterIndex(editionKey);
   const [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11] = allStories;
   const editionSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  // 50% chance per edition to split obs+ki with a story row between them
+  const splitSynthRow = seededRandom(editionSeed + 555) < 0.5;
 
   const card: React.CSSProperties = { background: P.cardBg, borderRadius: 20, overflow: "hidden", boxShadow: P.shadow, position: "relative" };
   const imgCard: React.CSSProperties = { ...card, position: "relative", background: P.tint + "44" };
@@ -1099,64 +1101,84 @@ export async function EditionView({
         const compactSlots = rowSlots.filter(isCompactId);
         const standaloneSlots = rowSlots.filter(id => !isCompactId(id));
 
+        const hStyle: React.CSSProperties = { fontFamily: P.fontHeading, fontSize: 22, fontWeight: 800, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, marginTop: 0, marginBottom: 0 };
+        const bodyStyle: React.CSSProperties = { fontSize: 15, lineHeight: 1.7, color: P.inkMid, fontFamily: P.fontBody };
+        const rowStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" };
+
+        function renderStoryCard(s: Story, seedIdx: number) {
+          const summaryText = (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
+          return (
+            <a key={`sc-${seedIdx}`} href={`/article/${urlToSlug(s.link)}?e=${editionKey}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
+              <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
+                {s.imageUrl && (
+                  <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
+                    <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
+                    <PixelEdge color={P.cardBg} seed={seedIdx + 2} height={52} />
+                    <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
+                  </div>
+                )}
+                <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
+                  {s.imageUrl && <PixelEdgeTop color={P.pageBg} seed={seedIdx + 2} height={28} />}
+                  {!s.imageUrl && <Pill section={s.section} />}
+                  <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
+                  {summaryText && <div className="ds-card-body" style={bodyStyle}>{summaryText}</div>}
+                  <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+          );
+        }
+
+        // When splitSynthRow is true and both obs+ki are standalone, inject
+        // the first story row (S3/S4/S5) between them to break up the stack.
+        const obsIdx = standaloneSlots.indexOf("obs");
+        const kiIdx = standaloneSlots.indexOf("ki");
+        const doSplit = splitSynthRow && obsIdx !== -1 && kiIdx !== -1 && stories9.length >= 3;
+        const insertAfterIdx = doSplit ? Math.min(obsIdx, kiIdx) : -1;
+        const splitRow = doSplit ? stories9.slice(0, 3) : [];
+        const gridStories = doSplit ? stories9.slice(3) : stories9;
+
         // Weave compact synth cards into the 3-col story grid.
-        // Per synth card, pick a random column (0/1/2) using edition seed so position varies per edition.
         type FlatItem = { kind: "synth"; id: CardId } | { kind: "story"; s: Story; si: number };
         const flat: FlatItem[] = [];
         let si = 0, ci = 0;
-        while (si < stories9.length || ci < compactSlots.length) {
+        // si offset: split row already consumed first 3 stories (indices 0-2), grid starts at index 3
+        const siOffset = doSplit ? 3 : 0;
+        while (si < gridStories.length || ci < compactSlots.length) {
           if (ci < compactSlots.length) {
-            // How many stories can fill this row alongside the synth?
-            const storiesLeft = stories9.length - si;
-            const storySlots = Math.min(storiesLeft, 2); // 0, 1, or 2
+            const storiesLeft = gridStories.length - si;
+            const storySlots = Math.min(storiesLeft, 2);
             const totalSlots = storySlots + 1;
-            // Pick synth position 0..totalSlots-1, seeded per synth index
             const synthPos = Math.floor(seededRandom(editionSeed + 200 + ci) * totalSlots);
             for (let pos = 0; pos < totalSlots; pos++) {
               if (pos === synthPos) flat.push({ kind: "synth", id: compactSlots[ci++] });
-              else flat.push({ kind: "story", s: stories9[si], si: si++ });
+              else flat.push({ kind: "story", s: gridStories[si], si: si++ + siOffset });
             }
           } else {
-            // No more synth cards — pure story rows
-            for (let k = 0; k < 3 && si < stories9.length; k++) flat.push({ kind: "story", s: stories9[si], si: si++ });
+            for (let k = 0; k < 3 && si < gridStories.length; k++) flat.push({ kind: "story", s: gridStories[si], si: si++ + siOffset });
           }
         }
 
-        const hStyle: React.CSSProperties = { fontFamily: P.fontHeading, fontSize: 22, fontWeight: 800, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" as const : "none" as const, marginTop: 0, marginBottom: 0 };
-        const bodyStyle: React.CSSProperties = { fontSize: 15, lineHeight: 1.7, color: P.inkMid, fontFamily: P.fontBody };
-
         return (
           <>
-            {standaloneSlots.map((id, i) => <div key={`ss-${i}`}>{renderSynthCard(id)}</div>)}
-            <div className="ds-story-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" }}>
+            {standaloneSlots.map((id, i) => (
+              <div key={`ss-${i}`}>
+                {renderSynthCard(id)}
+                {doSplit && i === insertAfterIdx && (
+                  <div className="ds-story-row" style={rowStyle}>
+                    {splitRow.map((s, ri) => renderStoryCard(s, ri))}
+                  </div>
+                )}
+              </div>
+            ))}
+            <div className="ds-story-row" style={rowStyle}>
               {flat.map((item, idx) => {
                 if (item.kind === "synth") {
                   return <div key={`sg-${idx}`} style={{ display: "flex" }}>{renderSynthGridItem(item.id)}</div>;
                 }
-                const { s, si: seedIdx } = item;
-                const summaryText = (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
-                return (
-                  <a key={`sc-${seedIdx}`} href={`/article/${urlToSlug(s.link)}?e=${editionKey}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
-                    <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
-                      {s.imageUrl && (
-                        <div style={{ position: "relative", height: 200, background: P.tint + "44", flexShrink: 0 }}>
-                          <img src={s.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
-                          <PixelEdge color={P.cardBg} seed={seedIdx + 2} height={52} />
-                          <div style={{ position: "absolute", top: 12, left: 14 }}><Pill section={s.section} /></div>
-                        </div>
-                      )}
-                      <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 18, display: "flex", flexDirection: "column", gap: 10, flex: 1, position: "relative" }}>
-                        {s.imageUrl && <PixelEdgeTop color={P.pageBg} seed={seedIdx + 2} height={28} />}
-                        {!s.imageUrl && <Pill section={s.section} />}
-                        <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
-                        {summaryText && <div className="ds-card-body" style={bodyStyle}>{summaryText}</div>}
-                        <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
-                        </div>
-                      </div>
-                    </div>
-                  </a>
-                );
+                return renderStoryCard(item.s, item.si);
               })}
             </div>
           </>
