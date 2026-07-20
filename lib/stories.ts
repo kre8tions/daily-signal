@@ -1943,6 +1943,7 @@ export interface FeatureCreature {
   digDeeper: string;
   callToAction: string;  // strong closing CTA — 1 imperative sentence
   pullQuote?: string;    // mid-article pull-quote fallback (shown when imageUrl2 absent)
+  pullQuoteAfterPara?: number; // 3 or 4 — which paragraph the pull quote follows (1-based)
   imageUrl?: string;     // hero image
   imageUrl2?: string;    // mid-article image (different query)
   editionKey?: string;
@@ -2072,12 +2073,13 @@ Structure:
 
 Also return:
 - pullQuote: 1 sentence lifted verbatim from the shaped body — the single most arresting line. Something a reader would screenshot. Word-for-word identical to what appears in the body.
+- pullQuoteAfterPara: 3 or 4 only — which paragraph the pull quote should follow (1-based). Choose 4 if para4 is the article's most dramatic turn; choose 3 if para3 lands the strongest line.
 
 Body to restructure:
 "${pass1.body}"
 
 Return JSON only:
-{"pullQuote":"...","para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`
+{"pullQuote":"...","pullQuoteAfterPara":4,"para1":"...","para2":"...","para3":"...","para4":"...","para5":"..."}`
       }],
     });
 
@@ -2130,6 +2132,12 @@ Return JSON only:
         } catch { /* vision review failed — skip image2, use pull-quote */ }
       }
     }
+    const fcPullQuoteAfterPara =
+      typeof scaffold.pullQuoteAfterPara === "number" &&
+      (scaffold.pullQuoteAfterPara === 3 || scaffold.pullQuoteAfterPara === 4)
+        ? scaffold.pullQuoteAfterPara
+        : 3;
+
     const result: FeatureCreature = {
       universe: FC_UNIVERSE.name,
       angleLabel: FC_ANGLE.label,
@@ -2140,6 +2148,7 @@ Return JSON only:
       ctaHeader: parsed.ctaHeader ?? undefined,
       body,
       pullQuote: fcPullQuote || undefined,
+      pullQuoteAfterPara: fcPullQuoteAfterPara,
       callToAction: parsed.callToAction ?? "",
       digDeeper: parsed.digDeeper ?? "",
       imageUrl,

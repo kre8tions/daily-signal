@@ -91,8 +91,8 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
                 </div>
               )}
               <p style={{ fontSize: 19, lineHeight: 1.9, color: P.inkMid, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 0, marginBottom: 24 }}>{para}</p>
-              {/* Mid-article: image2 if available, else pull-quote — after paragraph 2 */}
-              {i === 2 && (
+              {/* Mid-article: image2 if available, else pull-quote — placement seeded per edition */}
+              {i === (fc.pullQuoteAfterPara ?? 3) - 1 && (
                 fc.imageUrl2 ? (
                   <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 32, marginTop: 8, aspectRatio: "16/9" }}>
                     <img src={fc.imageUrl2} alt={`${fc.universe} — ${fc.angleLabel}`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
