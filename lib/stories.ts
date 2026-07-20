@@ -1874,8 +1874,10 @@ Return JSON only:
           .filter(k => scaffold[k])
           .map(k => {
             const val = (scaffold[k] as string | undefined) ?? "";
-            const matches = val.match(/[^.!?]*[.!?]+["']?\s*/g) ?? [val];
-            return matches.slice(0, limits[k]).join(" ").trim();
+            const ABBREV2 = /\b(Mr|Mrs|Ms|Dr|Prof|St|Jr|Sr|vs|etc|No|Vol|pp)\./g;
+            const safe = val.replace(ABBREV2, (m) => m.slice(0, -1) + "\x00");
+            const matches = safe.match(/[^.!?]*[.!?]+["']?\s*/g) ?? [safe];
+            return matches.slice(0, limits[k]).join(" ").trim().replace(/\x00/g, ".");
           })
           .join("\n\n");
         const remainderRaw = (scaffold.remainder as string | undefined)?.trim() ?? "";
@@ -2084,8 +2086,12 @@ Return JSON only:
     const scaffold = JSON.parse(text2);
 
     function trimSentences(s: string, max: number): string {
-      const matches = s.match(/[^.!?]*[.!?]+["']?/g) ?? [s];
-      return matches.slice(0, max).join(" ").trim();
+      // Split on sentence-ending punctuation but NOT on honorific/abbreviation dots
+      // (Mr. Mrs. Dr. Prof. St. Jr. Sr. vs. etc. — a dot followed by a capital only counts if preceded by ≥2 chars)
+      const ABBREV = /\b(Mr|Mrs|Ms|Dr|Prof|St|Jr|Sr|vs|etc|No|Vol|pp)\./g;
+      const placeholder = s.replace(ABBREV, (m) => m.slice(0, -1) + "\x00");
+      const matches = placeholder.match(/[^.!?]*[.!?]+["']?/g) ?? [placeholder];
+      return matches.slice(0, max).join(" ").trim().replace(/\x00/g, ".");
     }
     const limits: Record<string, number> = { para1: 1, para2: 1, para3: 2, para4: 3, para5: 3 };
     const paraKeys = ["para1", "para2", "para3", "para4", "para5"];
