@@ -114,7 +114,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
         )}
 
         {/* Fallback: summary + bullets when fullArticle not yet cached */}
-        {!fullArticle?.body && (story.summary || story.bullets?.length) && (
+        {!fullArticle?.body && (
           <div style={{ marginBottom: 36 }}>
             {story.summary && (
               <p style={{ fontSize: 19, lineHeight: 1.9, color: P.ink, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720 }}>{story.summary}</p>
@@ -122,6 +122,10 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
             {story.bullets?.map((b, i) => (
               <p key={i} style={{ fontSize: 19, lineHeight: 1.9, color: P.ink, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720 }}>{b}</p>
             ))}
+            {!story.summary && !story.bullets?.length && (
+              <p style={{ fontSize: 19, lineHeight: 1.9, color: P.inkMid, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720, fontStyle: "italic" }}>Commentary for this story is being prepared. In the meantime, you can read the original coverage below.</p>
+            )}
+            <a href={story.link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", fontSize: 14, fontWeight: 700, color: sectionColor, fontFamily: P.fontBody, letterSpacing: 0.5, textDecoration: "none", borderBottom: `2px solid ${sectionColor}`, paddingBottom: 2, marginBottom: 36 }}>Read original story →</a>
             <div style={{ height: 1, background: `${P.tint}66`, marginTop: 8, marginBottom: 36 }} />
           </div>
         )}
@@ -235,16 +239,16 @@ function RelatedCard({ story, editionKey }: { story: Story; editionKey: string }
   const slug = urlToSlug(story.link);
   const sectionColor = SECTION_COLORS[story.section] ?? "#888";
   return (
-    <a href={`/article/${slug}?e=${editionKey}`} style={{ display: "flex", gap: 16, paddingTop: 16, paddingBottom: 16, borderBottom: `1px solid ${P.tint}44`, textDecoration: "none", alignItems: "flex-start" }}>
+    <a href={`/article/${slug}?e=${editionKey}`} style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 20, paddingBottom: 20, borderBottom: `1px solid ${P.tint}44`, textDecoration: "none" }}>
       {story.imageUrl && (
-        <div style={{ width: 130, height: 94, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: P.tint }}>
+        <div style={{ width: "100%", height: 200, borderRadius: 10, overflow: "hidden", background: P.tint }}>
           <img src={story.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
         </div>
       )}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: sectionColor, marginBottom: 4, fontFamily: P.fontBody }}>{story.section}</div>
+      <div>
+        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: sectionColor, marginBottom: 6, fontFamily: P.fontBody }}>{story.section}</div>
         <div style={{ fontSize: 21, fontWeight: 700, color: P.ink, lineHeight: 1.3, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const }}>{story.ownedTitle || story.title}</div>
-        {story.summary && <div style={{ fontSize: 18, color: P.inkMid, lineHeight: 1.5, marginTop: 4, fontFamily: P.fontBody }}>{story.summary.slice(0, 110)}{story.summary.length > 110 ? "…" : ""}</div>}
+        {story.summary && <div style={{ fontSize: 18, color: P.inkMid, lineHeight: 1.6, marginTop: 8, fontFamily: P.fontBody }}>{story.summary.slice(0, 160)}{story.summary.length > 160 ? "…" : ""}</div>}
       </div>
     </a>
   );
