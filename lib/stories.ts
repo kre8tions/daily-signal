@@ -2269,6 +2269,9 @@ export async function getArchivedPageData(key: string): Promise<PageData | null>
     if (!existing) return null;
     const res = await fetch(existing.url + "?t=" + Date.now());
     if (!res.ok) return null;
-    return await res.json();
+    const data = await res.json() as PageData;
+    // Strip failed stories (no summary) from old blobs — these are generation placeholders
+    data.stories = data.stories.filter(s => s.summary);
+    return data;
   } catch { return null; }
 }
