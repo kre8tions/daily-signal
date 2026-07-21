@@ -1387,6 +1387,8 @@ interface SourceAnalysis {
   missed: string;          // angle the source didn't pursue
   fitness: number;         // 1–5: source quality for this pipeline
   fitness_reason: string;  // one sentence explaining the score
+  uplift_score: number;    // 1–5: relevance to reader's own life (S1/S2 gate)
+  uplift_reason: string;   // one sentence explaining the uplift score
   subject?: { name: string; type: "film" | "tv_show" | "book" | "album" | "game" | "person" | "other"; year?: string };
 }
 
@@ -1397,7 +1399,7 @@ async function analyzeSource(client: Anthropic, story: Story): Promise<SourceAna
   try {
     const msg = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 300,
+      max_tokens: 400,
       messages: [{
         role: "user",
         content: `Read this article and return a brief editorial analysis. Be specific — one tight sentence each.
@@ -1414,8 +1416,15 @@ FITNESS SCORING (1–5) — how strong is this source for an insight-driven edit
 2: PR, product launch, or announcement where the argument must be entirely manufactured. No finding — just a hook the writer must build from scratch. (e.g. Sony releasing $119 monitors with a democratization pitch = 2)
 1: Wire copy, obituary, deal, press release. No editorial substance. Nothing to engage with.
 
+UPLIFT SCORING (1–5) — does this story have direct relevance to a general reader's own life, growth, or decisions? This is about the reader, not the subject's importance:
+5: Reader can immediately apply insight to their own life, relationships, work, or thinking. (e.g. study on how sleep affects decision-making, research on what makes feedback land)
+4: Clear bridge to reader's life with one inference step. Reader sees themselves in the subject. (e.g. how top performers build habits, what the most creative teams do differently)
+3: Loosely applicable — reader could extract a personal lesson but must work for it. Story is more about the subject than the reader.
+2: Interesting but reader-distant. Institutional critique, industry analysis, or professional niche. The reader is an observer, not a participant. (e.g. design school students didn't consult a Japanese fishing village)
+1: No personal relevance. Obituary, geopolitical event, institutional announcement, celebrity gossip.
+
 Return JSON only:
-{"genre":"news_report|science_discovery|cultural_criticism|profile|policy_politics|entertainment|opinion|explainer","source_position":"what claim or stance the source takes, or neutral if wire copy","tension":"what is unresolved contested or glossed over","missed":"the angle or implication the source did not pursue","fitness":1-5,"fitness_reason":"one sentence — why this score, what makes it strong or weak as source material","subject":{"name":"exact title or person name if the article is primarily about a specific named film/TV show/book/album/video game/person — omit this field entirely if the article is not about a specific named work or person","type":"film|tv_show|book|album|game|person|other","year":"release or birth year if known, otherwise omit"}}`,
+{"genre":"news_report|science_discovery|cultural_criticism|profile|policy_politics|entertainment|opinion|explainer","source_position":"what claim or stance the source takes, or neutral if wire copy","tension":"what is unresolved contested or glossed over","missed":"the angle or implication the source did not pursue","fitness":1-5,"fitness_reason":"one sentence — why this score, what makes it strong or weak as source material","uplift_score":1-5,"uplift_reason":"one sentence — why this score, how directly does this land in the reader's own life","subject":{"name":"exact title or person name if the article is primarily about a specific named film/TV show/book/album/video game/person — omit this field entirely if the article is not about a specific named work or person","type":"film|tv_show|book|album|game|person|other","year":"release or birth year if known, otherwise omit"}}`,
       }],
     });
     const raw = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
@@ -1666,6 +1675,12 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   if (analysis && typeof analysis.fitness === "number" && analysis.fitness <= 3 && slotIndex <= 1) {
     console.warn(`[fitness-gate] slot ${slotIndex} rejected: score=${analysis.fitness} — ${analysis.fitness_reason} (${story.title})`);
     throw new Error(`Fitness gate: score ${analysis.fitness} — ${analysis.fitness_reason}`);
+  }
+
+  // ── Uplift gate: S1/S2 must land in the reader's own life ────────────────────
+  if (analysis && typeof analysis.uplift_score === "number" && analysis.uplift_score <= 2 && slotIndex <= 1) {
+    console.warn(`[uplift-gate] slot ${slotIndex} rejected: uplift=${analysis.uplift_score} — ${analysis.uplift_reason} (${story.title})`);
+    throw new Error(`Uplift gate: score ${analysis.uplift_score} — ${analysis.uplift_reason}`);
   }
 
   // ── Section gate: S1/S2 must be uplift (Psychology or HumanPotential) ────────
