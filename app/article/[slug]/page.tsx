@@ -70,6 +70,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
 
   return (
     <div style={{ minHeight: "100vh", background: P.articleBg, color: P.ink, fontFamily: P.fontBody, paddingBottom: 80 }}>
+      <style>{`.related-img { width: 100%; } @media (min-width: 600px) { .related-img { width: 50%; } }`}</style>
 
       {/* Masthead */}
       <div style={{ paddingTop: 20, paddingBottom: 20, paddingLeft: 24, paddingRight: 24, borderBottom: `1px solid ${P.tint}44` }}>
@@ -237,7 +238,7 @@ function RelatedCard({ story, editionKey }: { story: Story; editionKey: string }
   return (
     <a href={`/article/${slug}?e=${editionKey}`} style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 20, paddingBottom: 20, borderBottom: `1px solid ${P.tint}44`, textDecoration: "none" }}>
       {story.imageUrl && (
-        <div style={{ width: "min(100%, 50%)", height: 200, borderRadius: 10, overflow: "hidden", background: P.tint }}>
+        <div className="related-img" style={{ height: 200, borderRadius: 10, overflow: "hidden", background: P.tint }}>
           <img src={story.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
         </div>
       )}
