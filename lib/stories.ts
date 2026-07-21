@@ -132,6 +132,11 @@ export const FEEDS = [
   { url: "https://www.fastcompany.com/leadership/rss",                        source: "Fast Company Ideas",  section: "HumanPotential" },
   { url: "https://feeds.kottke.org/main",                                     source: "Kottke",              section: "HumanPotential" },
   { url: "https://dariusforoux.com/feed",                                     source: "Darius Foroux",       section: "HumanPotential" },
+  { url: "https://jamesclear.com/feed",                                        source: "James Clear",          section: "HumanPotential" },
+  { url: "https://sive.rs/en.atom",                                            source: "Derek Sivers",         section: "HumanPotential" },
+  { url: "https://www.scotthyoung.com/blog/feed/",                             source: "Scott H. Young",       section: "HumanPotential" },
+  { url: "https://www.raptitude.com/feed/",                                    source: "Raptitude",            section: "Psychology"      },
+  { url: "https://theconversation.com/us/psychology/articles.atom",            source: "The Conversation",     section: "Psychology"      },
   // Technology — emerging tech, innovation, futurism (no policy)
   { url: "https://www.theverge.com/rss/index.xml",                          source: "The Verge",           section: "Technology"    },
   { url: "https://feeds.arstechnica.com/arstechnica/index",                 source: "Ars Technica",        section: "Technology"    },
@@ -525,6 +530,48 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
   return result;
 }
 
+// ── Comparative uplift selection — picks best S1/S2 from pre-scored candidates ─
+async function comparativeUpliftSelect(
+  client: Anthropic,
+  scored: Array<{ item: RawItem; uplift: number; fitness: number }>
+): Promise<[RawItem | null, RawItem | null]> {
+  const top = scored.slice(0, 8);
+  const list = top.map((c, i) =>
+    `[${i}] ${c.item.title}\nSECTION: ${c.item.section} | uplift=${c.uplift} fitness=${c.fitness}\n${c.item.content.slice(0, 200)}`
+  ).join("\n\n");
+
+  const msg = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 150,
+    messages: [{
+      role: "user",
+      content: `Pick the best S1 and S2 for a curated daily news edition. Readers are building their lives with intention — creative practice, career, relationships, health, money, thinking.
+
+S1: reader opens it and immediately recognizes it as being about their own life. No inference required. They apply it today.
+S2: clear bridge to reader's life with one inference step.
+
+REJECT if the story is: film/arts/literary criticism, one person's life obsession, institutional critique, industry analysis, sports reporting, cultural commentary where the reader is a spectator, or anything the reader watches rather than does.
+
+CANDIDATES:
+${list}
+
+Return JSON only: {"s1": <index or null>, "s2": <index or null>}`,
+    }],
+  }).catch(() => null);
+
+  if (!msg) return [null, null];
+  try {
+    const text = msg.content[0]?.type === "text" ? msg.content[0].text : "{}";
+    const parsed = JSON.parse(text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim());
+    const s1idx = typeof parsed.s1 === "number" ? parsed.s1 : null;
+    const s2idx = typeof parsed.s2 === "number" && parsed.s2 !== s1idx ? parsed.s2 : null;
+    return [
+      s1idx !== null ? (top[s1idx]?.item ?? null) : null,
+      s2idx !== null ? (top[s2idx]?.item ?? null) : null,
+    ];
+  } catch { return [null, null]; }
+}
+
 // ── Cross-story synthesis (blob-cached per edition) ───────────────────────────
 export async function getSynthesis(items: RawItem[], editionKey: string): Promise<Synthesis> {
   const blobKey = `synthesis/v1/${editionKey}.json`;
@@ -542,12 +589,23 @@ export async function getSynthesis(items: RawItem[], editionKey: string): Promis
     `[${i}] ${a.section.toUpperCase()} — ${a.title}\n${a.content.slice(0, 300)}`
   ).join("\n\n");
 
+  const slot = editionKey.split("_")[1] ?? "morning";
+  const slotVoice: Record<string, string> = {
+    early:     "This is the reader's first contact with the world today. You are setting the frame through which they will interpret everything that follows. Tone: clarifying, orienting — a mind waking up to what today is actually about.",
+    morning:   "The day is fully underway. The reader has context from the morning. Give them the angle that reframes what they think they already know — the interpretation that makes the obvious less obvious.",
+    afternoon: "Midday. The reader is in motion, decisions being made. Give them the insight that changes how the rest of the day lands — something that arrives at exactly the right moment.",
+    evening:   "The day is nearly done. The reader is in reflection mode, processing what happened. Tell them what today actually meant — the pattern that only becomes visible in hindsight.",
+  };
+  const editionFrame = slotVoice[slot] ?? slotVoice.morning;
+
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 1800,
     messages: [{
       role: "user",
       content: `${synthWriter.style}
+
+EDITION CONTEXT: ${editionFrame}
 
 You are writing the synthesis for The Daily Signal — the card that finds the load-bearing beam underneath the day's news. Read today's stories until you understand something true about how the world works right now. Then say it. Not what you read — what you now know.
 
@@ -865,6 +923,38 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   const weeklySignalPromise = isSundayEvening(editionKey)
     ? getWeeklySignal(editionKey, blocked, () => { weeklySignalIsNew = true; }).catch(() => null)
     : Promise.resolve(null);
+
+  // ── Comparative uplift preselection: score all uplift candidates, pick best S1/S2 before slot lock-in
+  const upliftRaw = raw.filter(r => r.section === "Psychology" || r.section === "HumanPotential");
+  if (upliftRaw.length >= 2) {
+    try {
+      const preselectClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      const scored = (await Promise.all(
+        upliftRaw.map(async item => {
+          const shell: Story = { ...item, cardStyle: "brief" as const };
+          const a = await analyzeSource(preselectClient, shell).catch(() => null);
+          return a ? { item, uplift: a.uplift_score, fitness: a.fitness } : null;
+        })
+      )).filter(Boolean) as Array<{ item: RawItem; uplift: number; fitness: number }>;
+
+      const viable = scored
+        .filter(s => s.fitness >= 3 && s.uplift >= 3)
+        .sort((a, b) => (b.uplift * 2 + b.fitness) - (a.uplift * 2 + a.fitness));
+
+      if (viable.length >= 2) {
+        const [s1, s2] = await comparativeUpliftSelect(preselectClient, viable);
+        if (s1) {
+          const idx = raw.findIndex(r => r.link === s1.link);
+          if (idx > 0) [raw[0], raw[idx]] = [raw[idx], raw[0]];
+        }
+        if (s2) {
+          const idx = raw.findIndex(r => r.link === s2.link);
+          if (idx > 1) [raw[1], raw[idx]] = [raw[idx], raw[1]];
+        }
+        console.log(`[uplift-preselect] s1="${s1?.title}" s2="${s2?.title}"`);
+      }
+    } catch (e) { console.warn("[uplift-preselect] failed, using pool order:", e); }
+  }
 
   // Generate articles in batches of 3 to avoid Claude rate-limit bursts.
   // 9 simultaneous × 4 passes each = ~36 concurrent calls; batching keeps it to ~12 at a time.
