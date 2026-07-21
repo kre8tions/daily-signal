@@ -237,7 +237,7 @@ function RelatedCard({ story, editionKey }: { story: Story; editionKey: string }
   return (
     <a href={`/article/${slug}?e=${editionKey}`} style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 20, paddingBottom: 20, borderBottom: `1px solid ${P.tint}44`, textDecoration: "none" }}>
       {story.imageUrl && (
-        <div style={{ width: "100%", height: 200, borderRadius: 10, overflow: "hidden", background: P.tint }}>
+        <div style={{ width: "min(100%, 50%)", height: 200, borderRadius: 10, overflow: "hidden", background: P.tint }}>
           <img src={story.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
         </div>
       )}
