@@ -200,7 +200,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
         {/* Related Stories — same section first */}
         {relatedStories.length > 0 && (
           <div style={{ marginBottom: 40 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.inkLight, marginBottom: 16, fontFamily: P.fontBody }}>Related Stories</div>
+            <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.inkLight, marginBottom: 16, fontFamily: P.fontBody }}>Related Stories</div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               {relatedStories.map((s) => (
                 <RelatedCard key={s.link} story={s} editionKey={editionKey} />
@@ -212,7 +212,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
         {/* More From Today's Edition */}
         {moreFromEdition.length > 0 && (
           <div style={{ marginBottom: 48 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>More From Today&apos;s Edition</div>
+            <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>More From Today&apos;s Edition</div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               {moreFromEdition.map((s) => (
                 <RelatedCard key={s.link} story={s} editionKey={editionKey} />
@@ -244,7 +244,7 @@ function RelatedCard({ story, editionKey }: { story: Story; editionKey: string }
       <div>
         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: sectionColor, marginBottom: 6, fontFamily: P.fontBody }}>{story.section}</div>
         <div style={{ fontSize: 21, fontWeight: 700, color: P.ink, lineHeight: 1.3, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const }}>{story.ownedTitle || story.title}</div>
-        {story.summary && <div style={{ fontSize: 18, color: P.inkMid, lineHeight: 1.6, marginTop: 8, fontFamily: P.fontBody }}>{story.summary.slice(0, 160)}{story.summary.length > 160 ? "…" : ""}</div>}
+        {story.summary && <div style={{ fontSize: 14, color: P.inkMid, lineHeight: 1.6, marginTop: 8, fontFamily: P.fontBody }}>{story.summary.slice(0, 160)}{story.summary.length > 160 ? "…" : ""}</div>}
       </div>
     </a>
   );
