@@ -2218,8 +2218,14 @@ export async function getArchiveList(): Promise<ArchiveEntry[]> {
     evening: "Evening Edition", night: "Night Edition",
   };
 
-  // Blob list is the authoritative source of which editions exist
-  const { blobs } = await list({ prefix: "archive/editions/", limit: 100 });
+  // Blob list is the authoritative source of which editions exist — paginate to get all
+  const blobs: { pathname: string }[] = [];
+  let cursor: string | undefined;
+  do {
+    const res = await list({ prefix: "archive/editions/", limit: 1000, cursor });
+    blobs.push(...res.blobs);
+    cursor = res.cursor;
+  } while (cursor);
   if (!blobs.length) return [];
 
   // Load index for metadata (theme, imageUrl, label) — best-effort
