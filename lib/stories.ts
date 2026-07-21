@@ -483,7 +483,7 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
     else if (CREATIVE.includes(item.section)) creative.push(item);
   }
   // S1/S2: alternate between Psychology and HumanPotential (Outliers-style) — highest engagement slots
-  // slot extras REPLACE random s2-s11 slots (never s1, never append)
+  // slot extras REPLACE random s2-s9 slots (never s1, never append)
   const uplift = [...psychology, ...humanPotential]; // combined self-improvement pool
   const upl = uplift.slice(0, 3), sci = science.slice(0, 2), cre = creative.slice(0, 4), tec = tech.slice(0, 3);
   const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1), ...comics.slice(0, 1), ...anime.slice(0, 1)];
@@ -494,7 +494,7 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
   // Seeded Fisher-Yates shuffle of s2-s11 indices to pick replacement positions
   const poolSeed = editionKey.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const srPool = (n: number) => { const x = Math.sin(poolSeed * 127 + n * 311) * 10000; return x - Math.floor(x); };
-  const candidates = Array.from({ length: corePool.length - 1 }, (_, i) => i + 1); // indices 1..N (s2-s11)
+  const candidates = Array.from({ length: corePool.length - 1 }, (_, i) => i + 1); // indices 1..N (s2-s9)
   for (let i = candidates.length - 1; i > 0; i--) {
     const j = Math.floor(srPool(i) * (i + 1));
     [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
@@ -505,7 +505,7 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
   for (const pos of Array.from(replaceAt).sort((a, b) => a - b)) {
     if (ei < slotExtras.length) mutablePool[pos] = slotExtras[ei++];
   }
-  const pool = mutablePool.filter(Boolean).slice(0, 11);
+  const pool = mutablePool.filter(Boolean).slice(0, 9);
   // Deals and negative/dark stories must never appear in S1–S3; push them toward the end
   const isNeg = (s: RawItem) => NEGATIVE_RE.test(s.title) || DEAL_RE.test(s.title) || DEAL_RE.test(s.content);
   const negative = pool.filter(isNeg);
@@ -867,7 +867,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     : Promise.resolve(null);
 
   // Generate articles in batches of 3 to avoid Claude rate-limit bursts.
-  // 11 simultaneous × 4 passes each = ~44 concurrent calls; batching keeps it to ~12 at a time.
+  // 9 simultaneous × 4 passes each = ~36 concurrent calls; batching keeps it to ~12 at a time.
   const BATCH = 3;
   const articleResults: PromiseSettledResult<ArticleCommentary>[] = [];
   for (let b = 0; b < raw.length; b += BATCH) {
