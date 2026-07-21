@@ -627,7 +627,7 @@ ${synthWriter.voiceReminder}
 
 Return JSON only, no markdown:
 {
-  "theme": "2-4 words. An evocative noun phrase naming the underlying force or tension — not a topic, a dynamic. E.g. 'The Permission Economy' / 'Controlled Disintegration' / 'Institutional Overcorrection'. Not 'Technology and Society'.",
+  "theme": "2-4 words. An evocative noun phrase naming the underlying force or tension — not a topic, a dynamic. E.g. 'The Permission Economy' / 'Controlled Disintegration' / 'Institutional Overcorrection'. Not 'Technology and Society'. Do NOT use these overused themes — push further if your instinct lands here: The Authenticity Paradox, The Shortcut Paradox, The Authenticity Tax, The Persistence Paradox, The Legitimacy Arbitrage, Permission Collapse.",
   "hook": "1 sentence only. 7-10 words maximum — count them. The irreversible claim — the thing that cannot be unsaid once you read it. This is the first thing the reader sees. No setup, no throat-clearing. Start with the tension, not the context.",
   "observation": "1-2 sentences that deepen the hook. Don't summarize stories. Speak from what you now understand — as if you absorbed the news and are telling someone what it means, not what it said. End somewhere that makes the reader want the takeaways.",
   "takeaways": [
@@ -956,6 +956,16 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     } catch (e) { console.warn("[uplift-preselect] failed, using pool order:", e); }
   }
 
+  // Fix 1: Hard section enforcement — if preselect fell through and raw[0] is not uplift-section,
+  // promote the best available uplift story from the pool to S1
+  if (raw[0] && raw[0].section !== "Psychology" && raw[0].section !== "HumanPotential") {
+    const bestUplift = raw.findIndex((r, i) => i > 0 && (r.section === "Psychology" || r.section === "HumanPotential"));
+    if (bestUplift > 0) {
+      [raw[0], raw[bestUplift]] = [raw[bestUplift], raw[0]];
+      console.log(`[s1-section-enforce] promoted "${raw[0].title}" to S1 from position ${bestUplift}`);
+    }
+  }
+
   // Generate articles in batches of 3 to avoid Claude rate-limit bursts.
   // 9 simultaneous × 4 passes each = ~36 concurrent calls; batching keeps it to ~12 at a time.
   const BATCH = 3;
@@ -1016,8 +1026,17 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   }));
 
   // Only include stories where article generation succeeded (has summary)
-  const stories: Story[] = allStories
-    .filter(s => s.summary)
+  const filtered = allStories.filter(s => s.summary);
+
+  // Fix 2: Post-filter section check — if filter cascade left a non-uplift story at position 0,
+  // swap with the first uplift-section story in the remaining list
+  const firstUplift = filtered.findIndex(s => s.section === "Psychology" || s.section === "HumanPotential");
+  if (firstUplift > 0) {
+    [filtered[0], filtered[firstUplift]] = [filtered[firstUplift], filtered[0]];
+    console.log(`[s1-post-filter] swapped "${filtered[0].title}" into S1 from position ${firstUplift}`);
+  }
+
+  const stories: Story[] = filtered
     .map((s, i) => ({ ...s, cardStyle: CARD_STYLES[i] ?? "brief" as Story["cardStyle"] }));
 
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined, weeklySignal: weeklySignal ?? undefined };
@@ -1763,8 +1782,9 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
     throw new Error(`Fitness gate: score ${analysis.fitness} — ${analysis.fitness_reason}`);
   }
 
-  // ── Uplift gate: S1/S2 must land in the reader's own life ────────────────────
-  if (analysis && typeof analysis.uplift_score === "number" && analysis.uplift_score <= 2 && slotIndex <= 1) {
+  // ── Uplift gate: S1/S2 block score ≤2; S3 blocks score ≤1 (clearly irrelevant stories) ─────
+  const upliftBlock = slotIndex <= 1 ? 2 : slotIndex === 2 ? 1 : -1;
+  if (analysis && typeof analysis.uplift_score === "number" && upliftBlock >= 0 && analysis.uplift_score <= upliftBlock) {
     console.warn(`[uplift-gate] slot ${slotIndex} rejected: uplift=${analysis.uplift_score} — ${analysis.uplift_reason} (${story.title})`);
     throw new Error(`Uplift gate: score ${analysis.uplift_score} — ${analysis.uplift_reason}`);
   }
