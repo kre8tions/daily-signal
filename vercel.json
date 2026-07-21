@@ -4,10 +4,9 @@
   "installCommand": "npm install",
   "crons": [
     { "path": "/api/revalidate", "schedule": "0 15 * * *" },
-    { "path": "/api/pre-warm",   "schedule": "44 2 * * *" },
-    { "path": "/api/pre-warm",   "schedule": "44 6 * * *" },
-    { "path": "/api/pre-warm",   "schedule": "44 14 * * *" },
-    { "path": "/api/pre-warm",   "schedule": "44 18 * * *" },
-    { "path": "/api/pre-warm",   "schedule": "44 22 * * *" }
+    { "path": "/api/pre-warm",   "schedule": "44 3 * * *" },
+    { "path": "/api/pre-warm",   "schedule": "44 15 * * *" },
+    { "path": "/api/pre-warm",   "schedule": "44 19 * * *" },
+    { "path": "/api/pre-warm",   "schedule": "44 23 * * *" }
   ]
 }

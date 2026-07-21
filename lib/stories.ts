@@ -225,11 +225,10 @@ export function labelFromKey(key: string): string {
 }
 
 function slotFromHour(h: number, date: string): { label: string; key: string } {
-  if (h >= 5  && h < 9)  return { label: "First Light",    key: `${date}_early`    };
-  if (h >= 9  && h < 13) return { label: "The Brief",      key: `${date}_morning`  };
-  if (h >= 13 && h < 17) return { label: "Afternoon",       key: `${date}_afternoon`};
-  if (h >= 17 && h < 21) return { label: "The Digest",     key: `${date}_evening`  };
-  return                         { label: "Night Dispatch", key: `${date}_night`    };
+  if (h >= 6  && h < 10) return { label: "First Light", key: `${date}_early`     };
+  if (h >= 10 && h < 14) return { label: "The Brief",   key: `${date}_morning`   };
+  if (h >= 14 && h < 18) return { label: "Afternoon",   key: `${date}_afternoon` };
+  return                         { label: "The Digest",  key: `${date}_evening`   };
 }
 
 export function getEdition(): { label: string; key: string } {

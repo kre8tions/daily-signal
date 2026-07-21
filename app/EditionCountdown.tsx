@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 
 // Local slot boundaries — countdown hits zero when visitor's edition changes
-const LOCAL_BOUNDARIES = [5, 9, 13, 17, 21];
+const LOCAL_BOUNDARIES = [6, 10, 14, 18];
 
 function getNextEditionStart(): Date {
   const now = new Date();
