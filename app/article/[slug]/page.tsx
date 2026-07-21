@@ -114,7 +114,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
         )}
 
         {/* Fallback: summary + bullets when fullArticle not yet cached */}
-        {!fullArticle?.body && (
+        {!fullArticle?.body && (story.summary || story.bullets?.length) && (
           <div style={{ marginBottom: 36 }}>
             {story.summary && (
               <p style={{ fontSize: 19, lineHeight: 1.9, color: P.ink, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720 }}>{story.summary}</p>
@@ -122,10 +122,6 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
             {story.bullets?.map((b, i) => (
               <p key={i} style={{ fontSize: 19, lineHeight: 1.9, color: P.ink, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720 }}>{b}</p>
             ))}
-            {!story.summary && !story.bullets?.length && (
-              <p style={{ fontSize: 19, lineHeight: 1.9, color: P.inkMid, marginBottom: 26, fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: 720, fontStyle: "italic" }}>Commentary for this story is being prepared. In the meantime, you can read the original coverage below.</p>
-            )}
-            <a href={story.link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", fontSize: 14, fontWeight: 700, color: sectionColor, fontFamily: P.fontBody, letterSpacing: 0.5, textDecoration: "none", borderBottom: `2px solid ${sectionColor}`, paddingBottom: 2, marginBottom: 36 }}>Read original story →</a>
             <div style={{ height: 1, background: `${P.tint}66`, marginTop: 8, marginBottom: 36 }} />
           </div>
         )}

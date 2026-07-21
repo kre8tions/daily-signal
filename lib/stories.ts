@@ -925,13 +925,10 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     generationStatus: arts[i]?.summary && arts[i]?.body ? "ok" : arts[i]?.summary && !arts[i]?.body ? "no_body" : artErrors[i] ? "pass1_failed" : "missing",
   }));
 
-  // Promote successful stories into s1/s2 if they failed; push failed to end as placeholders
-  const successful = allStories.filter(s => s.summary);
-  const failed = allStories.filter(s => !s.summary);
-  const stories: Story[] = [
-    ...successful.map((s, i) => ({ ...s, cardStyle: CARD_STYLES[i] ?? "brief" as Story["cardStyle"] })),
-    ...failed.map(s => ({ ...s, cardStyle: "brief" as const })),
-  ];
+  // Only include stories where article generation succeeded (has summary)
+  const stories: Story[] = allStories
+    .filter(s => s.summary)
+    .map((s, i) => ({ ...s, cardStyle: CARD_STYLES[i] ?? "brief" as Story["cardStyle"] }));
 
   const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined, weeklySignal: weeklySignal ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
