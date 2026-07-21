@@ -594,7 +594,6 @@ function ObservationCard({ synthesis, writerIndex, editionKey }: { synthesis: Sy
             <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>The Signal</div>
             <div style={{ fontSize: 22, fontWeight: 400, color: P.ink, lineHeight: 1.1, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, letterSpacing: P.dark ? 2 : 0 }}>{synthesis.theme}</div>
           </div>
-          <div className="ds-obs-share"><ShareButton title={synthesis.theme} url={`/archive/${editionKey}#signal`} color={P.accent} fontBody={P.fontBody} /></div>
         </div>
         <div style={{ paddingLeft: 28, paddingRight: 28, marginBottom: 0 }}>
           <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
@@ -626,6 +625,9 @@ function ObservationCard({ synthesis, writerIndex, editionKey }: { synthesis: Sy
             )}
           </div>
         )}
+        <div style={{ display: "flex", justifyContent: "flex-end", paddingLeft: 28, paddingRight: 28, paddingBottom: 20 }}>
+          <ShareButton title={synthesis.theme} url={`/archive/${editionKey}#signal`} color={P.accent} fontBody={P.fontBody} />
+        </div>
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
         <defs><filter id="sketchy-border-obs" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="7" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
