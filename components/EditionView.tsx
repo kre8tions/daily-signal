@@ -857,9 +857,13 @@ export async function EditionView({
   const fullPool = hasAnySynth
     ? seededShuffle<CardId>(["obs", "ki", "bl", "a0", "a1", "a2"], editionSeed)
     : [] as CardId[];
-  const hasPreS1 = hasAnySynth && seededRandom(editionSeed + 999) < 0.4;
-  const preS1Card = hasPreS1 ? fullPool[0] : null;
-  const remainingPool = hasPreS1 ? fullPool.slice(1) : fullPool;
+  const actionPool: CardId[] = ["bl", "a0", "a1", "a2"];
+  const forceAction = hasAnySynth && seededRandom(editionSeed + 998) < 0.6;
+  const preS1Card = forceAction
+    ? actionPool[Math.floor(seededRandom(editionSeed + 997) * actionPool.length)]
+    : (hasAnySynth && seededRandom(editionSeed + 999) < 0.4 ? fullPool[0] : null);
+  const hasPreS1 = preS1Card !== null;
+  const remainingPool = hasPreS1 ? fullPool.filter(c => c !== preS1Card) : fullPool;
   // Assign remaining cards to fixed slots; last slot absorbs overflow
   const synthSlots = {
     afterS1:   remainingPool[0] ?? null,
