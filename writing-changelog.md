@@ -4,7 +4,30 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
-## writing-audit-fixes-persona-decimal-question (2026-07-21) — CURRENT STABLE
+## edition-audit-title-consistency-named-example (2026-07-21) — CURRENT STABLE
+
+**What changed:**
+- Pass 1.5 metadata extraction `ownedTitle` field: added a constraint that the title must reference the same specific subject, time period, and setting as the `summary` field — no titling off a historical aside or tangential detail the summary doesn't actually focus on.
+- Same field: added a rule that if `summary` contains a counter-intuitive claim or mechanism ("X happens not because of A, but because of B"), the title must surface that claim rather than settle for a neutral fact count or trivia statement.
+- Pass 1.5 `summary` field: added a rule requiring at least one named example (person, product, organization, place) when the article names one, instead of defaulting to generic references ("artists", "a report", "officials").
+
+**Why:**
+- Sourced from `edition-analysis` skill audit (`audit-reports/edition-2026-07-21-afternoon.md`), Afternoon edition, 9-story sample, average 28.0/40.
+- S3 scored Headline=1: title read "Binoculars Replaced Bird Traps in 1900s Europe" while the card body was entirely about present-day Southeast Asian bird-singing contests — different continent, century, and thesis (title/body topical drift, root-caused to no cross-check between the two Pass 1.5 fields).
+- S6 showed a milder version of the same pattern: title's "40 Percent" statistic wasn't supported anywhere in the shown body.
+- S8 scored Headline=2 despite its own summary containing a strong "self-fulfilling prophecy" mechanism claim — title settled for a flat fact count ("Nolan's Five Films Shot on IMAX Cameras") instead of surfacing it.
+- S3 and S4 both scored Voice=2 with no named person/place/organization despite source material likely containing one — generic nouns only ("artists", "Southeast Asia", "enforcement and education").
+- Did not implement from the same audit: Fix 1 (reader-application clause on brief summaries) or Fix 2 (always populate a pull quote) — not approved in this pass.
+
+**What to observe:**
+- Does S3-style topical drift (title anchored to a different subject/setting than the body) stop recurring?
+- Do fact-count/trivia titles (S8-style) get replaced with claim-forward titles when a summary contains a real mechanism claim, without running long or feeling breathless?
+- Do previously-generic briefs (S3/S4-style) start carrying a named anchor, and does the "where available" gate correctly avoid forcing a name onto genuinely aggregate/statistical stories?
+- Re-run the edition-analysis audit on a future edition to see if Headline and Voice dimension averages improve, and whether the title/summary consistency issue recurs.
+
+---
+
+## writing-audit-fixes-persona-decimal-question (2026-07-21)
 
 **What changed:**
 - Pass 1 Voice rules block: added a "persona first" line as the top rule — "every rule below is subordinate to your persona's voice and voiceReminder above... reread your draft and confirm at least 2 sentences are ones only this persona — not a generic sharp analyst — would have written."
