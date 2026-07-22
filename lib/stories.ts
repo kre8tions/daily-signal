@@ -1841,6 +1841,7 @@ ${sampleReferencePool(refSeed)}
 Ground your argument in at least one named case — a specific person, company, product, year, or documented incident. The named case is not optional. An abstract claim without a named anchor is an observation, not an article.
 
 Voice rules:
+- Persona first: every rule below is subordinate to your persona's voice and voiceReminder above. Where a generic rule and your persona's register would pull the sentence in different directions, follow the persona. Before finishing, reread your draft and confirm at least 2 sentences are ones only this persona — not a generic sharp analyst — would have written.
 - Vary sentence length. Short punches. Then one that earns it. Then short again.
 - Vivid and specific — name the thing, don't describe it abstractly.
 - When the source contains a striking number — use it. The specific number does more work than the abstraction.
@@ -1866,7 +1867,7 @@ ${rhythmForMode(modeSelection?.mode ?? "")}
 
 Total length: 250-350 words. Tight and complete — no padding, no filler, no repetition.
 
-FORBIDDEN: throat-clearing openers; colons anywhere in the prose — rewrite as two sentences, no exceptions; semicolons — rewrite as two sentences; vague lesson-gesturing ('this teaches us', 'there's a lesson here') — show the insight, don't announce it; vague endings that restate the opening without completing the thought ('something else entirely', 'more complicated than it seems', 'that's a different story') — the final paragraph must name the specific thing the reader now understands that they didn't at the start; endings that stay inside the subject world — the final paragraph must connect to something the reader can see in their own creative practice, career, or way of thinking, not just a conclusion about the subject itself; named cases that appear without setup — every specific person, company, or incident you name must be introduced and connected before the final sentence, not dropped in as a closing gesture.`,
+FORBIDDEN: throat-clearing openers; colons anywhere in the prose — rewrite as two sentences, no exceptions; semicolons — rewrite as two sentences; vague lesson-gesturing ('this teaches us', 'there's a lesson here') — show the insight, don't announce it; vague endings that restate the opening without completing the thought ('something else entirely', 'more complicated than it seems', 'that's a different story') — the final paragraph must name the specific thing the reader now understands that they didn't at the start; endings that stay inside the subject world — the final paragraph must connect to something the reader can see in their own creative practice, career, or way of thinking, not just a conclusion about the subject itself; named cases that appear without setup — every specific person, company, or incident you name must be introduced and connected before the final sentence, not dropped in as a closing gesture; ending the piece on a question — the final sentence must be a declarative claim, even if the paragraph before it poses a question to build toward it.`,
     }],
   });
 
@@ -1995,7 +1996,7 @@ Return JSON only:
           .filter(k => scaffold[k])
           .map(k => {
             const val = (scaffold[k] as string | undefined) ?? "";
-            const ABBREV2 = /\b(Mr|Mrs|Ms|Dr|Prof|St|Jr|Sr|vs|etc|No|Vol|pp)\./g;
+            const ABBREV2 = /\b(Mr|Mrs|Ms|Dr|Prof|St|Jr|Sr|vs|etc|No|Vol|pp)\.|\b[A-Z]\.(?=\s?[A-Z])|(?<=\d)\.(?=\d)/g;
             const safe = val.replace(ABBREV2, (m) => m.slice(0, -1) + "\x00");
             const matches = safe.match(/[^.!?]*[.!?]+["']?\s*/g) ?? [safe];
             return matches.slice(0, limits[k]).join(" ").trim().replace(/\x00/g, ".");

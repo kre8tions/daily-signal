@@ -4,6 +4,100 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
+## writing-audit-fixes-persona-decimal-question (2026-07-21) — CURRENT STABLE
+
+**What changed:**
+- Pass 1 Voice rules block: added a "persona first" line as the top rule — "every rule below is subordinate to your persona's voice and voiceReminder above... reread your draft and confirm at least 2 sentences are ones only this persona — not a generic sharp analyst — would have written."
+- Pass 1 FORBIDDEN list: added "ending the piece on a question — the final sentence must be a declarative claim, even if the paragraph before it poses a question to build toward it."
+- Pass 2 sentence-splitting `ABBREV2` regex extended from `/\b(Mr|Mrs|Ms|Dr|Prof|St|Jr|Sr|vs|etc|No|Vol|pp)\./g` to also protect single-capital initials (`\b[A-Z]\.(?=\s?[A-Z])`) and decimal points (`(?<=\d)\.(?=\d)`) from being read as sentence boundaries.
+
+**Why:**
+- Sourced from `writing-quality` skill audit (`audit-reports/writing-2026-07-21.md`), 7-article S1 sample, average 24.6/40.
+- Voice dilution (4/7 articles, e.g. Edmund/Sacks piece read as generic mechanism analysis): the generic "Voice rules" block competed with persona `style`/`voiceReminder` with no stated precedence.
+- Rhetorical-question endings: Mummers/Opal article scored Closing=1 by ending on two consecutive questions; the FORBIDDEN list banned other weak-ending patterns but not this one explicitly.
+- Mid-sentence truncation (2/7 articles): the sentence-splitter treated "1.3" and "E." (initial before a name) as sentence ends, then the paragraph-limit slice discarded everything after — Cronkite/Bruno's hook literally cut off mid-number ("...on a 1.") and Mummers/Opal's body cut off mid-name ("When folklorists like E.").
+- Did not implement: Fix 1 (pull quote never rendered — `CARD_STYLES` only assigns `"full"`/`"pullquote"` to 2 of 11 slots, a rendering-layer change with layout implications) or Fix 2 (25-word hook ceiling) — not approved in this pass.
+
+**What to observe:**
+- Do personas read more distinctly, especially ones previously flagged as diluted (Edmund/Sacks, Rosa/Roxane Gay, Bruno/Talese, Arlo/Ronson)?
+- Does the persona-first self-check produce awkward "trying too hard" persona affect, or does it stay organic?
+- Do articles stop ending on rhetorical questions? Watch for the FORBIDDEN list becoming checklist-y (same risk noted in `hardened-reader-life-transfer`).
+- Does the extended initials regex (`\b[A-Z]\.(?=\s?[A-Z])`) ever over-match a genuine sentence boundary (single capitalized word ending a sentence, followed by a capitalized sentence-starter)? Spot-check a sample of live articles.
+- Re-run the writing-quality audit in ~1-2 weeks to see if Voice, Closing, and Readability dimension averages improve.
+
+---
+
+## owntitle-colon-code-enforcement (2026-07-10) — CURRENT STABLE
+
+**What changed:**
+- After Pass 1.5 JSON parse, a code check replaces any `:` in `ownedTitle` with ` — ` (em-dash with spaces)
+- Handles both `X: Y` and `X:Y` patterns via `replace(/\s*:\s*/, " — ")`
+
+**Why:**
+- Prompt FORBIDDEN list bans colons but Haiku ignores it on metadata fields (~30% of titles still used colon-subtitle format even with explicit instruction)
+- Code enforcement is zero-fail: `repairPunctuation()` already uses this pattern for body prose; extended it to metadata
+
+**What to observe:**
+- Titles with natural colon structure — do they read as clean em-dash titles or awkward?
+- Any titles where the colon was semantic (ratios, times) — these would be wrongly converted. Hasn't appeared in practice but worth watching.
+
+---
+
+## remove-duplicate-sentences (2026-07-10) — CURRENT STABLE
+
+**What changed:**
+- New `removeDuplicateSentences(text: string): string` function in `lib/stories.ts`
+- Splits body into paragraphs, then sentences. Tracks all seen sentences (lowercased, whitespace-normalized) in a `Set`. Filters any sentence seen before.
+- Called after `repairPunctuation()` in Pass 2 assembly: `body = removeDuplicateSentences(body)`
+
+**Why:**
+- Haiku occasionally repeats verbatim sentences across paragraphs, especially when Pass 2 scaffold restructure pulls from Pass 1 prose and reuses a key line
+- No model-level fix for this — it's a structural artifact of multi-pass writing. Code dedup is deterministic and silent.
+
+**What to observe:**
+- Does the dedup silently remove legitimate variation? (Two sentences that start identically but end differently — regex splits on `.!?` so they should be distinct)
+- Are any articles noticeably shorter post-dedup? If so, a pass is producing too much repetition upstream.
+
+---
+
+## fitness-gate-raised-to-3 (2026-07-10) — CURRENT STABLE
+
+**What changed:**
+- Fitness gate threshold raised from `<= 2` to `<= 3`
+- Now: fitness 1–3 on S1/S2 slots (slotIndex ≤ 1) throws early, triggering bench backfill
+- Fitness 3 criteria: "Real subject with tension; article must find its own angle but source is legitimate starting point"
+
+**Why:**
+- Initial gate (`<= 2`) blocked PR/product launches but allowed fitness-3 sources through to S1/S2
+- A fitness-3 source means the article must manufacture its own angle — the source itself has no real finding. If a bench story scores 4 or 5, the pipeline was giving S1 to a weaker story because it arrived first in the feed, not because it was better.
+- Rule: S1/S2 should reflect the best available sources in the day's feed, not just "not a press release"
+
+**What to observe:**
+- How often does the gate fire? Check Vercel logs for `[fitness-gate]` entries.
+- Is S1/S2 noticeably stronger after this change?
+- Are bench pools deep enough? If most stories score ≤3, the gate may reject everything and fall back to the last bench item regardless.
+
+---
+
+## hardened-reader-life-transfer (2026-07-10) — CURRENT STABLE
+
+**What changed:**
+- Two new entries added to Pass 1 FORBIDDEN list:
+  1. `"endings that stay inside the subject world — the final paragraph must connect to something the reader can see in their own creative practice, career, or way of thinking, not just a conclusion about the subject itself"`
+  2. `"named cases that appear without setup — every specific person, company, or incident you name must be introduced and connected before the final sentence, not dropped in as a closing gesture"`
+
+**Why:**
+- Meow Wolf article (written after `reader-life-reorientation`) still ended at the subject level. The rhythm step 5 reader-life clauses were appended to existing instructions — Haiku treated them as secondary when the primary instruction was already satisfied.
+- Elevating reader-life transfer to FORBIDDEN-list status gives it equal weight with colon/semicolon bans — the highest enforcement signal available in prompt-only context.
+- Disney non-sequitur in the same article: the named-case requirement (Pass 1 global) caused Haiku to drop "Disney" into the final sentence with no prior setup. Added setup requirement to block this pattern.
+
+**What to observe:**
+- Do articles now reliably land on reader-life territory in the final paragraph?
+- Does the Disney/named-case-without-setup pattern recur? No code-level catch is possible; this is prompt-only.
+- Does the FORBIDDEN framing feel oppressive to the voice? If articles start sounding like they're completing a checklist, the enforcement is too heavy.
+
+---
+
 ## source-fitness-gate (2026-07-08) — CURRENT STABLE
 
 **What changed:**
