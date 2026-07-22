@@ -4,7 +4,29 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
-## edition-audit-title-consistency-named-example (2026-07-21) — CURRENT STABLE
+## edition-audit-closing-fragments-repetition (2026-07-21) — CURRENT STABLE
+
+**What changed:**
+- Pass 1 Voice rules block: added a rule that fragments must be readable as a complete thought on their own — bans dropped-subject fragments like "Means..." (add the subject back in if a fragment needs the previous sentence to parse grammatically).
+- Pass 1 Voice rules block: added a rule that restating the article's core insight later for emphasis must be rephrased, never repeated as an identical sentence verbatim.
+- Pass 2 paragraph-shaping prompt, para5 instruction: removed "open question" as an acceptable landing type (it directly contradicted Pass 1's existing FORBIDDEN-list rule against question endings). Added an explicit rule that the article's actual final sentence (para5's last sentence, or remainder's last sentence when remainder is non-empty) must be a complete, standalone declarative statement, never ending on a question mark or an unresolved contrast setup ("The question isn't whether X..." without completing the "it's whether Y" half).
+
+**Why:**
+- Sourced from a re-run of the `edition-analysis` skill audit (`audit-reports/edition-2026-07-21-afternoon.md`) after fixing the skill itself to score full article pages instead of truncated edition-page teasers for brief-style cards (see skill note in the report; skill lives at `~/.claude/agents/edition-analysis.md`, outside this repo).
+- Closing was the edition's weakest dimension (2.7/5 avg): S5 and S9 ended on unresolved contrast setups ("The question isn't whether the safeguard works." — never completes), S6 ended on a stacked double rhetorical question — all automatic score-1s. Root-caused partly to Pass 2's para5 instruction literally listing "open question" as a valid landing type, contradicting Pass 1's own no-question-ending rule.
+- Dropped-subject fragments appeared in 3 stories (S5: "Landed with the weight of a small stone..."; S9: "Means he wasn't deterred by the technology's existence..."), with no prompt guardrail requiring a fragment to carry its own subject.
+- Verbatim intra-article repetition appeared in 3 stories (S9's "The camera didn't stop abuse. It professionalized it." appears twice, identically; same for S8). Note: `removeDuplicateSentences()` already runs as a code-level dedup pass on the shaped body — it evidently isn't catching every case (likely a normalization mismatch on punctuation/quotes), so this prompt-level instruction is a second line of defense at the source rather than a replacement for the code check.
+- Did not implement from the same audit: Fix 4 (mandatory pull-quote selection for every story regardless of cardStyle) — not approved in this pass.
+
+**What to observe:**
+- Do S5/S6/S9-style unresolved endings stop recurring, and does Closing's dimension average improve above 2.7?
+- Do dropped-subject fragments ("Means...", "Landed with...") disappear from new articles?
+- Does verbatim self-repetition stop appearing, confirming the prompt-level fix catches what the code-level `removeDuplicateSentences()` dedup misses? If it still recurs, investigate why the dedup function's normalized-key match (`s.trim().toLowerCase().replace(/\s+/g, " ")`) isn't catching these cases — likely differing punctuation or quote characters between the two occurrences.
+- Re-run the edition-analysis audit (with the corrected full-article-page Step 1) on a future edition to confirm.
+
+---
+
+## edition-audit-title-consistency-named-example (2026-07-21)
 
 **What changed:**
 - Pass 1.5 metadata extraction `ownedTitle` field: added a constraint that the title must reference the same specific subject, time period, and setting as the `summary` field — no titling off a historical aside or tangential detail the summary doesn't actually focus on.

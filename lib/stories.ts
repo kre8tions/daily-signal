@@ -1843,6 +1843,8 @@ Ground your argument in at least one named case — a specific person, company, 
 Voice rules:
 - Persona first: every rule below is subordinate to your persona's voice and voiceReminder above. Where a generic rule and your persona's register would pull the sentence in different directions, follow the persona. Before finishing, reread your draft and confirm at least 2 sentences are ones only this persona — not a generic sharp analyst — would have written.
 - Vary sentence length. Short punches. Then one that earns it. Then short again.
+- Fragments are allowed for emphasis, but each one must be readable as a complete thought on its own. Never start a sentence with "Means..." or otherwise drop the subject of a clause — if a fragment needs the previous sentence to parse grammatically, add the subject back in.
+- If you restate the article's core insight later in the piece for emphasis, rephrase it — never repeat an identical sentence verbatim. Word-for-word repetition reads as an editing error, not emphasis.
 - Vivid and specific — name the thing, don't describe it abstractly.
 - When the source contains a striking number — use it. The specific number does more work than the abstraction.
 - No academic hedging: never "one might argue", "it is worth noting", "this suggests that".
@@ -1970,7 +1972,7 @@ Structure for first 5 paragraphs:
 - para2: up to 2 sentences — deepens or reframes the hook. Creates tension.
 - para3: 2-3 sentences — first insight or evidence. The "here's why" moment.
 - para4: 3-4 sentences — the turn. Complication, contradiction, or escalation.
-- para5: 3-5 sentences — landing. The consequence, open question, or provocation. Room to breathe.
+- para5: 3-5 sentences — landing. The consequence or provocation, resolved. Room to breathe. The final sentence of the article (para5's last sentence, or remainder's last sentence if remainder is non-empty) must be a complete, standalone declarative statement that lands an idea beyond today's news. Never end on a question mark. Never write a contrast setup ("The question isn't whether X..." / "Not Y, but...") without completing both halves in the same sentence.
 - remainder: everything after paragraph 5, preserved exactly as written. Empty string if nothing remains. Each paragraph in remainder will be capped at 3-5 sentences in post-processing.
 
 Also return:
