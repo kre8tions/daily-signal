@@ -4,7 +4,33 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
-## edition-audit-closing-fragments-repetition (2026-07-21) — CURRENT STABLE
+## edition-audit-list-fragments-hooks-persona-fidelity (2026-07-23) — CURRENT STABLE
+
+**What changed:**
+- Pass 1 Voice rules (line ~1853) and the `repairPunctuation()` rewrite prompt: added an exception to the "no semicolons/colons — always split into two sentences" rule — when the semicolon/colon separates parallel list items rather than two independent clauses, rewrite the list with commas and "and" instead of splitting it into a sentence fragment (e.g. never "legally, financially. Socially available").
+- Pass 1 FORBIDDEN list (line ~1872): reinforced the same list-fragment exception, and added a hard last-paragraph self-check ahead of the forbidden list — "does it name something outside today's subject the reader can act on or see differently in their own life? If the last paragraph could run in a product-news trade blog with only the subject swapped out, it has failed this check."
+- Pass 2 para5 instruction (line ~1975): extended the existing incomplete-contrast-ending rule to also cover bare negations with no positive completion ("This is not X." with no "it's Y" half).
+- Pass 1 reader-orientation instruction (line ~1826): softened per user request (medium risk noted in the audit) — instead of a hard "fuse subject and claim into sentence 1" rule, now *prefers* fusing them when the material supports it, allows the claim to land by sentence 2 at the latest, and explicitly warns against forcing a manufactured-feeling twist into sentence 1.
+- Pass 1 Voice rules (line ~1844): added a persona-topic-mismatch rule — when a persona lands on a subject outside its usual territory, apply the persona's characteristic *move* rather than defaulting to generic analyst prose (concrete examples given: Dawn's sustained-attention-on-one-small-thing move, Clive's disproportionate-consequence-in-something-small move).
+
+**Why:**
+- Sourced from `edition-analysis` skill audit of First Light edition 2026-07-23 (`audit-reports/edition-2026-07-23-early.md`), 7-story sample, avg 31.0/40.
+- List-fragment bug hit 2 stories (S1: "...legally, financially. Socially available to them."; S3: "...itemized, witnessed. Available for prosecutors to weaponize.") — root-caused to the existing semicolon-ban rule giving the model no alternative for rendering a natural 3-item list.
+- S5 and S6 both violated *existing, already-specific* closing rules rather than missing ones — confirms these are enforcement failures, not instruction gaps, hence the added hard self-check (S5) and the negation-specific extension (S6: "This is not a choice between two paths." with no completion).
+- S4 and S5 both opened with flat, fact-first hooks deferring the claim past sentence 1 — traced to the existing instruction phrasing subject-naming and claim as two sequential moves. Implemented as guidance rather than a hard rule per explicit steer to derisk, since a hard rule risks manufacturing artificial twists on genuinely low-drama subjects (e.g. Apple spec-bump story).
+- S3 (persona Clive/Bill Bryson) and S6 (persona Dawn/Mary Oliver) both scored Voice=3 with zero recognizable persona fingerprint on off-territory subjects (murder-case financial analysis, bodybuilding business history) — the existing "persona first" self-check didn't survive contact with a topic mismatch, since persona assignment (`getWriterAssignments`) has no topic-affinity weighting.
+- Did not implement from the same audit: Fix 5 (make pullQuote field never-empty with a fallback) — explicitly skipped this pass.
+
+**What to observe:**
+- Do S1/S3-style list fragments stop appearing?
+- Do S5/S6-style closing violations stop recurring even though the underlying rules already existed — i.e. did the added self-check and negation extension actually change enforcement, or is this a deeper adherence problem the prompt can't fix?
+- Do S4/S5-style flat fact-first hooks improve without producing artificial-feeling twists on low-drama subjects (watch specifically for forced drama on genuinely mundane product/spec stories)?
+- Does Voice score improve on persona/topic mismatches (watch Dawn, Clive, and other niche personas landing on off-territory subjects in future editions)?
+- Re-run the edition-analysis audit on a future edition to confirm.
+
+---
+
+## edition-audit-closing-fragments-repetition (2026-07-21)
 
 **What changed:**
 - Pass 1 Voice rules block: added a rule that fragments must be readable as a complete thought on their own — bans dropped-subject fragments like "Means..." (add the subject back in if a fragment needs the previous sentence to parse grammatically).

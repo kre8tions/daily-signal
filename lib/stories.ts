@@ -1428,7 +1428,7 @@ async function repairPunctuation(client: Anthropic, text: string): Promise<strin
       max_tokens: 600,
       messages: [{
         role: "user",
-        content: `Rewrite each sentence below to remove colons and semicolons. Split into two sentences at the colon or semicolon — no colons, no semicolons in the output. Keep the meaning intact. Return ONLY a JSON object where each key is the original sentence (exactly) and the value is the rewritten version. No extra text.
+        content: `Rewrite each sentence below to remove colons and semicolons. Split into two sentences at the colon or semicolon — no colons, no semicolons in the output. Keep the meaning intact. Exception: if the colon or semicolon separates parallel items in a list rather than two independent clauses, do NOT split into two sentences — rewrite the list using commas and "and" instead (e.g. "legally, financially, and socially available" — never "legally, financially. Socially available"). Only split into two sentences when both resulting halves are independently complete, grammatical sentences on their own. Return ONLY a JSON object where each key is the original sentence (exactly) and the value is the rewritten version. No extra text.
 
 Sentences:
 ${violations.map((v, i) => `${i + 1}. ${v}`).join("\n")}`,
@@ -1823,7 +1823,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
 
 You are writing for a curious, independently-minded adult who is building a life with intention — a creative practice, a considered career, a way of thinking they have chosen deliberately. They want to understand the world so they can make better decisions and see things other people miss. They are skeptical of received wisdom, equally unimpressed by institutions and by contrarianism. Write for someone who came to think, not to be told what to think. They came to read about the subject — the film, the discovery, the person, the idea — not about the journalism covering it.
 
-YOUR READER ARRIVES COLD. They have not read the source article. They do not know what we are talking about. Your first move is always to establish the subject: name the thing, anchor the reader, give them a foothold. Then have a real opinion about it.
+YOUR READER ARRIVES COLD. They have not read the source article. They do not know what we are talking about. Your first move is always to establish the subject: name the thing, anchor the reader, give them a foothold. Prefer fusing the subject and your real opinion into that same first sentence when the material supports it — don't let sentence 1 be pure neutral fact-establishment with the actual claim deferred to paragraph 2. If no claim is ready yet in sentence 1, land it by sentence 2 at the latest — never later. Don't force a dramatic pivot into sentence 1 if it would feel manufactured; a confident, specific claim beats an artificial twist.
 
 Draw on everything you know about this subject — not just what the source provided. Bring in the broader conversation: the history, the debates, the context outside the article. Write as if you chose to cover this topic today because it matters to you.
 
@@ -1842,6 +1842,7 @@ Ground your argument in at least one named case — a specific person, company, 
 
 Voice rules:
 - Persona first: every rule below is subordinate to your persona's voice and voiceReminder above. Where a generic rule and your persona's register would pull the sentence in different directions, follow the persona. Before finishing, reread your draft and confirm at least 2 sentences are ones only this persona — not a generic sharp analyst — would have written.
+- If today's subject has no obvious overlap with your persona's usual territory, do not default to generic analyst prose — find the persona's characteristic MOVE (not their usual subject matter) and apply it here. E.g. Dawn's move is sustained attention to one small thing until it opens into something larger — apply that attention-structure to any subject, not just nature. Clive's move is delight at a disproportionate consequence hiding inside something small — apply that structure to a legal argument, not just history.
 - Vary sentence length. Short punches. Then one that earns it. Then short again.
 - Fragments are allowed for emphasis, but each one must be readable as a complete thought on its own. Never start a sentence with "Means..." or otherwise drop the subject of a clause — if a fragment needs the previous sentence to parse grammatically, add the subject back in.
 - If you restate the article's core insight later in the piece for emphasis, rephrase it — never repeat an identical sentence verbatim. Word-for-word repetition reads as an editing error, not emphasis.
@@ -1850,7 +1851,7 @@ Voice rules:
 - No academic hedging: never "one might argue", "it is worth noting", "this suggests that".
 - No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...".
 - Never reference the source article or your own process. You chose to write about this subject — write about it directly.
-- No semicolons — ever. Rewrite as two sentences.
+- No semicolons — ever. Rewrite as two sentences. Exception: if the semicolon or colon separates parallel items in a list rather than two independent clauses, do not split into two sentences — use commas and "and" instead (e.g. "legally, financially, and socially available" — never "legally, financially. Socially available"). Only split into two sentences when both resulting halves are independently complete, grammatical sentences on their own.
 
 STORY: ${story.title}
 SOURCE: ${story.source}
@@ -1869,7 +1870,9 @@ ${rhythmForMode(modeSelection?.mode ?? "")}
 
 Total length: 250-350 words. Tight and complete — no padding, no filler, no repetition.
 
-FORBIDDEN: throat-clearing openers; colons anywhere in the prose — rewrite as two sentences, no exceptions; semicolons — rewrite as two sentences; vague lesson-gesturing ('this teaches us', 'there's a lesson here') — show the insight, don't announce it; vague endings that restate the opening without completing the thought ('something else entirely', 'more complicated than it seems', 'that's a different story') — the final paragraph must name the specific thing the reader now understands that they didn't at the start; endings that stay inside the subject world — the final paragraph must connect to something the reader can see in their own creative practice, career, or way of thinking, not just a conclusion about the subject itself; named cases that appear without setup — every specific person, company, or incident you name must be introduced and connected before the final sentence, not dropped in as a closing gesture; ending the piece on a question — the final sentence must be a declarative claim, even if the paragraph before it poses a question to build toward it.`,
+Before finishing, check your last paragraph specifically: does it name something outside today's subject that the reader can act on or see differently in their own life? If the last paragraph could be published in a product-news trade blog with only the subject swapped out, it has failed this check — rewrite it.
+
+FORBIDDEN: throat-clearing openers; colons anywhere in the prose — rewrite as two sentences, no exceptions; semicolons — rewrite as two sentences, unless they separate parallel list items, in which case use commas and "and" instead of a stray period (never "legally, financially. Socially available" — write "legally, financially, and socially available"); vague lesson-gesturing ('this teaches us', 'there's a lesson here') — show the insight, don't announce it; vague endings that restate the opening without completing the thought ('something else entirely', 'more complicated than it seems', 'that's a different story') — the final paragraph must name the specific thing the reader now understands that they didn't at the start; endings that stay inside the subject world — the final paragraph must connect to something the reader can see in their own creative practice, career, or way of thinking, not just a conclusion about the subject itself; named cases that appear without setup — every specific person, company, or incident you name must be introduced and connected before the final sentence, not dropped in as a closing gesture; ending the piece on a question — the final sentence must be a declarative claim, even if the paragraph before it poses a question to build toward it.`,
     }],
   });
 
@@ -1972,7 +1975,7 @@ Structure for first 5 paragraphs:
 - para2: up to 2 sentences — deepens or reframes the hook. Creates tension.
 - para3: 2-3 sentences — first insight or evidence. The "here's why" moment.
 - para4: 3-4 sentences — the turn. Complication, contradiction, or escalation.
-- para5: 3-5 sentences — landing. The consequence or provocation, resolved. Room to breathe. The final sentence of the article (para5's last sentence, or remainder's last sentence if remainder is non-empty) must be a complete, standalone declarative statement that lands an idea beyond today's news. Never end on a question mark. Never write a contrast setup ("The question isn't whether X..." / "Not Y, but...") without completing both halves in the same sentence.
+- para5: 3-5 sentences — landing. The consequence or provocation, resolved. Room to breathe. The final sentence of the article (para5's last sentence, or remainder's last sentence if remainder is non-empty) must be a complete, standalone declarative statement that lands an idea beyond today's news. Never end on a question mark. Never write a contrast setup ("The question isn't whether X..." / "Not Y, but...") without completing both halves in the same sentence. This includes negations without a positive completion — "This is not X." with no following clause stating what it IS. Every sentence of this shape must read "This is not X, it's Y" in one sentence, never split across two with the second half left unwritten.
 - remainder: everything after paragraph 5, preserved exactly as written. Empty string if nothing remains. Each paragraph in remainder will be capped at 3-5 sentences in post-processing.
 
 Also return:
