@@ -4,7 +4,31 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
-## edition-audit-list-fragments-hooks-persona-fidelity (2026-07-23) — CURRENT STABLE
+## synthesis-theme-word-repetition-dedup (2026-07-23) — CURRENT STABLE
+
+**What changed:**
+- New "theme word history" mechanism in `lib/stories.ts`, mirroring the existing 30-day image-history dedup pattern (`loadImageHistory`/`appendImageHistory`): a single blob (`theme-history/used.json`) storing `{word, theme, usedAt}` entries, read with a 14-day rolling cutoff (`loadThemeHistory`), written to after every synthesis generation (`appendThemeHistory`).
+- `themeCoreWord()`: extracts the theme's final non-stopword word (e.g. "Trap" from "The Delegation Trap", "Tax" from "The Authenticity Tax") — repetition concentrates in this position, not the whole phrase.
+- `getSynthesis()`'s theme-field prompt instruction: replaced the old static, hardcoded 6-phrase banned list with a dynamic one built from the last 14 days' core words, injected fresh into every generation call.
+- Deterministic backstop: after parsing the model's response, if the generated theme's core word still collides with the recent-word set anyway, one small follow-up call forces a single-word-swap replacement (same phrase style, different ending word) before the theme is saved. This is a hard backstop, not just a prompt ask — the old static list was violated 5 of 6 times in the wild, so a proactive instruction alone wasn't trusted to be sufficient here.
+
+**Why:**
+- Sourced from a 30-day cross-edition audit (`audit-reports/synthesis-theme-audit-2026-06-25-to-2026-07-24.md`, 140 editions, all fetched directly from `archive/editions/{key}.json` blobs). Found: 37.7% of all themes end in one of just six words (Trap ×16, Tax ×11, Paradox ×10, Problem ×6, Gap ×5, Collapse ×4); 6 exact-duplicate theme clusters including same-day repeats; and 5 of the 6 previously-hardcoded banned phrases still appeared verbatim in the live 30-day window despite being explicitly forbidden.
+- The old mechanism (static hardcoded banned-phrase list, no recency awareness at all) had no way to catch new repetition as it accumulated, and wasn't reliably obeyed even for the phrases it did know about.
+- Scoped to the theme's *core word* rather than the whole phrase or a fuzzy "concept" match, because the audit found the actual repetition is concentrated there (e.g. "Authenticity" appeared as the theme's root 13 times across Tax/Paradox/Premium/Moat/Collapse/Shortage/Threshold/Leak variants) — word-level matching is deterministic and catches this without needing the model to self-judge semantic closeness.
+- 14-day window (not 30) chosen deliberately to bound vocabulary pressure — banning too large a set of "good" tension-nouns (Trap, Tax, Paradox, Collapse, Gap, Threshold, Premium...) for too long risks forcing increasingly contorted or obscure words just to stay unique.
+- Did not implement the alternative designs considered first (passing full recent-theme-phrase history into the prompt; banning whole "concept roots"; a pure self-check with no deterministic backstop) — those were judged less reliable since they depend entirely on the model choosing to comply, with no verifiable enforcement, and this file already has direct evidence (the closing-rule violations audited this same week) that explicit prompt instructions get ignored some fraction of the time.
+
+**What to observe:**
+- Does the exact-duplicate rate (8.0% this month) drop, and do same-day repeats (07-09 Delegation Trap, 07-23 Trying Gap) stop happening?
+- Does the word-level ban meaningfully reduce the Authenticity/Friction-style clustering, or does the model just shift to a different single overused word once these are blocked (watch for a new dominant core word emerging)?
+- Does forcing a single-word swap ever produce an awkward or less accurate theme relative to the original — i.e. does avoiding repetition cost Fit? Spot-check swapped themes against that day's actual stories.
+- Confirm the new blob reads (`loadThemeHistory` on every generation) don't introduce latency or failure-rate issues in the warm/generation path — both new blob calls are wrapped in try/catch and fail soft (empty history / original theme kept) by design, but worth confirming in practice.
+- Re-run the 30-day theme audit in ~3-4 weeks once enough history has accumulated through the new mechanism to give it a fair test.
+
+---
+
+## edition-audit-list-fragments-hooks-persona-fidelity (2026-07-23)
 
 **What changed:**
 - Pass 1 Voice rules (line ~1853) and the `repairPunctuation()` rewrite prompt: added an exception to the "no semicolons/colons — always split into two sentences" rule — when the semicolon/colon separates parallel list items rather than two independent clauses, rewrite the list with commas and "and" instead of splitting it into a sentence fragment (e.g. never "legally, financially. Socially available").

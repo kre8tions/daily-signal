@@ -598,6 +598,10 @@ export async function getSynthesis(items: RawItem[], editionKey: string): Promis
   };
   const editionFrame = slotVoice[slot] ?? slotVoice.morning;
 
+  const themeHistory = await loadThemeHistory();
+  const recentWords = new Set(themeHistory.map(e => e.word));
+  const recentWordsList = [...recentWords].join(", ");
+
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 1800,
@@ -627,7 +631,7 @@ ${synthWriter.voiceReminder}
 
 Return JSON only, no markdown:
 {
-  "theme": "2-4 words. An evocative noun phrase naming the underlying force or tension — not a topic, a dynamic. E.g. 'The Permission Economy' / 'Controlled Disintegration' / 'Institutional Overcorrection'. Not 'Technology and Society'. Do NOT use these overused themes — push further if your instinct lands here: The Authenticity Paradox, The Shortcut Paradox, The Authenticity Tax, The Persistence Paradox, The Legitimacy Arbitrage, Permission Collapse.",
+  "theme": "2-4 words. An evocative noun phrase naming the underlying force or tension — not a topic, a dynamic. E.g. 'The Permission Economy' / 'Controlled Disintegration' / 'Institutional Overcorrection'. Not 'Technology and Society'. The theme's final word must NOT be any of these words, already used in recent editions — push for a genuinely different concept, not a rephrasing of the same one: ${recentWordsList || "none yet"}.",
   "hook": "1 sentence only. 7-10 words maximum — count them. The irreversible claim — the thing that cannot be unsaid once you read it. This is the first thing the reader sees. No setup, no throat-clearing. Start with the tension, not the context.",
   "observation": "1-2 sentences that deepen the hook. Don't summarize stories. Speak from what you now understand — as if you absorbed the news and are telling someone what it means, not what it said. End somewhere that makes the reader want the takeaways.",
   "takeaways": [
@@ -651,6 +655,25 @@ Return JSON only, no markdown:
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   try {
     const parsed = JSON.parse(cleaned) as Synthesis;
+
+    // Deterministic backstop: the prompt-level word ban above isn't always obeyed — if the
+    // model's theme collided with a recent core word anyway, force one targeted swap.
+    const collidingWord = parsed.theme ? themeCoreWord(parsed.theme) : null;
+    if (collidingWord && recentWords.has(collidingWord)) {
+      try {
+        const swapMsg = await client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 60,
+          messages: [{
+            role: "user",
+            content: `The theme "${parsed.theme}" ends on the word "${collidingWord}", which was already used in a recent edition's theme. Give ONE replacement — same 2-4 word evocative-noun-phrase style, same underlying meaning and tension, but ending on a different word. No colons, no semicolons, no quotes around it. Return ONLY the replacement phrase, nothing else.`,
+          }],
+        }).catch(() => null);
+        const swapText = (swapMsg?.content[0]?.type === "text" ? swapMsg.content[0].text : "").trim();
+        if (swapText && swapText.length < 60) parsed.theme = swapText;
+      } catch { /* keep original theme if the swap call fails */ }
+    }
+
     // Use article-derived imageQuery for the synthesis image; fall back to theme words
     const imgQuery = (parsed.imageQuery || parsed.theme || "").replace(/[^a-zA-Z\s]/g, "").trim();
     if (imgQuery) {
@@ -658,6 +681,8 @@ Return JSON only, no markdown:
       // Note: synthesis image history is appended by buildPageData after all images resolve
     }
     put(blobKey, JSON.stringify(parsed), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
+    const finalWord = parsed.theme ? themeCoreWord(parsed.theme) : null;
+    if (finalWord) appendThemeHistory(finalWord, parsed.theme).catch(() => {});
     return parsed;
   } catch {
     return { theme: "", hook: "", observation: "", takeaways: [], conclusion: "", actions: [] };
@@ -696,6 +721,52 @@ async function appendImageHistory(urls: string[]): Promise<void> {
       if (!fresh.find(e => e.url === url)) fresh.push({ url, usedAt: now });
     }
     await put(IMAGE_HISTORY_KEY, JSON.stringify(fresh), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
+  } catch { /* non-fatal */ }
+}
+
+// ── Theme word history (14-day dedup across editions) ─────────────────────────
+const THEME_HISTORY_KEY = "theme-history/used.json";
+const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+const THEME_STOPWORDS = new Set([
+  "the", "a", "an", "of", "in", "on", "to", "is", "are", "was", "were", "be", "been",
+  "as", "for", "and", "or", "not", "no", "with", "without", "by", "at", "from",
+  "into", "onto", "over", "under", "this", "that", "these", "those", "it", "its",
+  "your", "our", "their", "you", "we", "they",
+]);
+
+// The theme's final content word is where repetition concentrates ("The Delegation Trap" / "The Authenticity Tax") —
+// track that word, not the whole phrase, so near-variants ("Authenticity Tax" vs "Authenticity Paradox") still collide.
+function themeCoreWord(theme: string): string | null {
+  const words = theme.toLowerCase().replace(/[^a-z\s]/g, "").trim().split(/\s+/).filter(Boolean);
+  const content = words.filter(w => !THEME_STOPWORDS.has(w));
+  return content.length ? content[content.length - 1] : null;
+}
+
+async function loadThemeHistory(): Promise<{ word: string; theme: string; usedAt: string }[]> {
+  try {
+    const blob = await head(THEME_HISTORY_KEY);
+    if (!blob) return [];
+    const res = await fetch(blob.url, { cache: "no-store" });
+    if (!res.ok) return [];
+    const entries = await res.json() as { word: string; theme: string; usedAt: string }[];
+    const cutoff = Date.now() - FOURTEEN_DAYS_MS;
+    return entries.filter(e => new Date(e.usedAt).getTime() > cutoff);
+  } catch { return []; }
+}
+
+async function appendThemeHistory(word: string, theme: string): Promise<void> {
+  if (!word) return;
+  try {
+    let entries: { word: string; theme: string; usedAt: string }[] = [];
+    const blob = await head(THEME_HISTORY_KEY);
+    if (blob) {
+      const res = await fetch(blob.url, { cache: "no-store" });
+      if (res.ok) entries = await res.json() as { word: string; theme: string; usedAt: string }[];
+    }
+    const cutoff = Date.now() - FOURTEEN_DAYS_MS;
+    const fresh = entries.filter(e => new Date(e.usedAt).getTime() > cutoff);
+    fresh.push({ word, theme, usedAt: new Date().toISOString() });
+    await put(THEME_HISTORY_KEY, JSON.stringify(fresh), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
   } catch { /* non-fatal */ }
 }
 
