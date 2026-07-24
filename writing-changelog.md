@@ -4,7 +4,33 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
-## synthesis-theme-word-repetition-dedup (2026-07-23) — CURRENT STABLE
+## synthesis-theme-dedup-fifo-and-vocab-bank (2026-07-23) — CURRENT STABLE
+
+**What changed (refines `synthesis-theme-word-repetition-dedup` below, same day):**
+- Replaced the 14-day timestamp-filtered theme history with a fixed-size FIFO array (`THEME_HISTORY_SIZE = 30`, newest last, oldest dropped once over capacity). No date parsing, no growing-then-filtering — one blob read returns an already-bounded list, one write pushes the word we already have in memory and trims. Removes the `usedAt` timestamp field entirely.
+- `appendThemeHistory()` now takes the already-loaded history array as a parameter instead of re-fetching the blob a second time inside the function — the generation call already has it in memory from `loadThemeHistory()` moments earlier.
+- Added `THEME_VOCAB_POOL` — ~65 curated "evocative tension noun" words in the show's register (economic: Tariff, Ledger, Windfall, Loophole; structural: Bottleneck, Ratchet, Undertow; performative: Mirage, Theater, Facade; power/legitimacy: Mandate, Amnesty, Reprieve) — and `sampleThemeVocab()`, a seeded shuffle-and-sample mirroring the existing `sampleReferencePool` pattern, excluding any word already in recent history.
+- The main theme-generation prompt now gets both the recent-word avoid-list *and* a sample of fresh, unused vocabulary to actively reach for — proactive supply, not just reactive restriction.
+- The single-word-swap backstop prompt was strengthened: explicitly instructs the replacement to be "just as sharp and compelling as the original — do not flatten it into a generic synonym just to be different," and offers its own small fresh-vocab sample.
+
+**Why:**
+- Direct response to four concerns raised after the first version shipped: (1) the mechanism must never cause a failed/blank synthesis, (2) titles must stay compelling, not just novel, (3) reactive banning alone doesn't solve a shrinking-vocabulary problem, (4) the history list should be a simple fixed-size structure, not a date-filtered one.
+- (1) is now explicit in code comments and structurally guaranteed: every new code path (history load, swap call) is wrapped in try/catch with a no-op fallback; the swap attempt is capped at exactly one try with no retry loop; a collision that can't be resolved just means the original theme publishes rather than blocking the edition.
+- (2) and (3) are the same root fix: without fresh vocabulary offered up front, banning words only forces the model to hunt for a synonym under pressure, which is exactly the "flatten into a generic synonym" failure mode being guarded against explicitly in the swap prompt now. Giving the model a curated bank of good words before it needs to improvise is a stronger lever than restriction alone.
+- (4) removes an entire class of bug (timestamp filtering, `Date.now()` cutoff math) for a simpler, cheaper structure that was already sufficient for the goal — a bounded recent-history window, not a precise 14-day boundary.
+
+**What to observe:**
+- Does the FIFO list ever grow unbounded or fail to trim (check `theme-history/used.json` blob size over time — should never exceed 30 entries)?
+- Do swapped/collision-avoided themes read as strong as the edition's other themes, or do they read noticeably flatter — the specific failure mode Fix (2) targeted? Spot-check.
+- Does the vocab bank actually get used, or does the model keep defaulting to Trap/Tax/Paradox regardless of what's offered? If so, the pool itself may need to be surfaced more forcefully (e.g. weighted encouragement) rather than offered as optional.
+- Watch for the vocab pool itself becoming the new overused set after a few months — it's a fixed list of ~65 words, not infinite; may need periodic expansion.
+- Re-run the 30-day theme audit once several weeks of history have accumulated under this version specifically (the FIFO redesign invalidates any partial data collected under the first, now-superseded version).
+
+---
+
+## synthesis-theme-word-repetition-dedup (2026-07-23)
+
+*(Superseded same-day by `synthesis-theme-dedup-fifo-and-vocab-bank` above — the 14-day timestamp-filtered history described below was replaced with a fixed-size FIFO list, and a vocabulary bank was added.)*
 
 **What changed:**
 - New "theme word history" mechanism in `lib/stories.ts`, mirroring the existing 30-day image-history dedup pattern (`loadImageHistory`/`appendImageHistory`): a single blob (`theme-history/used.json`) storing `{word, theme, usedAt}` entries, read with a 14-day rolling cutoff (`loadThemeHistory`), written to after every synthesis generation (`appendThemeHistory`).

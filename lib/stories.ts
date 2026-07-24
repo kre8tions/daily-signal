@@ -601,6 +601,7 @@ export async function getSynthesis(items: RawItem[], editionKey: string): Promis
   const themeHistory = await loadThemeHistory();
   const recentWords = new Set(themeHistory.map(e => e.word));
   const recentWordsList = [...recentWords].join(", ");
+  const freshVocab = sampleThemeVocab(Date.now(), recentWords);
 
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -631,7 +632,7 @@ ${synthWriter.voiceReminder}
 
 Return JSON only, no markdown:
 {
-  "theme": "2-4 words. An evocative noun phrase naming the underlying force or tension — not a topic, a dynamic. E.g. 'The Permission Economy' / 'Controlled Disintegration' / 'Institutional Overcorrection'. Not 'Technology and Society'. The theme's final word must NOT be any of these words, already used in recent editions — push for a genuinely different concept, not a rephrasing of the same one: ${recentWordsList || "none yet"}.",
+  "theme": "2-4 words. An evocative noun phrase naming the underlying force or tension — not a topic, a dynamic. E.g. 'The Permission Economy' / 'Controlled Disintegration' / 'Institutional Overcorrection'. Not 'Technology and Society'. The theme's final word must NOT be any of these words, already used in recent editions — push for a genuinely different concept, not a rephrasing of the same one: ${recentWordsList || "none yet"}. If it fits today's actual mechanism, consider one of these fresh, unused words instead of defaulting to a familiar one — only use one if it genuinely earns its place, never force a bad fit: ${freshVocab}.",
   "hook": "1 sentence only. 7-10 words maximum — count them. The irreversible claim — the thing that cannot be unsaid once you read it. This is the first thing the reader sees. No setup, no throat-clearing. Start with the tension, not the context.",
   "observation": "1-2 sentences that deepen the hook. Don't summarize stories. Speak from what you now understand — as if you absorbed the news and are telling someone what it means, not what it said. End somewhere that makes the reader want the takeaways.",
   "takeaways": [
@@ -657,21 +658,24 @@ Return JSON only, no markdown:
     const parsed = JSON.parse(cleaned) as Synthesis;
 
     // Deterministic backstop: the prompt-level word ban above isn't always obeyed — if the
-    // model's theme collided with a recent core word anyway, force one targeted swap.
+    // model's theme collided with a recent core word anyway, force exactly one targeted swap.
+    // Never loops, never throws past this block — collision just means we keep the original
+    // theme and publish anyway. A rare repeat is a far smaller cost than a failed edition.
     const collidingWord = parsed.theme ? themeCoreWord(parsed.theme) : null;
     if (collidingWord && recentWords.has(collidingWord)) {
       try {
+        const swapVocab = sampleThemeVocab(Date.now(), recentWords, 8);
         const swapMsg = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 60,
           messages: [{
             role: "user",
-            content: `The theme "${parsed.theme}" ends on the word "${collidingWord}", which was already used in a recent edition's theme. Give ONE replacement — same 2-4 word evocative-noun-phrase style, same underlying meaning and tension, but ending on a different word. No colons, no semicolons, no quotes around it. Return ONLY the replacement phrase, nothing else.`,
+            content: `The theme "${parsed.theme}" ends on the word "${collidingWord}", which was already used in a recent edition's theme — it needs to change. Give ONE replacement: same 2-4 word evocative-noun-phrase style naming an underlying force or tension, same meaning, ending on a different word. It must be just as sharp and compelling as the original — do not flatten it into a generic synonym just to be different. A few fresh words to consider if one genuinely fits (optional, don't force one): ${swapVocab}. No colons, no semicolons, no quotes around it. Return ONLY the replacement phrase, nothing else.`,
           }],
         }).catch(() => null);
         const swapText = (swapMsg?.content[0]?.type === "text" ? swapMsg.content[0].text : "").trim();
         if (swapText && swapText.length < 60) parsed.theme = swapText;
-      } catch { /* keep original theme if the swap call fails */ }
+      } catch { /* keep original theme if the swap call fails — never blocks the edition */ }
     }
 
     // Use article-derived imageQuery for the synthesis image; fall back to theme words
@@ -682,7 +686,7 @@ Return JSON only, no markdown:
     }
     put(blobKey, JSON.stringify(parsed), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
     const finalWord = parsed.theme ? themeCoreWord(parsed.theme) : null;
-    if (finalWord) appendThemeHistory(finalWord, parsed.theme).catch(() => {});
+    if (finalWord) appendThemeHistory(finalWord, parsed.theme, themeHistory).catch(() => {});
     return parsed;
   } catch {
     return { theme: "", hook: "", observation: "", takeaways: [], conclusion: "", actions: [] };
@@ -724,9 +728,9 @@ async function appendImageHistory(urls: string[]): Promise<void> {
   } catch { /* non-fatal */ }
 }
 
-// ── Theme word history (14-day dedup across editions) ─────────────────────────
+// ── Theme word history (fixed-size FIFO, not date-based — cheap to load, bounded prompt size) ──
 const THEME_HISTORY_KEY = "theme-history/used.json";
-const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+const THEME_HISTORY_SIZE = 30; // roughly the last week-plus at 4-5 editions/day
 const THEME_STOPWORDS = new Set([
   "the", "a", "an", "of", "in", "on", "to", "is", "are", "was", "were", "be", "been",
   "as", "for", "and", "or", "not", "no", "with", "without", "by", "at", "from",
@@ -742,32 +746,51 @@ function themeCoreWord(theme: string): string | null {
   return content.length ? content[content.length - 1] : null;
 }
 
-async function loadThemeHistory(): Promise<{ word: string; theme: string; usedAt: string }[]> {
+// Plain bounded array, newest last — no timestamps, no date filtering. Load = one blob read,
+// no parsing overhead. Update = push the word we already just generated, drop the oldest if over size.
+async function loadThemeHistory(): Promise<{ word: string; theme: string }[]> {
   try {
     const blob = await head(THEME_HISTORY_KEY);
     if (!blob) return [];
     const res = await fetch(blob.url, { cache: "no-store" });
     if (!res.ok) return [];
-    const entries = await res.json() as { word: string; theme: string; usedAt: string }[];
-    const cutoff = Date.now() - FOURTEEN_DAYS_MS;
-    return entries.filter(e => new Date(e.usedAt).getTime() > cutoff);
+    return await res.json() as { word: string; theme: string }[];
   } catch { return []; }
 }
 
-async function appendThemeHistory(word: string, theme: string): Promise<void> {
+async function appendThemeHistory(word: string, theme: string, current: { word: string; theme: string }[]): Promise<void> {
   if (!word) return;
   try {
-    let entries: { word: string; theme: string; usedAt: string }[] = [];
-    const blob = await head(THEME_HISTORY_KEY);
-    if (blob) {
-      const res = await fetch(blob.url, { cache: "no-store" });
-      if (res.ok) entries = await res.json() as { word: string; theme: string; usedAt: string }[];
-    }
-    const cutoff = Date.now() - FOURTEEN_DAYS_MS;
-    const fresh = entries.filter(e => new Date(e.usedAt).getTime() > cutoff);
-    fresh.push({ word, theme, usedAt: new Date().toISOString() });
+    const fresh = [...current, { word, theme }];
+    if (fresh.length > THEME_HISTORY_SIZE) fresh.splice(0, fresh.length - THEME_HISTORY_SIZE);
     await put(THEME_HISTORY_KEY, JSON.stringify(fresh), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
   } catch { /* non-fatal */ }
+}
+
+// ── Theme vocabulary bank — proactive supply, not just reactive banning ───────
+// Curated "evocative tension noun" words in the show's register, grouped loosely by flavor.
+// Sampled fresh each generation (seeded, mirrors sampleReferencePool) so the model has live,
+// unused options to reach for instead of defaulting to Trap/Tax/Paradox out of habit.
+const THEME_VOCAB_POOL = [
+  "Tariff", "Toll", "Premium", "Discount", "Surcharge", "Markup", "Overhead", "Subsidy", "Rebate",
+  "Dividend", "Deficit", "Surplus", "Debt", "Ledger", "Currency", "Custody", "Escrow", "Collateral",
+  "Leverage", "Windfall", "Bailout", "Loophole", "Monopoly", "Franchise", "Royalty", "Inheritance",
+  "Bottleneck", "Chokepoint", "Ceiling", "Floor", "Threshold", "Ratchet", "Pendulum", "Cascade",
+  "Spiral", "Undertow", "Riptide", "Scaffolding", "Blueprint", "Circuitry", "Machinery", "Wiring",
+  "Illusion", "Mirage", "Denial", "Performance", "Theater", "Ritual", "Choreography", "Pretense",
+  "Facade", "Veneer", "Costume", "Mandate", "Charter", "Writ", "Decree", "Dispensation", "Amnesty",
+  "Reprieve", "Clemency", "Custodian", "Contagion", "Inertia", "Momentum",
+  "Drift", "Erosion", "Sediment", "Residue", "Aftertaste", "Hangover", "Debtor", "Creditor",
+] as const;
+
+function sampleThemeVocab(seed: number, exclude: Set<string>, count = 15): string {
+  const pool = THEME_VOCAB_POOL.filter(w => !exclude.has(w.toLowerCase()));
+  const arr = [...pool];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(seed + i) * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, count).join(", ");
 }
 
 // ── Weekly Signal & Noise ─────────────────────────────────────────────────────
