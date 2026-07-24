@@ -601,7 +601,6 @@ export async function getSynthesis(items: RawItem[], editionKey: string): Promis
   const themeHistory = await loadThemeHistory();
   const recentWords = new Set(themeHistory.map(e => e.word));
   const recentWordsList = [...recentWords].join(", ");
-  const freshVocab = sampleThemeVocab(Date.now(), recentWords);
 
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -632,7 +631,17 @@ ${synthWriter.voiceReminder}
 
 Return JSON only, no markdown:
 {
-  "theme": "2-4 words. An evocative noun phrase naming the underlying force or tension — not a topic, a dynamic. E.g. 'The Permission Economy' / 'Controlled Disintegration' / 'Institutional Overcorrection'. Not 'Technology and Society'. The theme's final word must NOT be any of these words, already used in recent editions — push for a genuinely different concept, not a rephrasing of the same one: ${recentWordsList || "none yet"}. If it fits today's actual mechanism, consider one of these fresh, unused words instead of defaulting to a familiar one — only use one if it genuinely earns its place, never force a bad fit: ${freshVocab}.",
+  "themeCandidates": [
+    "Candidate 1 — financial/economic register (think: tariff, ledger, debt, windfall, custody, currency — draw your own word from this register, don't just reuse these examples): 2-4 words, an evocative noun phrase naming today's specific underlying tension, grounded in the actual stories above, not generic.",
+    "Candidate 2 — spatial/structural register (think: threshold, bottleneck, scaffolding, architecture, chokepoint): same format, a genuinely different register from candidate 1.",
+    "Candidate 3 — legal/institutional register (think: mandate, charter, amnesty, jurisdiction, dispensation): same format, different register again.",
+    "Candidate 4 — theatrical/performative register (think: mask, rehearsal, costume, choreography, pretense): same format, different register again.",
+    "Candidate 5 — biological/physical register (think: contagion, immunity, inheritance, metabolism, erosion): same format, different register again.",
+    "Candidate 6 — temporal/motion register (think: momentum, drift, inertia, undertow, ratchet): same format, different register again.",
+    "Candidate 7 — your own choice, any register not used above, whatever genuinely fits today's stories best — reach into your own full vocabulary, don't default to the first word that comes to mind.",
+    "Candidate 8 — your own choice, any register not used above, a second genuinely different option."
+  ],
+  "theme": "Select your single strongest candidate from themeCandidates above — the one that most precisely names today's actual mechanism, not just the most dramatic-sounding. Same 2-4 word evocative-noun-phrase style. E.g. 'The Permission Economy' / 'Controlled Disintegration' / 'Institutional Overcorrection'. Not 'Technology and Society'. Its final word must NOT be any of these words, already used in recent editions — if your top candidate collides, use your next-best one instead: ${recentWordsList || "none yet"}.",
   "hook": "1 sentence only. 7-10 words maximum — count them. The irreversible claim — the thing that cannot be unsaid once you read it. This is the first thing the reader sees. No setup, no throat-clearing. Start with the tension, not the context.",
   "observation": "1-2 sentences that deepen the hook. Don't summarize stories. Speak from what you now understand — as if you absorbed the news and are telling someone what it means, not what it said. End somewhere that makes the reader want the takeaways.",
   "takeaways": [
@@ -655,22 +664,34 @@ Return JSON only, no markdown:
   const rawText = (msg.content[0]?.type === "text" ? msg.content[0].text : undefined) ?? "{}";
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   try {
-    const parsed = JSON.parse(cleaned) as Synthesis;
+    const parsed = JSON.parse(cleaned) as Synthesis & { themeCandidates?: string[] };
 
     // Deterministic backstop: the prompt-level word ban above isn't always obeyed — if the
-    // model's theme collided with a recent core word anyway, force exactly one targeted swap.
-    // Never loops, never throws past this block — collision just means we keep the original
-    // theme and publish anyway. A rare repeat is a far smaller cost than a failed edition.
-    const collidingWord = parsed.theme ? themeCoreWord(parsed.theme) : null;
+    // model's theme collided with a recent core word anyway, first try its OWN other candidates
+    // (already generated in this same response, no extra call needed), then fall back to one
+    // targeted follow-up call only if every candidate also collides. Never loops, never throws
+    // past this block — collision just means we keep the original theme and publish anyway.
+    // A rare repeat is a far smaller cost than a failed edition.
+    let collidingWord = parsed.theme ? themeCoreWord(parsed.theme) : null;
+    if (collidingWord && recentWords.has(collidingWord)) {
+      const original = parsed.theme.trim();
+      const alt = (parsed.themeCandidates ?? []).find(c => {
+        const w = themeCoreWord(c);
+        return w && !recentWords.has(w) && c.trim() !== original;
+      });
+      if (alt) {
+        parsed.theme = alt.trim();
+        collidingWord = themeCoreWord(parsed.theme);
+      }
+    }
     if (collidingWord && recentWords.has(collidingWord)) {
       try {
-        const swapVocab = sampleThemeVocab(Date.now(), recentWords, 8);
         const swapMsg = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 60,
           messages: [{
             role: "user",
-            content: `The theme "${parsed.theme}" ends on the word "${collidingWord}", which was already used in a recent edition's theme — it needs to change. Give ONE replacement: same 2-4 word evocative-noun-phrase style naming an underlying force or tension, same meaning, ending on a different word. It must be just as sharp and compelling as the original — do not flatten it into a generic synonym just to be different. A few fresh words to consider if one genuinely fits (optional, don't force one): ${swapVocab}. No colons, no semicolons, no quotes around it. Return ONLY the replacement phrase, nothing else.`,
+            content: `The theme "${parsed.theme}" ends on the word "${collidingWord}", which was already used in a recent edition's theme — it needs to change. Think of ONE replacement from your own vocabulary: same 2-4 word evocative-noun-phrase style naming an underlying force or tension, same meaning, ending on a genuinely different word — reach for a register you haven't tried yet (financial, spatial, legal, theatrical, biological, temporal...). It must be just as sharp and compelling as the original — do not flatten it into a generic synonym just to be different. No colons, no semicolons, no quotes around it. Return ONLY the replacement phrase, nothing else.`,
           }],
         }).catch(() => null);
         const swapText = (swapMsg?.content[0]?.type === "text" ? swapMsg.content[0].text : "").trim();
@@ -684,10 +705,11 @@ Return JSON only, no markdown:
       parsed.imageUrl = await fetchUnsplash(imgQuery, undefined, 1, imgQuery).then(r => r?.url).catch(() => undefined);
       // Note: synthesis image history is appended by buildPageData after all images resolve
     }
-    put(blobKey, JSON.stringify(parsed), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
-    const finalWord = parsed.theme ? themeCoreWord(parsed.theme) : null;
-    if (finalWord) appendThemeHistory(finalWord, parsed.theme, themeHistory).catch(() => {});
-    return parsed;
+    const { themeCandidates: _themeCandidates, ...synthesis } = parsed;
+    put(blobKey, JSON.stringify(synthesis), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
+    const finalWord = synthesis.theme ? themeCoreWord(synthesis.theme) : null;
+    if (finalWord) appendThemeHistory(finalWord, synthesis.theme, themeHistory).catch(() => {});
+    return synthesis;
   } catch {
     return { theme: "", hook: "", observation: "", takeaways: [], conclusion: "", actions: [] };
   }
@@ -765,32 +787,6 @@ async function appendThemeHistory(word: string, theme: string, current: { word: 
     if (fresh.length > THEME_HISTORY_SIZE) fresh.splice(0, fresh.length - THEME_HISTORY_SIZE);
     await put(THEME_HISTORY_KEY, JSON.stringify(fresh), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
   } catch { /* non-fatal */ }
-}
-
-// ── Theme vocabulary bank — proactive supply, not just reactive banning ───────
-// Curated "evocative tension noun" words in the show's register, grouped loosely by flavor.
-// Sampled fresh each generation (seeded, mirrors sampleReferencePool) so the model has live,
-// unused options to reach for instead of defaulting to Trap/Tax/Paradox out of habit.
-const THEME_VOCAB_POOL = [
-  "Tariff", "Toll", "Premium", "Discount", "Surcharge", "Markup", "Overhead", "Subsidy", "Rebate",
-  "Dividend", "Deficit", "Surplus", "Debt", "Ledger", "Currency", "Custody", "Escrow", "Collateral",
-  "Leverage", "Windfall", "Bailout", "Loophole", "Monopoly", "Franchise", "Royalty", "Inheritance",
-  "Bottleneck", "Chokepoint", "Ceiling", "Floor", "Threshold", "Ratchet", "Pendulum", "Cascade",
-  "Spiral", "Undertow", "Riptide", "Scaffolding", "Blueprint", "Circuitry", "Machinery", "Wiring",
-  "Illusion", "Mirage", "Denial", "Performance", "Theater", "Ritual", "Choreography", "Pretense",
-  "Facade", "Veneer", "Costume", "Mandate", "Charter", "Writ", "Decree", "Dispensation", "Amnesty",
-  "Reprieve", "Clemency", "Custodian", "Contagion", "Inertia", "Momentum",
-  "Drift", "Erosion", "Sediment", "Residue", "Aftertaste", "Hangover", "Debtor", "Creditor",
-] as const;
-
-function sampleThemeVocab(seed: number, exclude: Set<string>, count = 15): string {
-  const pool = THEME_VOCAB_POOL.filter(w => !exclude.has(w.toLowerCase()));
-  const arr = [...pool];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom(seed + i) * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr.slice(0, count).join(", ");
 }
 
 // ── Weekly Signal & Noise ─────────────────────────────────────────────────────

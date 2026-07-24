@@ -4,7 +4,30 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
-## synthesis-theme-dedup-fifo-and-vocab-bank (2026-07-23) — CURRENT STABLE
+## synthesis-theme-dedup-model-brainstorm (2026-07-23) — CURRENT STABLE
+
+**What changed (replaces the vocab-bank approach in `synthesis-theme-dedup-fifo-and-vocab-bank` below, same day):**
+- Removed `THEME_VOCAB_POOL` and `sampleThemeVocab()` entirely — a hand-curated ~65-word list was judged too small to "mimic human creative choice" and would eventually become its own overused set.
+- Replaced it with a `themeCandidates` field in the synthesis JSON schema: the model now generates 6-8 candidate theme phrases *before* selecting its final `theme`, each candidate steered toward a different register (financial, spatial/structural, legal/institutional, theatrical/performative, biological/physical, temporal/motion — 6 guided slots plus 2 fully open ones), each grounded in that day's actual stories rather than generic. The model then picks its strongest candidate whose core word isn't in the recent-history list.
+- Collision handling is now tiered: (1) if the model's chosen theme still collides anyway, first check its *own other candidates* already sitting in the same response — no extra API call; (2) only if every candidate also collides does it fall through to the single last-resort follow-up call (kept from the prior version, now a true edge case rather than the primary mechanism).
+- `themeCandidates` is stripped from the object before it's saved to the synthesis blob or returned — it's scratch reasoning, not part of the persisted `Synthesis` shape.
+
+**Why:**
+- Direct feedback that a fixed list, no matter how large, is the wrong shape for "creative choice" — a human editor doesn't consult a vocabulary card, they run through several options in their head informed by the material in front of them, then pick. Asking the model to brainstorm from its own (much larger, contextual) vocabulary reproduces that mechanism instead of approximating it with a bigger static list.
+- Register-steering (naming categories like "financial" or "theatrical") rather than word-steering (naming specific words) avoids reintroducing the same finite-list problem one level up — the model fills each category from its actual vocabulary, not from words I pre-selected.
+- Resolving collisions from the model's own already-generated alternates (instead of always making a follow-up call) is both cheaper and more natural — closer to "I already thought of another option" than "let me think of something else on request."
+
+**What to observe:**
+- Does theme diversity actually improve, or does the model produce 6-8 candidates that still cluster around the same few registers/words despite the steering?
+- How often does the primary candidate collide and require falling back to an alternate — if it's frequent, the "avoid this list" instruction inside the candidate-generation step itself may need to be stronger.
+- Does `themeCandidates` ever come back malformed or missing (check whether the model reliably returns 6-8 items) — the collision-fallback logic degrades gracefully to the last-resort call if the array is empty or absent, but worth confirming this doesn't happen often.
+- Re-run the 30-day theme audit once enough history has accumulated under this version — invalidates comparison against data collected under either of the two earlier (now-superseded) same-day versions.
+
+---
+
+## synthesis-theme-dedup-fifo-and-vocab-bank (2026-07-23)
+
+*(The vocab-bank portion below was superseded same-day by `synthesis-theme-dedup-model-brainstorm` above — a fixed word list, even a larger one, was judged the wrong shape for "creative choice." The FIFO history structure described here is still current.)*
 
 **What changed (refines `synthesis-theme-word-repetition-dedup` below, same day):**
 - Replaced the 14-day timestamp-filtered theme history with a fixed-size FIFO array (`THEME_HISTORY_SIZE = 30`, newest last, oldest dropped once over capacity). No date parsing, no growing-then-filtering — one blob read returns an already-bounded list, one write pushes the word we already have in memory and trims. Removes the `usedAt` timestamp field entirely.
