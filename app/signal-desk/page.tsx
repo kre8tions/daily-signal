@@ -60,7 +60,7 @@ export default async function SignalDeskPage() {
       const [bDate, bSlot = ""] = b.key.split("_");
       if (aDate !== bDate) return (bDate ?? "").localeCompare(aDate ?? "");
       const SLOT_ORDER = ["early", "morning", "afternoon", "evening", "night"];
-      return SLOT_ORDER.indexOf(bSlot) - SLOT_ORDER.indexOf(aSlot);
+      return SLOT_ORDER.indexOf(aSlot) - SLOT_ORDER.indexOf(bSlot);
     });
 
   const allEditions = [
