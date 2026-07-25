@@ -60,9 +60,10 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
         {allEditions.map(edition => (
           <div key={edition.key} style={{ marginBottom: 56 }}>
             {(() => {
-              const datePart = edition.key.split("_")[0] ?? "";
+              const [datePart = "", slotPart = ""] = edition.key.split("_");
               const [yr, mo, dy] = datePart.split("-");
               const dateDisplay = mo && dy && yr ? `${mo}/${dy}/${yr.slice(2)}` : "";
+              const slotDisplay = slotPart.charAt(0).toUpperCase() + slotPart.slice(1);
               return (
                 <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: `2px solid ${P.accent}` }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
@@ -70,7 +71,7 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                       {edition.label}
                     </div>
                     {edition.isCurrent && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: P.accent, background: P.accent + "22", padding: "2px 7px", borderRadius: 20 }}>● Live</span>}
-                    {dateDisplay && <span style={{ fontSize: 10, fontWeight: 600, color: P.inkLight, opacity: 0.6, marginLeft: "auto" }}>{dateDisplay}</span>}
+                    {dateDisplay && <span style={{ fontSize: 10, fontWeight: 600, color: P.inkLight, opacity: 0.6, marginLeft: "auto" }}>{dateDisplay}{slotDisplay ? ` · ${slotDisplay}` : ""}</span>}
                   </div>
                   {edition.theme && <div style={{ fontSize: 20, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading }}>{edition.theme}</div>}
                 </div>
