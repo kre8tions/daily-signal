@@ -63,10 +63,14 @@ export default async function SignalDeskPage() {
       return SLOT_ORDER.indexOf(bSlot) - SLOT_ORDER.indexOf(aSlot);
     });
 
-  const allEditions = [
-    { key: currentKey, label: editionLabel, theme: currentSynthesis?.theme ?? "", isCurrent: true, rows: buildRows(currentStories, currentKey, currentFC, currentSynthesis?.theme) },
-    ...archivedEditions,
-  ];
+  const currentEdition = { key: currentKey, label: editionLabel, theme: currentSynthesis?.theme ?? "", isCurrent: true, rows: buildRows(currentStories, currentKey, currentFC, currentSynthesis?.theme) };
+  const SLOT_ORDER_ALL = ["early", "morning", "afternoon", "evening", "night"];
+  const allEditions = [currentEdition, ...archivedEditions].sort((a, b) => {
+    const [aDate, aSlot = ""] = a.key.split("_");
+    const [bDate, bSlot = ""] = b.key.split("_");
+    if (aDate !== bDate) return (bDate ?? "").localeCompare(aDate ?? "");
+    return SLOT_ORDER_ALL.indexOf(bSlot) - SLOT_ORDER_ALL.indexOf(aSlot);
+  });
 
   return (
     <DeskClient
