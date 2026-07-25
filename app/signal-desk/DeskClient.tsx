@@ -59,12 +59,23 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
       <div style={{ maxWidth: 1300, marginLeft: "auto", marginRight: "auto", padding: "32px 24px" }}>
         {allEditions.map(edition => (
           <div key={edition.key} style={{ marginBottom: 56 }}>
-            <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: `2px solid ${P.accent}` }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.inkLight, marginBottom: 4 }}>
-                {edition.isCurrent ? "Current Edition" : edition.label}
-              </div>
-              {edition.theme && <div style={{ fontSize: 20, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading }}>{edition.theme}</div>}
-            </div>
+            {(() => {
+              const datePart = edition.key.split("_")[0] ?? "";
+              const [yr, mo, dy] = datePart.split("-");
+              const dateDisplay = mo && dy && yr ? `${mo}/${dy}/${yr.slice(2)}` : "";
+              return (
+                <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: `2px solid ${P.accent}` }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.inkLight }}>
+                      {edition.label}
+                    </div>
+                    {edition.isCurrent && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: P.accent, background: P.accent + "22", padding: "2px 7px", borderRadius: 20 }}>● Live</span>}
+                    {dateDisplay && <span style={{ fontSize: 10, fontWeight: 600, color: P.inkLight, opacity: 0.6, marginLeft: "auto" }}>{dateDisplay}</span>}
+                  </div>
+                  {edition.theme && <div style={{ fontSize: 20, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading }}>{edition.theme}</div>}
+                </div>
+              );
+            })()}
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
