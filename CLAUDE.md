@@ -7,6 +7,8 @@ Next: Custom domain + share button + Anime/Film/Comics filter (reject items with
 Blockers: none
 <!-- STATUS:END -->
 
+Keep this block current: before ending any session that changes this project, update Last updated/Status/Next/Blockers above and commit it. kre8tions/orchestrator's nightly job reads this block for the cross-project dashboard — a stale block here shows up as stale everywhere else, silently.
+
 Live: https://dailysignal.cc (custom domain live 2026-07-03; also at daily-signal-omega.vercel.app)
 GitHub: github.com/kre8tions/daily-signal (main branch)
 Local: C:\dev\daily-signal
