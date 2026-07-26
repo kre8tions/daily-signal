@@ -2,6 +2,7 @@ import { getHowTo } from "@/lib/stories";
 import { P, contrastColor, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL } from "@/lib/palette";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { ShareButton } from "@/app/ShareButton";
 
 export const dynamic = "force-dynamic";
 
@@ -49,10 +50,15 @@ export default async function HowToPage({ params, searchParams }: {
         {/* "How To" label in cursive */}
         <div style={{ fontSize: 32, color: P.accent, marginBottom: 8, fontFamily: CURSIVE_FONT_FAMILY, lineHeight: 1 }}>How To</div>
 
-        {/* Title */}
-        <h1 style={{ fontFamily: P.fontHeading, fontSize: "clamp(24px, 5vw, 38px)", fontWeight: P.dark ? 400 : 900, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" : "none" as const, marginBottom: 48, marginTop: 8 }}>
-          {howto.title}
-        </h1>
+        {/* Title + share */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 48, marginTop: 8 }}>
+          <h1 style={{ fontFamily: P.fontHeading, fontSize: "clamp(24px, 5vw, 38px)", fontWeight: P.dark ? 400 : 900, lineHeight: 1.15, color: P.ink, letterSpacing: P.dark ? 1 : -0.5, textTransform: P.dark ? "uppercase" : "none" as const, margin: 0 }}>
+            {howto.title}
+          </h1>
+          <div style={{ flexShrink: 0, paddingTop: 6 }}>
+            <ShareButton title={`How To ${howto.title} — The Daily Signal`} url={`/how/${slug}`} color={P.accent} fontBody={P.fontBody} />
+          </div>
+        </div>
 
         {/* Steps */}
         <div style={{ display: "flex", flexDirection: "column", gap: 28, marginBottom: 48 }}>
