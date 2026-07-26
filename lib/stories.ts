@@ -335,17 +335,18 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
   for (const q of queries) {
     try {
       const res = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&orientation=landscape&per_page=${page}&page=1&client_id=${key}`,
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&orientation=landscape&per_page=10&page=${page}&client_id=${key}`,
         { cache: "no-store" }
       );
       if (!res.ok) continue;
       const data = await res.json();
-      const results = data?.results ?? [];
-      const photo = results[results.length - 1] ?? results[0];
-      const url = photo?.urls?.regular
-        ? (photo.urls.regular as string).replace(/&w=\d+/, "&w=1600")
-        : undefined;
-      if (url && (!blocked || !blocked.has(url))) return { url, color: photo.color as string | undefined };
+      const results: { urls?: { regular?: string }; color?: string }[] = data?.results ?? [];
+      for (const photo of results) {
+        const url = photo?.urls?.regular
+          ? (photo.urls.regular as string).replace(/&w=\d+/, "&w=1600")
+          : undefined;
+        if (url && (!blocked || !blocked.has(url))) return { url, color: photo.color as string | undefined };
+      }
     } catch { continue; }
   }
   return undefined;
