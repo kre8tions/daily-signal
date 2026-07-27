@@ -511,31 +511,28 @@ function S1FlightPaths({ seed, color, imageColor }: { seed: number; color: strin
   );
 }
 
-// ── Synthesis section ─────────────────────────────────────────────────────────
+// ── Weekly Signal & Noise cards (distributed into bento slots like synthesis) ──
 
-function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
+function WkObsCard({ weekly, editionKey }: { weekly: WeeklySignal; editionKey: string }) {
   return (
-    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-      <div style={{ background: P.cardBg, borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
+    <div id="signal" style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+      <div style={{ background: P.accent + "40", borderRadius: 24, boxShadow: P.shadow, overflow: "hidden", position: "relative" }}>
         {/* Header */}
-        <div style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ width: 55, height: 55, borderRadius: "50%", background: P.cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><SpaceInvaderSVG color={P.accent} /></div>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>Weekly Signal & Noise</div>
-              <div style={{ fontSize: 13, color: P.inkLight, fontFamily: P.fontBody }}>{weekly.weekOf}</div>
-            </div>
+        <div className="ds-obs-header" style={{ background: "transparent", paddingTop: 18, paddingBottom: 18, paddingLeft: 28, paddingRight: 28, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" as const }}>
+          <div style={{ width: 55, height: 55, borderRadius: "50%", background: P.pageBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><SpaceInvaderSVG color={P.accent} /></div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color: P.accent, marginBottom: 4, fontFamily: P.fontBody }}>Weekly Signal & Noise</div>
+            <div style={{ fontSize: 13, color: P.inkLight, fontFamily: P.fontBody }}>{weekly.weekOf}</div>
           </div>
-          <ShareButton title={`Weekly Signal & Noise — ${weekly.weekOf}`} url={typeof window !== "undefined" ? window.location.href : ""} color={P.accent} fontBody={P.fontBody} />
         </div>
         <div style={{ paddingLeft: 28, paddingRight: 28, marginBottom: 0 }}>
           <svg width="100%" height="12" style={{ display: "block", overflow: "visible" }} xmlns="http://www.w3.org/2000/svg">
-            <defs><filter id="sketchy-line-w" x="-5%" y="-100%" width="110%" height="300%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="9" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
-            <line x1="0" y1="6" x2="100%" y2="6" stroke={P.accent} strokeWidth="2.5" filter="url(#sketchy-line-w)" />
+            <defs><filter id="sketchy-line-wk" x="-5%" y="-100%" width="110%" height="300%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="9" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+            <line x1="0" y1="6" x2="100%" y2="6" stroke={P.accent} strokeWidth="2.5" filter="url(#sketchy-line-wk)" />
           </svg>
         </div>
-        {/* Hook + Signal — mirrors synthesis observation section */}
-        <div className="ds-synthesis-obs" style={{ position: "relative", paddingTop: 20, paddingBottom: 14, paddingLeft: 28, paddingRight: weekly.imageUrl ? 320 : 28, borderBottom: `1px solid ${P.tint}44` }}>
+        {/* The Signal */}
+        <div className="ds-synthesis-obs" style={{ position: "relative", paddingTop: 20, paddingBottom: 28, paddingLeft: 28, paddingRight: weekly.imageUrl ? 320 : 28 }}>
           <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 8, fontFamily: P.fontBody }}>The Signal</div>
           <p style={{ fontSize: 19, lineHeight: 1.6, fontWeight: 600, color: P.ink, marginTop: 0, marginBottom: weekly.signal ? 14 : 0, fontFamily: P.fontBody }}>{weekly.hook}</p>
           {weekly.signal && <p style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, marginTop: 0, marginBottom: 0, fontFamily: P.fontBody }}>{weekly.signal}</p>}
@@ -546,38 +543,127 @@ function WeeklySignalSection({ weekly }: { weekly: WeeklySignal }) {
                   <img src={weekly.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
                 </div>
                 <svg style={{ position: "absolute", top: -5, left: -5, width: 210, height: 210, overflow: "visible", pointerEvents: "none" }} viewBox="0 0 210 210">
-                  <defs><filter id="sketchy-circle-w" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="8" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
-                  <circle cx="105" cy="105" r="101" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#sketchy-circle-w)" />
+                  <defs><filter id="sketchy-circle-wk" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="8" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+                  <circle cx="105" cy="105" r="101" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#sketchy-circle-wk)" />
                 </svg>
               </div>
             </div>
           )}
         </div>
-        {/* Noise + Looking Forward — mirrors synthesis key insights / bottom line layout */}
-        <div className="ds-synthesis-body ds-weekly-cols" style={{ paddingTop: 18, paddingBottom: 24, paddingLeft: 28, paddingRight: 28, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 36, borderBottom: `1px solid ${P.tint}44` }}>
-          {weekly.noise && (
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 14, fontFamily: P.fontBody }}>The Noise</div>
-              <p style={{ fontSize: 17, lineHeight: 1.65, color: P.inkMid, margin: 0, fontFamily: P.fontBody }}>{weekly.noise}</p>
-            </div>
-          )}
-          {weekly.lookingForward && (
-            <div style={{ borderLeft: `1px solid ${P.tint}55`, paddingLeft: 28 }}>
-              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 14, fontFamily: P.fontBody }}>Looking Forward</div>
-              <p style={{ fontSize: 17, lineHeight: 1.65, color: P.inkMid, margin: 0, fontFamily: P.fontBody }}>{weekly.lookingForward}</p>
-            </div>
-          )}
-        </div>
-        {/* One Move — mirrors synthesis bottom line */}
-        <div style={{ paddingTop: 20, paddingBottom: 24, paddingLeft: 28, paddingRight: 28 }}>
-          <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 14, fontFamily: P.fontBody }}>One Move This Week</div>
-          <div style={{ fontSize: 19, lineHeight: 1.6, fontWeight: 600, color: P.ink, fontFamily: P.fontBody }}>{weekly.oneMove}</div>
-          {weekly.writerName && <div style={{ marginTop: 14, fontSize: 12, color: P.inkLight, fontFamily: P.fontBody }}>— {weekly.writerName}</div>}
+        <div style={{ display: "flex", justifyContent: "flex-end", paddingLeft: 28, paddingRight: 28, paddingBottom: 20 }}>
+          <ShareButton title={`Weekly Signal & Noise — ${weekly.weekOf}`} url={`/archive/${editionKey}#signal`} color={P.accent} fontBody={P.fontBody} />
         </div>
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
-        <defs><filter id="sketchy-border-w" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="11" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
-        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-w)" />
+        <defs><filter id="sketchy-border-wk" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="11" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-wk)" />
+      </svg>
+    </div>
+  );
+}
+
+function WkNoiseCard({ weekly }: { weekly: WeeklySignal }) {
+  if (!weekly.noise) return null;
+  return (
+    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+      <div style={{ background: P.accent + "40", borderRadius: 24, boxShadow: P.shadow, paddingTop: 28, paddingBottom: 32, paddingLeft: 36, paddingRight: 36 }}>
+        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 22, fontFamily: P.fontBody }}>The Noise</div>
+        <p style={{ fontSize: 17, lineHeight: 1.75, color: P.inkMid, margin: 0, fontFamily: P.fontBody }}>{weekly.noise}</p>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="sketchy-border-wkn" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="13" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-wkn)" />
+      </svg>
+    </div>
+  );
+}
+
+function WkLookingForwardCard({ weekly, editionKey }: { weekly: WeeklySignal; editionKey: string }) {
+  if (!weekly.lookingForward) return null;
+  const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  const qFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 66) * QUOTE_FONTS.length)];
+  return (
+    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+      <div style={{ background: P.accent + "40", borderRadius: 24, boxShadow: P.shadow, paddingTop: 32, paddingBottom: 36, paddingLeft: 44, paddingRight: 44 }}>
+        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>Looking Forward</div>
+        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 4 }}>"</div>
+        <div style={{ fontSize: 34, fontWeight: qFont.weight, lineHeight: 1.25, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.3, textAlign: "left" as const }}>{weekly.lookingForward}</div>
+        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 4, textAlign: "left" as const }}>"</div>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="sketchy-border-wklf" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="14" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-wklf)" />
+      </svg>
+    </div>
+  );
+}
+
+function WkOneMoveCard({ weekly, editionKey }: { weekly: WeeklySignal; editionKey: string }) {
+  if (!weekly.oneMove) return null;
+  const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44) * QUOTE_FONTS.length)];
+  return (
+    <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
+      <style>{`@keyframes wk-pop{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
+      <div style={{ background: P.accent + "40", borderRadius: 24, boxShadow: P.shadow, paddingTop: 24, paddingBottom: 28, paddingLeft: 28, paddingRight: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+          <span style={{ fontSize: 36, display: "inline-block", animation: "wk-pop 1.2s ease-in-out infinite" }}>⚡</span>
+          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>One Move This Week</div>
+        </div>
+        <div style={{ border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 18, paddingRight: 18 }}>
+          <div style={{ fontSize: 24, lineHeight: 1.4, color: P.ink, fontFamily: aFont.family, fontStyle: aFont.style as "italic" | "normal", fontWeight: aFont.weight }}>{weekly.oneMove}</div>
+          {weekly.writerName && <div style={{ marginTop: 16, fontSize: 12, color: P.inkLight, fontFamily: P.fontBody }}>— {weekly.writerName}</div>}
+        </div>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="sketchy-border-wkm" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="15" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-wkm)" />
+      </svg>
+    </div>
+  );
+}
+
+// Grid-cell (compact bento) variants for weekly bl/a0 slots
+function WkLookingForwardGridCell({ weekly, editionKey }: { weekly: WeeklySignal; editionKey: string }) {
+  if (!weekly.lookingForward) return null;
+  const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  const qFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 66) * QUOTE_FONTS.length)];
+  return (
+    <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
+      <div style={{ background: P.accent + "40", borderRadius: 20, boxShadow: P.shadow, paddingTop: 22, paddingBottom: 26, paddingLeft: 26, paddingRight: 26, display: "flex", flexDirection: "column", flex: 1, justifyContent: "flex-start" }}>
+        <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 12, fontFamily: P.fontBody }}>Looking Forward</div>
+        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 2 }}>"</div>
+        <div style={{ fontSize: 26, fontWeight: qFont.weight, lineHeight: 1.3, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.2, textAlign: "left" as const }}>{weekly.lookingForward}</div>
+        <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 2, textAlign: "left" as const }}>"</div>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="skg-wklf" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="14" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="2" y="2" width="99%" height="99%" rx="18" ry="18" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#skg-wklf)" />
+      </svg>
+    </div>
+  );
+}
+
+function WkOneMoveGridCell({ weekly, editionKey }: { weekly: WeeklySignal; editionKey: string }) {
+  if (!weekly.oneMove) return null;
+  const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44) * QUOTE_FONTS.length)];
+  return (
+    <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
+      <style>{`@keyframes wkg-pop{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
+      <div style={{ background: P.accent + "40", borderRadius: 20, boxShadow: P.shadow, paddingTop: 18, paddingBottom: 20, paddingLeft: 20, paddingRight: 20, display: "flex", flexDirection: "column", flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          <span style={{ fontSize: 28, display: "inline-block", animation: "wkg-pop 1.2s ease-in-out infinite" }}>⚡</span>
+          <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>One Move</div>
+        </div>
+        <div style={{ border: `2px dashed ${P.accent}`, borderRadius: 12, paddingTop: 14, paddingBottom: 14, paddingLeft: 14, paddingRight: 14, flex: 1 }}>
+          <div style={{ fontSize: 21, lineHeight: 1.4, color: P.ink, fontFamily: aFont.family, fontStyle: aFont.style as "italic" | "normal", fontWeight: aFont.weight }}>{weekly.oneMove}</div>
+          {weekly.writerName && <div style={{ marginTop: 12, fontSize: 11, color: P.inkLight, fontFamily: P.fontBody }}>— {weekly.writerName}</div>}
+        </div>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="skg-wkm" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="15" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="2" y="2" width="99%" height="99%" rx="18" ry="18" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#skg-wkm)" />
       </svg>
     </div>
   );
@@ -888,21 +974,39 @@ export async function EditionView({
   function renderSynthCard(id: CardId) {
     if (id === "obs") {
       return weeklySignal?.hook
-        ? <WeeklySignalSection key="obs" weekly={weeklySignal} />
+        ? <WkObsCard key="obs" weekly={weeklySignal} editionKey={editionKey} />
         : synthesis?.theme ? <ObservationCard key="obs" synthesis={synthesis} writerIndex={synthWriterIndex} editionKey={editionKey} /> : null;
     }
-    if (!synthesis?.theme) return null;
-    if (id === "ki") return synthesis.takeaways?.length ? <KeyInsightsCard key="ki" synthesis={synthesis} /> : null;
-    if (id === "bl") return synthesis.conclusion ? <BottomLineCard key="bl" synthesis={synthesis} editionKey={editionKey} /> : null;
+    if (id === "ki") {
+      return weeklySignal?.hook
+        ? (weeklySignal.noise ? <WkNoiseCard key="ki" weekly={weeklySignal} /> : null)
+        : (synthesis?.theme && synthesis.takeaways?.length ? <KeyInsightsCard key="ki" synthesis={synthesis} /> : null);
+    }
+    if (id === "bl") {
+      return weeklySignal?.hook
+        ? (weeklySignal.lookingForward ? <WkLookingForwardCard key="bl" weekly={weeklySignal} editionKey={editionKey} /> : null)
+        : (synthesis?.theme && synthesis.conclusion ? <BottomLineCard key="bl" synthesis={synthesis} editionKey={editionKey} /> : null);
+    }
     const ai = parseInt(id[1]);
+    if (weeklySignal?.hook) {
+      return ai === 0 && weeklySignal.oneMove ? <WkOneMoveCard key={id} weekly={weeklySignal} editionKey={editionKey} /> : null;
+    }
+    if (!synthesis?.theme) return null;
     const action = synthesis.actions?.[ai];
     return action ? <StandaloneActionCard key={id} action={action} actionIndex={ai} stories={allStories} synthesis={synthesis} editionKey={editionKey} /> : null;
   }
 
   function renderSynthGridItem(id: CardId): React.ReactNode {
-    if (!synthesis?.theme) return null;
-    if (id === "bl") return synthesis.conclusion ? <BottomLineGridCell key="blg" synthesis={synthesis} editionKey={editionKey} /> : null;
+    if (id === "bl") {
+      return weeklySignal?.hook
+        ? (weeklySignal.lookingForward ? <WkLookingForwardGridCell key="blg" weekly={weeklySignal} editionKey={editionKey} /> : null)
+        : (synthesis?.theme && synthesis.conclusion ? <BottomLineGridCell key="blg" synthesis={synthesis} editionKey={editionKey} /> : null);
+    }
     const ai = parseInt(id[1]);
+    if (weeklySignal?.hook) {
+      return ai === 0 && weeklySignal.oneMove ? <WkOneMoveGridCell key={`wkg${ai}`} weekly={weeklySignal} editionKey={editionKey} /> : null;
+    }
+    if (!synthesis?.theme) return null;
     const action = synthesis.actions?.[ai];
     return action ? <ActionGridCell key={`ag${ai}`} action={action} actionIndex={ai} stories={allStories} synthesis={synthesis} editionKey={editionKey} /> : null;
   }
