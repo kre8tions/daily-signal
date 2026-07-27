@@ -598,32 +598,100 @@ function WkLookingForwardCard({ weekly, editionKey }: { weekly: WeeklySignal; ed
   );
 }
 
-function WkOneMoveCard({ weekly, editionKey }: { weekly: WeeklySignal; editionKey: string }) {
-  if (!weekly.oneMove) return null;
+function WkActionCard({ action, actionIndex, weekly, stories, editionKey }: { action: string; actionIndex: number; weekly: WeeklySignal; stories: Story[]; editionKey: string }) {
+  const slug = actionSlug(action);
+  const encoded = Buffer.from(action).toString("base64");
+  const relStory = stories[actionIndex] ?? stories[0];
+  const relSlug = relStory ? urlToSlug(relStory.link) : "";
+  const relTitle = relStory ? encodeURIComponent(relStory.ownedTitle || relStory.title) : "";
+  const weeklyCtx = [
+    weekly.hook ? `st=${encodeURIComponent("Weekly Signal & Noise")}` : "",
+    weekly.hook ? `sh=${encodeURIComponent(weekly.hook)}` : "",
+  ].filter(Boolean).join("&");
+  const href = `/how/${slug}?a=${encoded}&as=${relSlug}&at=${relTitle}${weeklyCtx ? "&" + weeklyCtx : ""}`;
+  const seed = ACTION_CARD_SEEDS[actionIndex % ACTION_CARD_SEEDS.length];
+  const emoji = ACTION_CARD_EMOJIS[actionIndex % ACTION_CARD_EMOJIS.length];
+  const animName = `wka-pop-${actionIndex}`;
   const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77 + actionIndex * 11) * MOVE_LABELS.length)];
   const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44) * QUOTE_FONTS.length)];
   return (
     <div style={{ maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-      <style>{`@keyframes wk-pop{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
+      <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
       <div style={{ background: P.accent + "40", borderRadius: 24, boxShadow: P.shadow, paddingTop: 24, paddingBottom: 28, paddingLeft: 28, paddingRight: 28 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
-          <span style={{ fontSize: 36, display: "inline-block", animation: "wk-pop 1.2s ease-in-out infinite" }}>⚡</span>
-          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>One Move This Week</div>
+          <span style={{ fontSize: 36, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite` }}>{emoji}</span>
+          <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{moveLabel}</div>
         </div>
-        <div style={{ border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 18, paddingRight: 18 }}>
-          <div style={{ fontSize: 24, lineHeight: 1.4, color: P.ink, fontFamily: aFont.family, fontStyle: aFont.style as "italic" | "normal", fontWeight: aFont.weight }}>{weekly.oneMove}</div>
-          {weekly.writerName && <div style={{ marginTop: 16, fontSize: 12, color: P.inkLight, fontFamily: P.fontBody }}>— {weekly.writerName}</div>}
-        </div>
+        <a href={href} style={{ textDecoration: "none", display: "flex", flexDirection: "column", gap: 16, background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 14, paddingTop: 18, paddingBottom: 18, paddingLeft: 18, paddingRight: 18, minHeight: 120 }}>
+          <div style={{ fontSize: 24, lineHeight: 1.4, color: P.ink, fontFamily: aFont.family, fontStyle: aFont.style as "italic" | "normal", fontWeight: aFont.weight }}>{action}</div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
+            <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, background: "transparent", border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, display: "inline-block", whiteSpace: "nowrap" as const }}>How?</span>
+          </div>
+        </a>
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
-        <defs><filter id="sketchy-border-wkm" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="15" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
-        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter="url(#sketchy-border-wkm)" />
+        <defs><filter id={`sketchy-border-wka${actionIndex}`} x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed={seed} result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="3" y="3" width="99%" height="99%" rx="22" ry="22" fill="none" stroke={P.accent} strokeWidth="4" filter={`url(#sketchy-border-wka${actionIndex})`} />
       </svg>
     </div>
   );
 }
 
-// Grid-cell (compact bento) variants for weekly bl/a0 slots
+// Grid-cell (compact bento) variants for weekly ki/bl/a0–a2 slots
+function WkNoiseGridCell({ weekly }: { weekly: WeeklySignal }) {
+  if (!weekly.noise) return null;
+  return (
+    <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
+      <div style={{ background: P.accent + "40", borderRadius: 20, boxShadow: P.shadow, paddingTop: 22, paddingBottom: 26, paddingLeft: 26, paddingRight: 26, display: "flex", flexDirection: "column", flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 16, fontFamily: P.fontBody }}>The Noise</div>
+        <p style={{ fontSize: 16, lineHeight: 1.65, color: P.inkMid, margin: 0, fontFamily: P.fontBody }}>{weekly.noise}</p>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="skg-wkn" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed="13" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="2" y="2" width="99%" height="99%" rx="18" ry="18" fill="none" stroke={P.accent} strokeWidth="3.5" filter="url(#skg-wkn)" />
+      </svg>
+    </div>
+  );
+}
+
+function WkActionGridCell({ action, actionIndex, weekly, stories, editionKey }: { action: string; actionIndex: number; weekly: WeeklySignal; stories: Story[]; editionKey: string }) {
+  const slug = actionSlug(action);
+  const encoded = Buffer.from(action).toString("base64");
+  const relStory = stories[actionIndex] ?? stories[0];
+  const relSlug = relStory ? urlToSlug(relStory.link) : "";
+  const relTitle = relStory ? encodeURIComponent(relStory.ownedTitle || relStory.title) : "";
+  const weeklyCtx = weekly.hook ? `st=${encodeURIComponent("Weekly Signal & Noise")}&sh=${encodeURIComponent(weekly.hook)}` : "";
+  const href = `/how/${slug}?a=${encoded}&as=${relSlug}&at=${relTitle}${weeklyCtx ? "&" + weeklyCtx : ""}`;
+  const seed = ACTION_CARD_SEEDS[actionIndex % ACTION_CARD_SEEDS.length];
+  const emoji = ACTION_CARD_EMOJIS[actionIndex % ACTION_CARD_EMOJIS.length];
+  const animName = `wkag-pop-${actionIndex}`;
+  const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  const moveLabel = MOVE_LABELS[Math.floor(seededRandom(eSeed + 77 + actionIndex * 11) * MOVE_LABELS.length)];
+  const aFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 44) * QUOTE_FONTS.length)];
+  return (
+    <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
+      <style>{`@keyframes ${animName}{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.3) rotate(5deg)}}`}</style>
+      <div style={{ background: P.accent + "40", borderRadius: 20, boxShadow: P.shadow, paddingTop: 18, paddingBottom: 20, paddingLeft: 20, paddingRight: 20, display: "flex", flexDirection: "column", flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          <span style={{ fontSize: 28, display: "inline-block", animation: `${animName} 1.2s ease-in-out infinite` }}>{emoji}</span>
+          <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{moveLabel}</div>
+        </div>
+        <a href={href} style={{ textDecoration: "none", display: "flex", flexDirection: "column", gap: 14, background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 12, paddingTop: 14, paddingBottom: 14, paddingLeft: 14, paddingRight: 14, flex: 1 }}>
+          <div style={{ fontSize: 21, lineHeight: 1.4, color: P.ink, fontFamily: aFont.family, fontStyle: aFont.style as "italic" | "normal", fontWeight: aFont.weight }}>{action}</div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
+            <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, color: P.accent, fontFamily: P.fontBody, textTransform: "uppercase" as const, border: `1px solid ${P.accent}`, borderRadius: 50, paddingTop: 5, paddingBottom: 5, paddingLeft: 14, paddingRight: 14, display: "inline-block", whiteSpace: "nowrap" as const }}>How?</span>
+          </div>
+        </a>
+      </div>
+      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id={`skg-wka${actionIndex}`} x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="4" seed={seed} result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G" /></filter></defs>
+        <rect x="2" y="2" width="99%" height="99%" rx="18" ry="18" fill="none" stroke={P.accent} strokeWidth="3.5" filter={`url(#skg-wka${actionIndex})`} />
+      </svg>
+    </div>
+  );
+}
+
 function WkLookingForwardGridCell({ weekly, editionKey }: { weekly: WeeklySignal; editionKey: string }) {
   if (!weekly.lookingForward) return null;
   const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
@@ -961,7 +1029,7 @@ export async function EditionView({
     tail:      remainingPool.slice(4),   // 1 card (hasPreS1) or 2 cards (!hasPreS1)
   };
 
-  const isCompactId = (id: CardId) => id === "bl" || id.startsWith("a");
+  const isCompactId = (id: CardId) => id === "bl" || id.startsWith("a") || (id === "ki" && !!weeklySignal?.hook);
   // At most one bento row gets a compact card per edition; seed decides which one wins
   const bothBentoCompact = !!(preS1Card && isCompactId(preS1Card) && synthSlots.afterS1 && isCompactId(synthSlots.afterS1));
   const s1BentoWins = !bothBentoCompact || seededRandom(editionSeed + 300) < 0.5;
@@ -989,7 +1057,8 @@ export async function EditionView({
     }
     const ai = parseInt(id[1]);
     if (weeklySignal?.hook) {
-      return ai === 0 && weeklySignal.oneMove ? <WkOneMoveCard key={id} weekly={weeklySignal} editionKey={editionKey} /> : null;
+      const action = weeklySignal.actions?.[ai];
+      return action ? <WkActionCard key={id} action={action} actionIndex={ai} weekly={weeklySignal} stories={allStories} editionKey={editionKey} /> : null;
     }
     if (!synthesis?.theme) return null;
     const action = synthesis.actions?.[ai];
@@ -997,6 +1066,9 @@ export async function EditionView({
   }
 
   function renderSynthGridItem(id: CardId): React.ReactNode {
+    if (id === "ki" && weeklySignal?.hook) {
+      return weeklySignal.noise ? <WkNoiseGridCell key="wkng" weekly={weeklySignal} /> : null;
+    }
     if (id === "bl") {
       return weeklySignal?.hook
         ? (weeklySignal.lookingForward ? <WkLookingForwardGridCell key="blg" weekly={weeklySignal} editionKey={editionKey} /> : null)
@@ -1004,7 +1076,8 @@ export async function EditionView({
     }
     const ai = parseInt(id[1]);
     if (weeklySignal?.hook) {
-      return ai === 0 && weeklySignal.oneMove ? <WkOneMoveGridCell key={`wkg${ai}`} weekly={weeklySignal} editionKey={editionKey} /> : null;
+      const action = weeklySignal.actions?.[ai];
+      return action ? <WkActionGridCell key={`wkag${ai}`} action={action} actionIndex={ai} weekly={weeklySignal} stories={allStories} editionKey={editionKey} /> : null;
     }
     if (!synthesis?.theme) return null;
     const action = synthesis.actions?.[ai];

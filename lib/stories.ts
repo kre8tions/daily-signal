@@ -32,11 +32,12 @@ export interface Synthesis {
 }
 
 export interface WeeklySignal {
+  actions?: string[];
   hook: string;
   signal: string;
   noise: string;
   lookingForward: string;
-  oneMove: string;
+  oneMove?: string;
   writerName?: string;
   weekOf: string;
   imageUrl?: string;
@@ -882,7 +883,7 @@ export async function getWeeklySignal(editionKey: string, blocked?: Set<string>,
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1200,
+    max_tokens: 1400,
     messages: [{
       role: "user",
       content: `${writer.style}
@@ -909,7 +910,7 @@ Return JSON only, no markdown:
   "signal": "2-3 sentences. The thread that ran through this week — the pattern only visible across all the days. Name the mechanism, not the events. Ground it in something specific — a named company, person, or technology that crystallizes the pattern. This is what the week actually meant.",
   "noise": "1-2 sentences. One specific thing that got amplified this week but won't matter in a month — an overblown story, a manufactured outrage, a distraction that served someone's agenda. Name it. Dismiss it. The reader deserves to put it down.",
   "lookingForward": "2-3 sentences. Given what this week revealed about how the world works, where should a curious, independently-minded adult building a considered life put their attention next week? Not predictions — where the pattern leads. What to watch, what to question, what to prepare for in their own work, decisions, and thinking.",
-  "oneMove": "Single imperative sentence. The one thing someone building a considered life does with this week's understanding. Doable this week. Beginner-friendly. Starts with a verb. Max 15 words.",
+  "actions": ["Action 1 — single imperative sentence, doable this week, beginner-friendly, zero tools or money required, starts with a verb, max 15 words.", "Action 2 — same rules, different angle on the week's signal.", "Action 3 — same rules, a third distinct entry point for someone building a considered life."],
   "imageQuery": "4-6 atmospheric words for Unsplash. The mood or texture of the week's thread — a real scene or object, not an abstraction."
 }`,
     }],
@@ -928,7 +929,7 @@ Return JSON only, no markdown:
       signal: parsed.signal ?? "",
       noise: parsed.noise ?? "",
       lookingForward: parsed.lookingForward ?? "",
-      oneMove: parsed.oneMove ?? "",
+      actions: Array.isArray(parsed.actions) ? parsed.actions.slice(0, 3) : [],
       writerName: writer.name,
       weekOf,
       imageUrl,
@@ -970,10 +971,10 @@ async function sendWeeklySignalBroadcast(weekly: WeeklySignal, editionKey: strin
     <div style="font-size:16px;line-height:1.75;color:#444;">${weekly.lookingForward}</div>
   </div>` : ""}
 
-  ${weekly.oneMove ? `
+  ${(weekly.actions?.length ? weekly.actions[0] : weekly.oneMove) ? `
   <div style="background:#1a1a2e;color:#f8f7f4;border-radius:10px;padding:20px 24px;margin-bottom:32px;">
     <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:8px;">One Move</div>
-    <div style="font-size:16px;line-height:1.6;font-weight:600;">${weekly.oneMove}</div>
+    <div style="font-size:16px;line-height:1.6;font-weight:600;">${weekly.actions?.length ? weekly.actions[0] : weekly.oneMove}</div>
   </div>` : ""}
 
   <div style="text-align:center;margin-top:32px;">
@@ -1158,6 +1159,12 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     const context = { theme: synthesis.theme, hook: synthesis.hook };
     await Promise.allSettled(
       synthesis.actions.map(action => generateHowTo(action, actionSlug(action), context))
+    );
+  }
+  if (weeklySignal?.actions?.length) {
+    const context = { theme: "Weekly Signal & Noise", hook: weeklySignal.hook };
+    await Promise.allSettled(
+      weeklySignal.actions.map(action => generateHowTo(action, actionSlug(action), context))
     );
   }
 
