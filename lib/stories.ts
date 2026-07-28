@@ -371,14 +371,12 @@ async function getArticleImage(article: { link: string; title: string; section?:
 
 export async function getUniqueImages(articles: (RawItem & { imageQuery?: string; preferRssImage?: boolean })[], blocked?: Set<string>): Promise<{ url?: string; color?: string }[]> {
   const seen = blocked ?? new Set<string>();
-  const raw = await Promise.all(articles.map((a) => getArticleImage(a, seen)));
+  // Sequential fetch so each article's URL is added to `seen` before the next one runs,
+  // preventing parallel calls from independently claiming the same Unsplash photo.
   const result: { url?: string; color?: string }[] = [];
-  for (let i = 0; i < raw.length; i++) {
-    const img = raw[i];
-    if (!img?.url || !seen.has(img.url)) {
-      if (img?.url) seen.add(img.url);
-      result.push(img ?? {});
-    } else {
+  for (let i = 0; i < articles.length; i++) {
+    const img = await getArticleImage(articles[i], seen);
+    if (!img?.url || seen.has(img.url)) {
       const cKey = imgCacheKey(articles[i].link);
       cacheSet(cKey, "__none__", 1);
       const fresh = await fetchUnsplash(articles[i].title + " " + articles[i].section, undefined, 1, articles[i].imageQuery, seen);
@@ -389,6 +387,9 @@ export async function getUniqueImages(articles: (RawItem & { imageQuery?: string
       } else {
         result.push({});
       }
+    } else {
+      seen.add(img.url);
+      result.push(img);
     }
   }
   return result;
@@ -1096,6 +1097,12 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   }
 
   const [synthesis, featureCreature, weeklySignal] = await Promise.all([synthesisPromise, fcPromise, weeklySignalPromise]);
+
+  // Add FC, synthesis, and weekly signal images to blocked BEFORE fetching article images.
+  // Without this, article fetches run with a stale blocked set and can duplicate FC/synthesis photos.
+  for (const url of [featureCreature?.imageUrl, synthesis?.imageUrl, weeklySignal?.imageUrl]) {
+    if (url) blocked.add(url);
+  }
 
   const artErrors = arts.map((a, i) => (!a && articleResults[i]?.status === "rejected") ? String((articleResults[i] as PromiseRejectedResult).reason) : undefined);
   const rawWithQuery = activeRaw.map((r, i) => ({ ...r, imageQuery: arts[i]?.imageQuery }));
