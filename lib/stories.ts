@@ -346,7 +346,7 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
         const url = photo?.urls?.regular
           ? (photo.urls.regular as string).replace(/&w=\d+/, "&w=1600")
           : undefined;
-        if (url && (!blocked || !blocked.has(url))) return { url, color: photo.color as string | undefined };
+        if (url && (!blocked || !blocked.has(unsplashPhotoId(url)))) return { url, color: photo.color as string | undefined };
       }
     } catch { continue; }
   }
@@ -357,11 +357,18 @@ function imgCacheKey(link: string) {
   return `artimg_v4_${createHash("md5").update(link).digest("hex")}`;
 }
 
+// Unsplash URLs contain a volatile `ixid` parameter that changes on every API call,
+// making URL-string equality useless for dedup. Extract the stable photo ID from the
+// path segment (e.g. "photo-1234abc") and use that as the canonical dedup key.
+function unsplashPhotoId(url: string): string {
+  return url.match(/\/(photo-[^?/]+)/)?.[1] ?? url;
+}
+
 async function getArticleImage(article: { link: string; title: string; section?: string; imageQuery?: string; rssImageUrl?: string; preferRssImage?: boolean }, blocked?: Set<string>): Promise<{ url: string; color?: string } | undefined> {
   if (article.preferRssImage && article.rssImageUrl) return { url: article.rssImageUrl };
   const cKey = imgCacheKey(article.link);
   const hit = cacheGet<string>(cKey);
-  if (hit && hit !== "__none__" && (!blocked || !blocked.has(hit))) return { url: hit };
+  if (hit && hit !== "__none__" && (!blocked || !blocked.has(unsplashPhotoId(hit)))) return { url: hit };
 
   const unsplash = await fetchUnsplash(article.title, article.section, 1, article.imageQuery, blocked);
   if (unsplash) { cacheSet(cKey, unsplash.url, THREE_DAYS); return unsplash; }
@@ -376,19 +383,19 @@ export async function getUniqueImages(articles: (RawItem & { imageQuery?: string
   const result: { url?: string; color?: string }[] = [];
   for (let i = 0; i < articles.length; i++) {
     const img = await getArticleImage(articles[i], seen);
-    if (!img?.url || seen.has(img.url)) {
+    if (!img?.url || seen.has(unsplashPhotoId(img.url))) {
       const cKey = imgCacheKey(articles[i].link);
       cacheSet(cKey, "__none__", 1);
       const fresh = await fetchUnsplash(articles[i].title + " " + articles[i].section, undefined, 1, articles[i].imageQuery, seen);
-      if (fresh && !seen.has(fresh.url)) {
-        seen.add(fresh.url);
+      if (fresh && !seen.has(unsplashPhotoId(fresh.url))) {
+        seen.add(unsplashPhotoId(fresh.url));
         cacheSet(cKey, fresh.url, THREE_DAYS);
         result.push(fresh);
       } else {
         result.push({});
       }
     } else {
-      seen.add(img.url);
+      seen.add(unsplashPhotoId(img.url));
       result.push(img);
     }
   }
@@ -730,7 +737,7 @@ async function loadImageHistory(): Promise<Set<string>> {
     if (!res.ok) return new Set();
     const entries = await res.json() as { url: string; usedAt: string }[];
     const cutoff = Date.now() - THIRTY_DAYS_MS;
-    return new Set(entries.filter(e => new Date(e.usedAt).getTime() > cutoff).map(e => e.url));
+    return new Set(entries.filter(e => new Date(e.usedAt).getTime() > cutoff).map(e => unsplashPhotoId(e.url)));
   } catch { return new Set(); }
 }
 
@@ -746,8 +753,10 @@ async function appendImageHistory(urls: string[]): Promise<void> {
     const cutoff = Date.now() - THIRTY_DAYS_MS;
     const fresh = entries.filter(e => new Date(e.usedAt).getTime() > cutoff);
     const now = new Date().toISOString();
+    const freshIds = new Set(fresh.map(e => unsplashPhotoId(e.url)));
     for (const url of urls) {
-      if (!fresh.find(e => e.url === url)) fresh.push({ url, usedAt: now });
+      const pid = unsplashPhotoId(url);
+      if (!freshIds.has(pid)) { fresh.push({ url: pid, usedAt: now }); freshIds.add(pid); }
     }
     await put(IMAGE_HISTORY_KEY, JSON.stringify(fresh), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
   } catch { /* non-fatal */ }
@@ -1101,7 +1110,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   // Add FC, synthesis, and weekly signal images to blocked BEFORE fetching article images.
   // Without this, article fetches run with a stale blocked set and can duplicate FC/synthesis photos.
   for (const url of [featureCreature?.imageUrl, synthesis?.imageUrl, weeklySignal?.imageUrl]) {
-    if (url) blocked.add(url);
+    if (url) blocked.add(unsplashPhotoId(url));
   }
 
   const artErrors = arts.map((a, i) => (!a && articleResults[i]?.status === "rejected") ? String((articleResults[i] as PromiseRejectedResult).reason) : undefined);
