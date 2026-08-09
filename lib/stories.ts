@@ -1021,22 +1021,11 @@ export async function getS1Insight(editionKey: string, newsCandidate?: { title: 
 
   // Return cached story shell from edition archive if already warmed
   const storyCacheKey = `s1-insight-story/v1/${editionKey}.json`;
-  const imgBlobKey = `insight-images/v1/${editionKey}.png`;
   try {
     const existing = await head(storyCacheKey);
     if (existing) {
       const res = await fetch(existing.url, { cache: "no-store" });
-      if (res.ok) {
-        const cached = await res.json() as Story;
-        // Backfill imageUrl if DALL-E failed on this run but succeeded on a prior one
-        if (!cached.imageUrl) {
-          try {
-            const imgBlob = await head(imgBlobKey);
-            if (imgBlob) cached.imageUrl = imgBlob.url;
-          } catch { /* no prior image */ }
-        }
-        return cached;
-      }
+      if (res.ok) return await res.json() as Story;
     }
   } catch { /* generate fresh */ }
 
@@ -1118,7 +1107,7 @@ OUTPUT — return JSON only, no markdown:
   },
   "hasKeyFacts": true,
   "writer": "${insightWriter.name}",
-  "imageQuery": "3-7 words describing a concrete subject for a pop art illustration — e.g. 'runner at a fork', 'scattered clock faces', 'open hand releasing birds'. The subject noun, not a mood word."
+  "imageQuery": "3-5 words for Unsplash — atmospheric and abstract, not literal. Captures the emotional tone of the piece."
 }`,
       }],
     });
@@ -1128,41 +1117,10 @@ OUTPUT — return JSON only, no markdown:
     const parsed = JSON.parse(cleaned);
     if (!parsed.ownedTitle || !parsed.body) return null;
 
-    // Generate pop art image via DALL-E 3, persist to Vercel Blob
     const imgQuery = (parsed.imageQuery as string | undefined)?.trim();
-    let imageUrl: string | undefined;
-    let imageColor: string | undefined;
-    try {
-      if (imgQuery && process.env.OPENAI_API_KEY) {
-        const apiRes = await fetch("https://api.openai.com/v1/images/generations", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "dall-e-3",
-            prompt: `Pop art illustration in Andy Warhol style: ${imgQuery}. Bold halftone dot pattern, flat graphic design, vibrant saturated primary colors (red, yellow, blue, magenta), thick black outlines, no text, no words, no letters.`,
-            size: "1024x1024",
-            quality: "standard",
-            n: 1,
-            response_format: "b64_json",
-          }),
-        });
-        if (!apiRes.ok) throw new Error(`OpenAI ${apiRes.status}: ${await apiRes.text()}`);
-        const apiData = await apiRes.json() as { data?: Array<{ b64_json?: string }> };
-        const b64 = apiData.data?.[0]?.b64_json;
-        if (b64) {
-          const imgBuffer = Buffer.from(b64, "base64");
-          const imgKey = `insight-images/v1/${editionKey}.png`;
-          const stored = await put(imgKey, imgBuffer, { access: "public", contentType: "image/png", addRandomSuffix: false, allowOverwrite: true });
-          imageUrl = stored.url;
-          imageColor = "#E63946";
-        }
-      }
-    } catch (e) {
-      console.error("[s1-insight] DALL-E generation failed:", e);
-    }
+    const img = await fetchUnsplash(parsed.ownedTitle as string, "Insight", 1, imgQuery, blocked).catch(() => undefined);
+    const imageUrl = img?.url;
+    const imageColor = img?.color;
 
     // Store as ArticleCommentary blob so getFullArticle returns it on the article page
     const commentary: ArticleCommentary = {
