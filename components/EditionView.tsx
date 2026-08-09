@@ -115,10 +115,10 @@ function InsightHeaderRow({ editionKey, color, pageBg, fontBody }: { editionKey:
   const label = INSIGHT_LABELS[seed % INSIGHT_LABELS.length];
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
-      <div style={{ width: 44, height: 44, borderRadius: "50%", background: pageBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <div style={{ width: 55, height: 55, borderRadius: "50%", background: pageBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <InsightGhostSVG color={color} />
       </div>
-      <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color, fontFamily: fontBody }}>{label}</span>
+      <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color, fontFamily: fontBody }}>{label}</span>
     </div>
   );
 }
