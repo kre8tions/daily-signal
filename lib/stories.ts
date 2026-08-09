@@ -1973,6 +1973,7 @@ export async function clearEditionCache(editionKey: string): Promise<void> {
   const pointBlobs = [
     `synthesis/v1/${editionKey}.json`,
     `feature-creature/v20/${editionKey}.json`,
+    `s1-insight-story/v1/${editionKey}.json`,
     ...(isSundayEvening(editionKey) ? [`weekly-signal/v1/${editionKey.split("_")[0]}.json`] : []),
   ];
   for (const key of pointBlobs) {
