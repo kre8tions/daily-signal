@@ -1095,17 +1095,18 @@ OUTPUT — return JSON only, no markdown:
     "Key takeaway 2 — one complete sentence, specific and actionable",
     "Key takeaway 3 — one complete sentence, specific and actionable"
   ],
-  "header": "Section header for the body (3-6 words, all-caps style — e.g. THE MECHANISM BENEATH IT)",
+  "header": "Section header for the body opening (3-6 words, all-caps — e.g. THE MECHANISM BENEATH IT)",
+  "header2": "Second section header before paragraph 4 (3-6 words, all-caps — e.g. WHAT THIS MEANS FOR YOU)",
   "pullQuote": "Copy verbatim the single most quotable sentence from paragraph 2 or 3 of the body. Must appear word-for-word in the body text. Should stand alone without context.",
   "pullQuoteAfterPara": 2,
-  "body": "Full four-paragraph piece as a single string with \\n\\n between paragraphs.",
+  "body": "Full five-paragraph piece as a single string with \\n\\n between paragraphs.",
   "cta": {
     "header": "Try This",
     "body": "One specific, zero-barrier action the reader can do this week. Starts with a verb. Two sentences max."
   },
   "hasKeyFacts": true,
   "writer": "${insightWriter.name}",
-  "imageQuery": "3-5 words for Unsplash — atmospheric and abstract, not literal. Captures the emotional tone."
+  "imageQuery": "3-7 words describing a concrete subject for a pop art illustration — e.g. 'runner at a fork', 'scattered clock faces', 'open hand releasing birds'. The subject noun, not a mood word."
 }`,
       }],
     });
@@ -1148,6 +1149,7 @@ OUTPUT — return JSON only, no markdown:
     const commentary: ArticleCommentary = {
       ownedTitle: parsed.ownedTitle as string,
       header: parsed.header as string,
+      header2: parsed.header2 as string | undefined,
       pullQuote: parsed.pullQuote as string,
       pullQuoteAfterPara: 2,
       body: parsed.body as string,
