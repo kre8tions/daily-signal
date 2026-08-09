@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Home() {
   const { edition, dateStr } = await getVisitorContext();
   const { key: editionKey } = edition;
-  const [{ stories, synthesis, editionLabel, featureCreature, weeklySignal }, archiveList] = await Promise.all([
+  const [{ stories, synthesis, editionLabel, featureCreature, weeklySignal, s1Insight }, archiveList] = await Promise.all([
     getPageData(edition),
     getArchiveList(),
   ]);
@@ -50,6 +50,7 @@ export default async function Home() {
       synthesis={synthesis}
       featureCreature={featureCreature}
       weeklySignal={weeklySignal}
+      s1Insight={s1Insight}
       editionKey={editionKey}
       editionLabel={editionLabel}
       dateStr={dateStr}

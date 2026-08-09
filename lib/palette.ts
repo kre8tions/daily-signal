@@ -359,6 +359,90 @@ export const FC_ANGLE = new Proxy({} as typeof FC_ANGLES[number], {
   },
 });
 
+// ── S1 Insight — personal-development lens pool ───────────────────────────────
+export type InsightDomain = "habits" | "learning" | "finance" | "career" | "relationships" | "health" | "reasoning" | "creativity";
+export interface InsightLens {
+  domain: InsightDomain;
+  concept: string;
+  source: string;
+  angle: string;
+}
+
+const il = (domain: InsightDomain, concept: string, source: string, angle: string): InsightLens => ({ domain, concept, source, angle });
+
+export const INSIGHT_LENSES: InsightLens[] = [
+  // Habits
+  il("habits", "Context shapes behavior more than willpower", "Wendy Wood / Good Habits Bad Habits", "Your environment is running most of your decisions without you noticing"),
+  il("habits", "Reducing friction beats adding motivation", "BJ Fogg / Tiny Habits", "Make the right behavior the path of least resistance"),
+  il("habits", "Cues trigger habits before the conscious mind notices", "Wendy Wood / Good Habits Bad Habits", "You're not choosing — you're responding to signals you designed"),
+  il("habits", "Implementation intentions triple follow-through", "habit science", "'When X, I will do Y' is not a slogan — it's a neurological mechanism"),
+  il("habits", "Immediate rewards wire habits; delayed rewards don't", "Wendy Wood / neuroscience", "The brain doesn't optimize for your long-term goals — it optimizes for right now"),
+  il("habits", "Habit stacking: attach new behavior to an existing trigger", "BJ Fogg / Tiny Habits", "Leverage what already runs on autopilot"),
+  il("habits", "Social context is the most powerful environmental cue", "Wendy Wood / Good Habits Bad Habits", "The people around you shape your behavior more than your values do"),
+  il("habits", "Procrastination is a solvable equation, not a character flaw", "Piers Steel / The Procrastination Equation", "Expectancy × value ÷ impulsiveness × delay — adjust any variable"),
+  // Learning
+  il("learning", "Retrieval practice beats re-reading by a wide margin", "Brown, Roediger / Make It Stick", "Testing yourself is not assessment — it is the actual learning"),
+  il("learning", "Spaced repetition: spacing beats cramming for long-term retention", "Brown, Roediger / Make It Stick", "The forgetting curve is a feature you can exploit"),
+  il("learning", "Interleaving: mixing problem types builds real transfer", "Brown, Roediger / Make It Stick", "Blocked practice feels better and works worse — you're measuring fluency, not learning"),
+  il("learning", "Desirable difficulty: struggling during learning makes it stick", "Brown, Roediger / Make It Stick", "Fluency is a false signal of mastery"),
+  il("learning", "Deliberate practice requires focused work on weaknesses with feedback", "Anders Ericsson / Peak", "The hours only count if they're aimed at your current edge"),
+  il("learning", "Mental representations: experts literally perceive the domain differently", "Anders Ericsson / Peak", "The goal of practice is to change how you see the problem"),
+  il("learning", "Direct practice: train in the exact form you'll use the skill", "Scott Young / Ultralearning", "Transfer is weak — practice the real thing, not an approximation"),
+  // Finance
+  il("finance", "Behavior matters more than math in investing", "Morgan Housel / The Psychology of Money", "A lower return you can hold beats a higher one you panic-sell"),
+  il("finance", "Reasonable beats rational: you need to sleep at night", "Morgan Housel / The Psychology of Money", "The theoretically optimal portfolio is useless if it causes you to bail at the bottom"),
+  il("finance", "Time horizon determines almost everything", "Morgan Housel / Bogle", "Someone investing for 30 years and someone investing for 3 are playing entirely different games"),
+  il("finance", "Compounding requires staying in the game", "John Bogle / The Little Book of Common Sense Investing", "The enemy of compounding is interruption — not bad picks"),
+  il("finance", "Tail events dominate — a few decisions drive most outcomes", "Morgan Housel / The Psychology of Money", "You can be wrong most of the time and still win by a lot"),
+  il("finance", "Define 'enough' in advance or the goalpost keeps moving", "Morgan Housel / The Psychology of Money", "Wealth without a finish line is a treadmill, not a destination"),
+  il("finance", "Volatility is the price of admission, not a fine", "Morgan Housel / The Psychology of Money", "Treating it as a fine causes you to sell at exactly the wrong moment"),
+  // Career
+  il("career", "Career capital: build rare, valuable skills before seeking autonomy", "Cal Newport / So Good They Can't Ignore You", "'Follow your passion' gets the causality exactly backwards"),
+  il("career", "Control requires career capital first — in that order", "Cal Newport / So Good They Can't Ignore You", "Autonomy without leverage leads to failure, not freedom"),
+  il("career", "Mission emerges at the frontier of your field — not before you get there", "Cal Newport / So Good They Can't Ignore You", "You can't see the calling from the beginning"),
+  il("career", "Working identity: try possible selves through actual projects", "Herminia Ibarra / Working Identity", "You don't think your way to a new career — you act your way there"),
+  il("career", "Range: broad sampling early produces better long-term outcomes in most fields", "David Epstein / Range", "Early specialization is overrated outside of a narrow set of domains"),
+  il("career", "Career experiments beat career plans", "Burnett & Evans / Designing Your Life", "Prototype a few futures before committing to one"),
+  il("career", "Psychological capital — hope, efficacy, resilience, optimism — is trainable", "APA / career psychology research", "These are not personality traits you either have or don't"),
+  // Relationships
+  il("relationships", "The 5:1 ratio: positive-to-negative interactions predicts relationship stability", "John Gottman / The Seven Principles for Making Marriage Work", "It's not the presence of conflict that matters — it's the ratio around it"),
+  il("relationships", "Repair is more important than not fighting", "John Gottman / The Seven Principles for Making Marriage Work", "Masters of relationships fight — they just recover faster"),
+  il("relationships", "Turning toward bids for connection", "John Gottman / The Seven Principles for Making Marriage Work", "The small moments — not the grand gestures — determine the relationship"),
+  il("relationships", "Relationship quality requires active investment, not passive compatibility", "Robert Waldinger / The Good Life", "The longest happiness study found relationships decay without deliberate attention"),
+  il("relationships", "Responsive listening changes the speaker's nervous system", "Sue Johnson / Hold Me Tight", "Being heard is not just pleasant — it is physiologically regulating"),
+  il("relationships", "Friendship requires intentional pursuit, not circumstance", "Marisa Franco / Platonic", "Adult friendship doesn't maintain itself the way childhood friendship did"),
+  il("relationships", "Constructive conflict: express needs without contempt", "Gottman / Difficult Conversations", "Contempt is the single best predictor of relationship dissolution — not anger"),
+  // Health
+  il("health", "Movement is the single best available cognitive enhancer", "Daniel Lieberman / Exercised", "Exercise benefits the brain as much as the body — and the science is unambiguous"),
+  il("health", "Sleep is the foundation everything else rests on", "W. Chris Winter / The Sleep Solution", "You cannot outwork or supplement your way past sleep deprivation"),
+  il("health", "Stress appraisal: seeing stress as a challenge vs. a threat changes your physiology", "Kelly McGonigal / The Upside of Stress", "The story you tell about your stress affects your biology — measurably"),
+  il("health", "Values-based action over mood-based action", "Russ Harris / The Happiness Trap", "Waiting to feel motivated before acting reverses the actual sequence"),
+  il("health", "Self-compassion outperforms self-criticism for sustained performance", "Kristin Neff / Self-Compassion", "Harsh self-judgment is not a motivator — it's a brake disguised as a spur"),
+  il("health", "Social connection is a direct predictor of physical health and longevity", "Robert Waldinger / The Good Life", "Loneliness is a health risk comparable to smoking — not a mood"),
+  // Reasoning
+  il("reasoning", "Scout mindset: the goal is to see clearly, not to be right", "Julia Galef / The Scout Mindset", "Motivated reasoning feels exactly like thinking — that's what makes it dangerous"),
+  il("reasoning", "Separating your identity from your conclusions", "Julia Galef / The Scout Mindset", "When beliefs become identity, updating them feels like self-destruction"),
+  il("reasoning", "All decisions are made under uncertainty — the question is how you manage it", "Annie Duke / Thinking in Bets", "The quality of a decision cannot be judged by its outcome"),
+  il("reasoning", "Base rates: the population matters more than the vivid story", "David Spiegelhalter / The Art of Statistics", "A compelling anecdote bypasses your statistical judgment every time"),
+  il("reasoning", "Correlation vs. causation — and why narrative feels more real than data", "David Spiegelhalter / The Art of Statistics", "The brain runs on stories; stories systematically mislead about cause"),
+  il("reasoning", "Cognitive bias is an error in the heuristic, not a character flaw", "Kahneman / Thaler / behavioral economics", "Understanding the mechanism lets you build systems around it"),
+  // Creativity
+  il("creativity", "Attention is the raw material of creative work", "Rick Rubin / The Creative Act", "You can't create what you haven't first noticed"),
+  il("creativity", "Quantity before quality: generate many before selecting", "creativity research / Originals", "Judgment too early kills the best ideas before they have a chance to form"),
+  il("creativity", "Incubation: alternating focused work and rest produces insight", "creativity research", "The shower insight is real — it's what happens after sustained hard effort"),
+  il("creativity", "Domain depth is the prerequisite for creative leaps", "creativity research / Annual Reviews", "Novelty in a field requires knowing the field deeply first"),
+  il("creativity", "Psychological safety is the organizational prerequisite for creative risk", "Ed Catmull / Creativity Inc.", "Ideas are fragile; the team has to be safe enough to surface them"),
+  il("creativity", "Intrinsic motivation protects creative quality", "creativity research / Csikszentmihalyi", "External rewards narrow the search space — usually in the least interesting direction"),
+];
+
+export const INSIGHT_LENS: InsightLens = new Proxy({} as InsightLens, {
+  get(_, key) {
+    const seed = _editionKeyHash > 0 ? _editionKeyHash : Math.floor(Date.now() / 14_400_000);
+    const lens = INSIGHT_LENSES[(seed * 7 + 13) % INSIGHT_LENSES.length];
+    return lens[key as keyof InsightLens];
+  },
+});
+
 // Returns #000 or #fff — whichever contrasts better against the given hex color
 export function contrastColor(hex: string): string {
   const c = hex.replace("#", "");
