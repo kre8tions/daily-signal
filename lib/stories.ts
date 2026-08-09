@@ -1068,13 +1068,23 @@ Domain: ${lens.domain}
 Principle: "${lens.concept}"
 Angle: "${lens.angle}"${adjacencyContext}
 
-STRUCTURE (four paragraphs, pure prose — no bullet points, no headers in the body):
-- Para 1 (3-4 sentences): ${adjacencyContext ? "Open with the news hook as a concrete moment, then bridge to the underlying pattern it reveals about human behavior." : "Open with a concrete scene, counterintuitive claim, or sharp observation that makes the principle visible in the real world. Show it happening — not 'many people struggle with...'"}
-- Para 2 (3-4 sentences): Introduce the principle and explain the mechanism — why the world works this way. No citations, no named authors. Write it as something you know to be true, not something you read somewhere.
-- Para 3 (3-4 sentences): Translate it to one specific domain of the reader's life — work, money, relationships, health, or learning. One domain only. Concrete and actionable, not general.
-- Para 4 (2-3 sentences): Close with something durable. A sentence the reader would underline. Slightly uncomfortable. True beyond today.
+STRUCTURE (five paragraphs, pure prose — no bullet points, no headers in the body):
+- Para 1 (4-5 sentences): ${adjacencyContext ? "Open with the news hook as a concrete moment, then bridge to the underlying pattern it reveals about human behavior." : "Open with a concrete scene, counterintuitive claim, or sharp observation that makes the principle visible in the real world. Name a specific person, moment, or situation — not 'many people struggle with...' Show it happening."}
+- Para 2 (4-5 sentences): Introduce the principle and explain the mechanism — why the world works this way. Write it as something you know to be true, not something you read somewhere. No citations, no named authors. This is the intellectual core of the piece.
+- Para 3 (4-5 sentences): Ground the principle in at least one named case — a specific person, company, product, year, or documented moment. Not hypothetical. Not anonymous. A real anchor that makes the principle tangible.
+- Para 4 (4-5 sentences): Translate it to one specific domain of the reader's life — work, money, relationships, health, or learning. One domain only. Concrete and actionable. What does this look like on a Tuesday afternoon?
+- Para 5 (2-3 sentences): Close with something durable. A sentence the reader would underline. Slightly uncomfortable. True beyond today.
 
-VOICE: Confident, direct, warm. Columnist who has thought carefully. No hedging, no self-help tone, no "it's worth noting", no "in today's world". Max 450 words total. First word must not be "The", "In", "It", "There", or "Today".
+CRAFT RULES:
+- Vary sentence length. Short punches. Then one that earns it. Then short again.
+- Fragments are allowed for emphasis, but each must be readable as a complete thought on its own. Never drop the subject of a clause.
+- No semicolons — ever. Rewrite as two sentences.
+- No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...".
+- No academic hedging: never "one might argue", "it is worth noting", "this suggests that".
+- Vivid and specific — name the thing, don't describe it abstractly.
+- You may use ONE surprising reference (a thinker, experiment, or moment) that creates a genuine connection. One sentence, then move on. If nothing fits cleanly, skip it.
+- First word must not be "The", "In", "It", "There", or "Today".
+- Target 580-700 words total.
 
 OUTPUT — return JSON only, no markdown:
 {
@@ -1086,7 +1096,7 @@ OUTPUT — return JSON only, no markdown:
     "Key takeaway 3 — one complete sentence, specific and actionable"
   ],
   "header": "Section header for the body (3-6 words, all-caps style — e.g. THE MECHANISM BENEATH IT)",
-  "pullQuote": "The single most quotable sentence from the body. Should be able to stand alone.",
+  "pullQuote": "Copy verbatim the single most quotable sentence from paragraph 2 or 3 of the body. Must appear word-for-word in the body text. Should stand alone without context.",
   "pullQuoteAfterPara": 2,
   "body": "Full four-paragraph piece as a single string with \\n\\n between paragraphs.",
   "cta": {
