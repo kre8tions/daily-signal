@@ -1030,8 +1030,11 @@ export async function getS1Insight(editionKey: string, newsCandidate?: { title: 
   } catch { /* generate fresh */ }
 
   try {
-    const { INSIGHT_LENS } = await import("./palette");
-    const lens = { ...INSIGHT_LENS };
+    const { INSIGHT_LENSES } = await import("./palette");
+    // Compute lens deterministically from editionKey directly — bypasses the _editionKeyHash
+    // singleton which can be corrupted when multiple editions build concurrently.
+    const lensHash = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+    const lens = INSIGHT_LENSES[(lensHash * 11 + 17) % INSIGHT_LENSES.length];
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
