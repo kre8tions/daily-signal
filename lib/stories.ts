@@ -1054,32 +1054,41 @@ export async function getS1Insight(editionKey: string, newsCandidate?: { title: 
       max_tokens: 1400,
       messages: [{
         role: "user",
-        content: `You are writing the lead story for The Daily Signal — a personal-development insight column that appears at the top of every edition. It is an original piece, not a news rewrite. Write for a smart reader who wants to understand themselves and the world better.
+        content: `You are writing the lead story for The Daily Signal — a personal-development insight column that appears at the top of every edition. It is original writing, not a news rewrite. Write for a smart reader who wants to understand themselves and the world better.
 
 TODAY'S LENS:
 Domain: ${lens.domain}
 Principle: "${lens.concept}"
-Source: ${lens.source}
 Angle: "${lens.angle}"${adjacencyContext}
 
-STRUCTURE:
-- Para 1 (3-4 sentences): ${adjacencyContext ? "Open with the news hook as a concrete moment, then bridge to the underlying pattern it reveals about human behavior." : "Open with a concrete scene, counterintuitive claim, or sharp observation that makes the principle visible in the real world. Not abstract — show it happening."}
-- Para 2 (3-4 sentences): Introduce the principle. Name the source. Explain the mechanism — why the world works this way. Make the reader feel they are learning something true.
-- Para 3 (3-4 sentences): Translate it to one specific domain of the reader's life (work, money, relationships, health, or learning). Concrete and specific — not general advice.
-- Para 4 (2-3 sentences): Close with something durable. A sentence they would underline. Slightly uncomfortable. True beyond today.
+STRUCTURE (four paragraphs, pure prose — no bullet points, no headers in the body):
+- Para 1 (3-4 sentences): ${adjacencyContext ? "Open with the news hook as a concrete moment, then bridge to the underlying pattern it reveals about human behavior." : "Open with a concrete scene, counterintuitive claim, or sharp observation that makes the principle visible in the real world. Show it happening — not 'many people struggle with...'"}
+- Para 2 (3-4 sentences): Introduce the principle and explain the mechanism — why the world works this way. No citations, no named authors. Write it as something you know to be true, not something you read somewhere.
+- Para 3 (3-4 sentences): Translate it to one specific domain of the reader's life — work, money, relationships, health, or learning. One domain only. Concrete and actionable, not general.
+- Para 4 (2-3 sentences): Close with something durable. A sentence the reader would underline. Slightly uncomfortable. True beyond today.
 
-VOICE: Columnist who has read widely and thought carefully. No hedging, no self-help tone, no "it's worth noting." No bullet points or headers in the body. Max 450 words across all four paragraphs. First word must not be "The", "In", "It", "There", or "Today".
+VOICE: Confident, direct, warm. Columnist who has thought carefully. No hedging, no self-help tone, no "it's worth noting", no "in today's world". Max 450 words total. First word must not be "The", "In", "It", "There", or "Today".
 
 OUTPUT — return JSON only, no markdown:
 {
   "ownedTitle": "Specific, earned headline. Under 12 words. Not clickbait.",
-  "summary": "One sentence (25-35 words) that captures the piece's core insight — used in the edition card preview.",
-  "bullets": ["Key point 1 (one sentence)", "Key point 2 (one sentence)", "Key point 3 (one sentence)"],
-  "header": "Short section header for the body (3-6 words, all caps style)",
-  "pullQuote": "The single most quotable sentence from the body.",
+  "summary": "One sentence (25-35 words) capturing the core insight — shown in the edition card preview.",
+  "bullets": [
+    "Key takeaway 1 — one complete sentence, specific and actionable",
+    "Key takeaway 2 — one complete sentence, specific and actionable",
+    "Key takeaway 3 — one complete sentence, specific and actionable"
+  ],
+  "header": "Section header for the body (3-6 words, all-caps style — e.g. THE MECHANISM BENEATH IT)",
+  "pullQuote": "The single most quotable sentence from the body. Should be able to stand alone.",
+  "pullQuoteAfterPara": 2,
   "body": "Full four-paragraph piece as a single string with \\n\\n between paragraphs.",
+  "cta": {
+    "header": "Try This",
+    "body": "One specific, zero-barrier action the reader can do this week. Starts with a verb. Two sentences max."
+  },
+  "hasKeyFacts": true,
   "writer": "The Signal",
-  "imageQuery": "3-5 words for Unsplash — atmospheric, abstract, captures the emotional tone of the piece"
+  "imageQuery": "3-5 words for Unsplash — atmospheric and abstract, not literal. Captures the emotional tone."
 }`,
       }],
     });
@@ -1098,11 +1107,14 @@ OUTPUT — return JSON only, no markdown:
       ownedTitle: parsed.ownedTitle as string,
       header: parsed.header as string,
       pullQuote: parsed.pullQuote as string,
+      pullQuoteAfterPara: 2,
       body: parsed.body as string,
       summary: parsed.summary as string,
       bullets: Array.isArray(parsed.bullets) ? parsed.bullets.slice(0, 3) : [],
       writer: "The Signal",
       imageQuery: imgQuery,
+      cta: parsed.cta && parsed.cta.header && parsed.cta.body ? { header: parsed.cta.header as string, body: parsed.cta.body as string } : undefined,
+      hasKeyFacts: true,
     };
     put(blobKey, JSON.stringify(commentary), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
 
