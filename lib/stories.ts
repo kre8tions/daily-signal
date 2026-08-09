@@ -1021,11 +1021,22 @@ export async function getS1Insight(editionKey: string, newsCandidate?: { title: 
 
   // Return cached story shell from edition archive if already warmed
   const storyCacheKey = `s1-insight-story/v1/${editionKey}.json`;
+  const imgBlobKey = `insight-images/v1/${editionKey}.png`;
   try {
     const existing = await head(storyCacheKey);
     if (existing) {
       const res = await fetch(existing.url, { cache: "no-store" });
-      if (res.ok) return await res.json() as Story;
+      if (res.ok) {
+        const cached = await res.json() as Story;
+        // Backfill imageUrl if DALL-E failed on this run but succeeded on a prior one
+        if (!cached.imageUrl) {
+          try {
+            const imgBlob = await head(imgBlobKey);
+            if (imgBlob) cached.imageUrl = imgBlob.url;
+          } catch { /* no prior image */ }
+        }
+        return cached;
+      }
     }
   } catch { /* generate fresh */ }
 
@@ -1069,11 +1080,11 @@ Principle: "${lens.concept}"
 Angle: "${lens.angle}"${adjacencyContext}
 
 STRUCTURE (five paragraphs, pure prose — no bullet points, no headers in the body):
-- Para 1 (4-5 sentences): ${adjacencyContext ? "Open with the news hook as a concrete moment, then bridge to the underlying pattern it reveals about human behavior." : "Open with a concrete scene, counterintuitive claim, or sharp observation that makes the principle visible in the real world. Name a specific person, moment, or situation — not 'many people struggle with...' Show it happening."}
-- Para 2 (4-5 sentences): Introduce the principle and explain the mechanism — why the world works this way. Write it as something you know to be true, not something you read somewhere. No citations, no named authors. This is the intellectual core of the piece.
-- Para 3 (4-5 sentences): Ground the principle in at least one named case — a specific person, company, product, year, or documented moment. Not hypothetical. Not anonymous. A real anchor that makes the principle tangible.
-- Para 4 (4-5 sentences): Translate it to one specific domain of the reader's life — work, money, relationships, health, or learning. One domain only. Concrete and actionable. What does this look like on a Tuesday afternoon?
-- Para 5 (2-3 sentences): Close with something durable. A sentence the reader would underline. Slightly uncomfortable. True beyond today.
+- Para 1 — HOOK: ${adjacencyContext ? "Open with the news hook as a concrete moment, then bridge to the underlying pattern it reveals about human behavior." : "Open with a concrete scene, counterintuitive claim, or sharp observation. Name a specific person, situation, or moment — not 'many people struggle with...' Show it happening."}
+- Para 2 — MECHANISM: State the principle and explain why the world works this way. Write it as something you know to be true. No citations, no named authors.
+- Para 3 — CASE: Ground the principle in one named case — a real person, company, product, year, or documented moment. Not hypothetical. The reader should be able to look it up.
+- Para 4 — APPLICATION: Translate to one specific domain of the reader's life — work, money, relationships, health, or learning. What does this look like on a Tuesday afternoon?
+- Para 5 — CLOSE: One to three sentences. Something the reader would underline. Slightly uncomfortable. True beyond today.
 
 CRAFT RULES:
 - Vary sentence length. Short punches. Then one that earns it. Then short again.
@@ -1083,8 +1094,9 @@ CRAFT RULES:
 - No academic hedging: never "one might argue", "it is worth noting", "this suggests that".
 - Vivid and specific — name the thing, don't describe it abstractly.
 - You may use ONE surprising reference (a thinker, experiment, or moment) that creates a genuine connection. One sentence, then move on. If nothing fits cleanly, skip it.
+- No sentence earns its place unless it adds something the reader doesn't already know from the previous sentence.
 - First word must not be "The", "In", "It", "There", or "Today".
-- Target 580-700 words total.
+- Target 500-600 words total. Every word should pull weight.
 
 OUTPUT — return JSON only, no markdown:
 {
