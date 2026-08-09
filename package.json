@@ -13,6 +13,7 @@
     "@vercel/blob": "^2.4.1",
     "@vercel/functions": "^3.7.4",
     "next": "^15.5.19",
+    "openai": "^7.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "rss-parser": "^3.13.0"

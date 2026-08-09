@@ -75,6 +75,54 @@ function SpaceInvaderSVG({ color }: { color: string }) {
   );
 }
 
+const INSIGHT_LABELS = ["Insight", "Kickoff", "Edge", "Lens", "The Take", "Spark", "Clarity"];
+
+function InsightGhostSVG({ color }: { color: string }) {
+  // Pac-Man ghost with blinking/shifting eyes animation
+  return (
+    <div style={{ width: 36, height: 36, position: "relative" }}>
+      <style>{`
+        @keyframes ghost-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+        @keyframes ghost-eye-blink{0%,90%,100%{transform:scaleY(1)}95%{transform:scaleY(0.1)}}
+        @keyframes ghost-pupil-shift{0%,30%{transform:translateX(0)}35%,65%{transform:translateX(2px)}70%,100%{transform:translateX(0)}}
+      `}</style>
+      <svg width="36" height="36" viewBox="0 0 36 40" xmlns="http://www.w3.org/2000/svg" style={{ animation: "ghost-float 2s ease-in-out infinite" }}>
+        {/* Body */}
+        <path d="M4,18 C4,9 10,3 18,3 C26,3 32,9 32,18 L32,37 L27,32 L22,37 L18,32 L14,37 L9,32 L4,37 Z" fill={color} />
+        {/* Left eye white */}
+        <g style={{ animation: "ghost-eye-blink 3s ease-in-out infinite", transformOrigin: "13px 18px" }}>
+          <ellipse cx="13" cy="18" rx="4.5" ry="5" fill="white" />
+        </g>
+        {/* Right eye white */}
+        <g style={{ animation: "ghost-eye-blink 3s ease-in-out infinite 0.15s", transformOrigin: "23px 18px" }}>
+          <ellipse cx="23" cy="18" rx="4.5" ry="5" fill="white" />
+        </g>
+        {/* Left pupil */}
+        <g style={{ animation: "ghost-pupil-shift 2.5s ease-in-out infinite" }}>
+          <ellipse cx="14" cy="19" rx="2.5" ry="3" fill="#1a0a2e" />
+        </g>
+        {/* Right pupil */}
+        <g style={{ animation: "ghost-pupil-shift 2.5s ease-in-out infinite 0.1s" }}>
+          <ellipse cx="24" cy="19" rx="2.5" ry="3" fill="#1a0a2e" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function InsightHeaderRow({ editionKey, color, pageBg, fontBody }: { editionKey: string; color: string; pageBg: string; fontBody: string }) {
+  const seed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 3), 0);
+  const label = INSIGHT_LABELS[seed % INSIGHT_LABELS.length];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+      <div style={{ width: 44, height: 44, borderRadius: "50%", background: pageBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <InsightGhostSVG color={color} />
+      </div>
+      <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" as const, color, fontFamily: fontBody }}>{label}</span>
+    </div>
+  );
+}
+
 const VEHICLES: Array<{
   icon: (c: string) => React.ReactNode;
   marker: (c: string) => React.ReactNode;
@@ -1158,7 +1206,9 @@ export async function EditionView({
         {s1 && (
           <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ gridColumn: hasS1Compact ? (s1CompactFirst ? "5 / 9" : "1 / 5") : "1 / 6", gridRow: "1", textDecoration: "none", color: "inherit" }}>
             <div style={{ ...card, height: "100%", paddingTop: 28, paddingBottom: 32, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
-              <Pill section={s1.section} />
+              {s1.section === "Insight"
+                ? <InsightHeaderRow editionKey={editionKey} color={P.accent} pageBg={P.pageBg} fontBody={P.fontBody} />
+                : <Pill section={s1.section} />}
               <h1 className="ds-card-h" style={hStyle}>{s1.ownedTitle || s1.title}</h1>
               {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{(s1.summary.match(/^[^.!?]+[.!?]/) ?? [s1.summary])[0].trim()}</p>}
               <MorePill story={s1} editionKey={editionKey} />

@@ -1098,9 +1098,37 @@ OUTPUT — return JSON only, no markdown:
     const parsed = JSON.parse(cleaned);
     if (!parsed.ownedTitle || !parsed.body) return null;
 
-    // Fetch image
+    // Generate pop art image via DALL-E 3, persist to Vercel Blob
     const imgQuery = (parsed.imageQuery as string | undefined)?.trim();
-    const imageResult = imgQuery ? await fetchUnsplash(imgQuery, "Insight", 1, imgQuery, blocked).catch(() => undefined) : undefined;
+    let imageUrl: string | undefined;
+    let imageColor: string | undefined;
+    try {
+      if (imgQuery && process.env.OPENAI_API_KEY) {
+        const { default: OpenAI } = await import("openai");
+        const oai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const dalleRes = await oai.images.generate({
+          model: "dall-e-3",
+          prompt: `Pop art illustration in Andy Warhol style: ${imgQuery}. Bold halftone dot pattern, flat graphic design, vibrant saturated primary colors (red, yellow, blue, magenta), thick black outlines, no text, no words, no letters.`,
+          size: "1024x1024",
+          quality: "standard",
+          n: 1,
+        });
+        const tempUrl = dalleRes.data?.[0]?.url;
+        if (tempUrl) {
+          // DALL-E URLs expire — fetch and re-upload to Vercel Blob
+          const imgRes = await fetch(tempUrl);
+          if (imgRes.ok) {
+            const imgBlob = await imgRes.blob();
+            const imgKey = `insight-images/v1/${editionKey}.jpg`;
+            const stored = await put(imgKey, imgBlob, { access: "public", contentType: "image/jpeg", addRandomSuffix: false, allowOverwrite: true });
+            imageUrl = stored.url;
+            imageColor = "#E63946"; // warm red — consistent with pop art palette
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[s1-insight] DALL-E generation failed, skipping image", e);
+    }
 
     // Store as ArticleCommentary blob so getFullArticle returns it on the article page
     const commentary: ArticleCommentary = {
@@ -1130,8 +1158,8 @@ OUTPUT — return JSON only, no markdown:
       bullets: commentary.bullets,
       pullquote: parsed.pullQuote as string,
       cardStyle: "full",
-      imageUrl: imageResult?.url,
-      imageColor: imageResult?.color,
+      imageUrl,
+      imageColor,
       imageQuery: imgQuery,
       generationStatus: "ok",
     };
