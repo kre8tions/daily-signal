@@ -1115,22 +1115,19 @@ OUTPUT — return JSON only, no markdown:
           size: "1024x1024",
           quality: "standard",
           n: 1,
+          response_format: "b64_json",
         });
-        const tempUrl = dalleRes.data?.[0]?.url;
-        if (tempUrl) {
-          // DALL-E URLs expire — fetch and re-upload to Vercel Blob
-          const imgRes = await fetch(tempUrl);
-          if (imgRes.ok) {
-            const imgBlob = await imgRes.blob();
-            const imgKey = `insight-images/v1/${editionKey}.jpg`;
-            const stored = await put(imgKey, imgBlob, { access: "public", contentType: "image/jpeg", addRandomSuffix: false, allowOverwrite: true });
-            imageUrl = stored.url;
-            imageColor = "#E63946"; // warm red — consistent with pop art palette
-          }
+        const b64 = dalleRes.data?.[0]?.b64_json;
+        if (b64) {
+          const imgBuffer = Buffer.from(b64, "base64");
+          const imgKey = `insight-images/v1/${editionKey}.png`;
+          const stored = await put(imgKey, imgBuffer, { access: "public", contentType: "image/png", addRandomSuffix: false, allowOverwrite: true });
+          imageUrl = stored.url;
+          imageColor = "#E63946";
         }
       }
     } catch (e) {
-      console.warn("[s1-insight] DALL-E generation failed, skipping image", e);
+      console.error("[s1-insight] DALL-E generation failed:", e);
     }
 
     // Store as ArticleCommentary blob so getFullArticle returns it on the article page
