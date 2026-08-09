@@ -744,12 +744,13 @@ function WkLookingForwardGridCell({ weekly, editionKey }: { weekly: WeeklySignal
   if (!weekly.lookingForward) return null;
   const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
   const qFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 66) * QUOTE_FONTS.length)];
+  const firstSentence = weekly.lookingForward.match(/[^.!?]+[.!?]+/)?.[0]?.trim() ?? weekly.lookingForward;
   return (
     <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
       <div style={{ background: P.accent + "40", borderRadius: 20, boxShadow: P.shadow, paddingTop: 22, paddingBottom: 26, paddingLeft: 26, paddingRight: 26, display: "flex", flexDirection: "column", flex: 1, justifyContent: "flex-start" }}>
         <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 12, fontFamily: P.fontBody }}>Looking Forward</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 2 }}>"</div>
-        <div style={{ fontSize: 26, fontWeight: qFont.weight, lineHeight: 1.3, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.2, textAlign: "left" as const }}>{weekly.lookingForward}</div>
+        <div style={{ fontSize: 22, fontWeight: qFont.weight, lineHeight: 1.35, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.2, textAlign: "left" as const }}>{firstSentence}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 2, textAlign: "left" as const }}>"</div>
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">

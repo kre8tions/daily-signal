@@ -1134,17 +1134,24 @@ OUTPUT — return JSON only, no markdown:
     let imageColor: string | undefined;
     try {
       if (imgQuery && process.env.OPENAI_API_KEY) {
-        const { default: OpenAI } = await import("openai");
-        const oai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        const dalleRes = await oai.images.generate({
-          model: "dall-e-3",
-          prompt: `Pop art illustration in Andy Warhol style: ${imgQuery}. Bold halftone dot pattern, flat graphic design, vibrant saturated primary colors (red, yellow, blue, magenta), thick black outlines, no text, no words, no letters.`,
-          size: "1024x1024",
-          quality: "standard",
-          n: 1,
-          response_format: "b64_json",
+        const apiRes = await fetch("https://api.openai.com/v1/images/generations", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "dall-e-3",
+            prompt: `Pop art illustration in Andy Warhol style: ${imgQuery}. Bold halftone dot pattern, flat graphic design, vibrant saturated primary colors (red, yellow, blue, magenta), thick black outlines, no text, no words, no letters.`,
+            size: "1024x1024",
+            quality: "standard",
+            n: 1,
+            response_format: "b64_json",
+          }),
         });
-        const b64 = dalleRes.data?.[0]?.b64_json;
+        if (!apiRes.ok) throw new Error(`OpenAI ${apiRes.status}: ${await apiRes.text()}`);
+        const apiData = await apiRes.json() as { data?: Array<{ b64_json?: string }> };
+        const b64 = apiData.data?.[0]?.b64_json;
         if (b64) {
           const imgBuffer = Buffer.from(b64, "base64");
           const imgKey = `insight-images/v1/${editionKey}.png`;
