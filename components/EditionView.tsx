@@ -1,4 +1,4 @@
-import { urlToSlug, actionSlug, getSynthWriterIndex, type Story, type Synthesis, type FeatureCreature, type WeeklySignal, type S1Insight } from "@/lib/stories";
+import { urlToSlug, actionSlug, getSynthWriterIndex, type Story, type Synthesis, type FeatureCreature, type WeeklySignal } from "@/lib/stories";
 import { P, QUOTE_FONT, QUOTE_FONTS, SECTION_COLORS, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL, TAGLINE, contrastColor, setEditionPaletteKey } from "@/lib/palette";
 import { EditionCountdown } from "@/app/EditionCountdown";
 import { EmailCapture } from "@/app/EmailCapture";
@@ -975,7 +975,6 @@ export async function EditionView({
   synthesis,
   featureCreature,
   weeklySignal,
-  s1Insight,
   editionKey,
   editionLabel,
   dateStr,
@@ -987,7 +986,6 @@ export async function EditionView({
   synthesis: Synthesis;
   featureCreature?: FeatureCreature;
   weeklySignal?: WeeklySignal;
-  s1Insight?: S1Insight;
   editionKey: string;
   editionLabel: string;
   dateStr: string;
@@ -1157,27 +1155,7 @@ export async function EditionView({
       {/* Bento row 1: S1 hero */}
       <div className="ds-bento" style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gridTemplateRows: "minmax(320px, auto)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto" }}>
 
-        {/* S1 text tile — insight if available, otherwise RSS story */}
-        {s1Insight ? (
-          <a href={`/insight/${editionKey}`} style={{ gridColumn: hasS1Compact ? (s1CompactFirst ? "5 / 9" : "1 / 5") : "1 / 6", gridRow: "1", textDecoration: "none", color: "inherit" }}>
-            <div style={{ ...card, height: "100%", paddingTop: 28, paddingBottom: 32, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 14 }}>
-              {/* Insight pill */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}44`, borderRadius: 20, paddingTop: 4, paddingBottom: 4, paddingLeft: 10, paddingRight: 10, fontFamily: P.fontBody }}>Insight</span>
-                <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase" as const, color: P.inkLight, fontFamily: P.fontBody }}>{s1Insight.domain}</span>
-              </div>
-              <h1 className="ds-card-h" style={hStyle}>{s1Insight.title}</h1>
-              <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>
-                {(s1Insight.body.match(/^[^.!?]+[.!?]/) ?? [s1Insight.body])[0].trim()}
-              </p>
-              {/* Attribution + micro-action */}
-              <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody, fontStyle: "italic" }}>{s1Insight.source}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: P.accent, fontFamily: P.fontBody }}>Try this → {s1Insight.microAction}</div>
-              </div>
-            </div>
-          </a>
-        ) : s1 ? (
+        {s1 && (
           <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ gridColumn: hasS1Compact ? (s1CompactFirst ? "5 / 9" : "1 / 5") : "1 / 6", gridRow: "1", textDecoration: "none", color: "inherit" }}>
             <div style={{ ...card, height: "100%", paddingTop: 28, paddingBottom: 32, paddingLeft: 28, paddingRight: 28, display: "flex", flexDirection: "column", gap: 16 }}>
               <Pill section={s1.section} />
@@ -1186,22 +1164,14 @@ export async function EditionView({
               <MorePill story={s1} editionKey={editionKey} />
             </div>
           </a>
-        ) : null}
+        )}
 
-        {/* S1 image tile */}
-        {s1Insight ? (
-          <a href={`/insight/${editionKey}`} style={{ ...imgCard, gridColumn: hasS1Compact ? (s1CompactFirst ? "9 / 13" : "5 / 9") : "6 / 13", gridRow: "1", textDecoration: "none" }}>
-            {s1Insight.imageUrl
-              ? <img src={s1Insight.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
-              : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.gradFrom}, ${P.gradTo})` }} />}
-            <S1FlightPaths seed={editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 7), 0)} color={P.accent} imageColor={s1Insight.imageColor} />
-          </a>
-        ) : s1 ? (
+        {s1 && (
           <a href={`/article/${urlToSlug(s1.link)}?e=${editionKey}`} style={{ ...imgCard, gridColumn: hasS1Compact ? (s1CompactFirst ? "9 / 13" : "5 / 9") : "6 / 13", gridRow: "1", textDecoration: "none" }}>
             {s1.imageUrl ? <img src={s1.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} /> : <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${P.gradFrom}, ${P.gradTo})` }} />}
             <S1FlightPaths seed={editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 7), 0)} color={P.accent} imageColor={s1.imageColor} />
           </a>
-        ) : null}
+        )}
 
         {hasS1Compact && preS1Card && (
           <div className={s1CompactFirst ? "ds-compact-first" : undefined} style={{ gridColumn: s1CompactFirst ? "1 / 5" : "9 / 13", gridRow: "1", display: "flex" }}>

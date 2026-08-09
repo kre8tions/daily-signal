@@ -50,6 +50,7 @@ export const PALETTES: Palette[] = [
 export const SECTION_COLORS: Record<string, string> = {
   Technology: "#5B8DEF", Science: "#27AE8F", Culture: "#9B6DDE",
   Film: "#E07B3C", Entertainment: "#D4517A", Arts: "#C87AC0", Faith: "#F5A623",
+  Insight: "#A855F7",
 };
 
 // Per-request override: set from edition key so each edition has a stable palette

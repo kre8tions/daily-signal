@@ -43,22 +43,10 @@ export interface WeeklySignal {
   imageUrl?: string;
 }
 
-export interface S1Insight {
-  title: string;
-  body: string;           // 350-450 words, 3-4 paragraphs
-  domain: string;
-  source: string;         // displayed as attribution
-  microAction: string;    // one-sentence challenge
-  newsHook?: string;      // title of the RSS story used as the opening anchor, if any
-  imageUrl?: string;
-  imageColor?: string;
-}
-
 export interface PageData {
   stories: Story[]; synthesis: Synthesis; editionLabel: string;
   featureCreature?: FeatureCreature;
   weeklySignal?: WeeklySignal;
-  s1Insight?: S1Insight;
 }
 
 // ── Slug helpers ──────────────────────────────────────────────────────────────
@@ -1019,71 +1007,79 @@ async function sendWeeklySignalBroadcast(weekly: WeeklySignal, editionKey: strin
 }
 
 // ── S1 Insight — original personal-development piece per edition ──────────────
-export async function getS1Insight(editionKey: string, newsCandidate?: { title: string; summary?: string; section?: string }, blocked?: Set<string>): Promise<S1Insight | null> {
-  const blobKey = `s1-insight/v1/${editionKey}.json`;
+// Generates a columnist-style insight piece from the INSIGHT_LENS pool, stores it
+// as an ArticleCommentary blob (same format as regular articles), and returns a
+// Story that slots into position 0 of the edition. The article detail page renders
+// it identically to any other story — no custom routes or card components needed.
+const INSIGHT_LINK_BASE = "https://dailysignal.cc/insight/";
+const INSIGHT_PROMPT_V = "v4"; // must match getFullArticle's PROMPT_V
+
+export async function getS1Insight(editionKey: string, newsCandidate?: { title: string; section?: string }, blocked?: Set<string>): Promise<Story | null> {
+  const syntheticLink = `${INSIGHT_LINK_BASE}${editionKey}`;
+  const articleSlug = createHash("md5").update(syntheticLink).digest("hex").slice(0, 16);
+  const blobKey = `articles/${INSIGHT_PROMPT_V}/${editionKey}/${articleSlug}.json`;
+
+  // Return cached story shell from edition archive if already warmed
+  const storyCacheKey = `s1-insight-story/v1/${editionKey}.json`;
   try {
-    const existing = await head(blobKey);
+    const existing = await head(storyCacheKey);
     if (existing) {
       const res = await fetch(existing.url, { cache: "no-store" });
-      if (res.ok) return await res.json() as S1Insight;
+      if (res.ok) return await res.json() as Story;
     }
   } catch { /* generate fresh */ }
 
   try {
     const { INSIGHT_LENS } = await import("./palette");
-    const lens = { ...INSIGHT_LENS }; // snapshot — proxy resolves once
+    const lens = { ...INSIGHT_LENS };
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-    // Score adjacency between the news candidate and the lens (1-10)
-    let newsHook: string | undefined;
+    // Score adjacency between the news candidate and today's lens (1-10, fast Haiku call)
     let adjacencyContext = "";
     if (newsCandidate?.title) {
       const scoreMsg = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 64,
-        messages: [{ role: "user", content: `Rate 1-10 how naturally this news story connects to this personal-development principle. Return only the integer.\n\nNews: "${newsCandidate.title}"\nPrinciple: "${lens.concept}" (${lens.source})\nAngle: "${lens.angle}"` }],
+        max_tokens: 16,
+        messages: [{ role: "user", content: `Rate 1-10 how naturally this news story connects to this personal-development principle. Return only the integer.\n\nNews: "${newsCandidate.title}"\nPrinciple: "${lens.concept}" (${lens.source})` }],
       });
-      const scoreText = scoreMsg.content[0]?.type === "text" ? scoreMsg.content[0].text.trim() : "0";
-      const score = parseInt(scoreText) || 0;
+      const score = parseInt(scoreMsg.content[0]?.type === "text" ? scoreMsg.content[0].text.trim() : "0") || 0;
       if (score >= 6) {
-        newsHook = newsCandidate.title;
-        adjacencyContext = `\n\nNEWS HOOK (score ${score}/10 — use as your opening): "${newsCandidate.title}"${newsCandidate.summary ? `\nContext: ${newsCandidate.summary}` : ""}`;
+        adjacencyContext = `\n\nNEWS HOOK TO OPEN WITH (adjacency score ${score}/10): "${newsCandidate.title}" — use it as your opening scene or moment, then pivot to the principle.`;
       }
     }
 
     const msg = await client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 900,
+      max_tokens: 1400,
       messages: [{
         role: "user",
-        content: `You are writing the S1 Insight — a standalone personal-development piece for The Daily Signal. It appears at the top of the edition as the lead story. It is NOT a rewrite of a news article. It is a short, sharp column written for a smart reader who wants to understand themselves and the world better.
+        content: `You are writing the lead story for The Daily Signal — a personal-development insight column that appears at the top of every edition. It is an original piece, not a news rewrite. Write for a smart reader who wants to understand themselves and the world better.
 
-LENS FOR TODAY:
+TODAY'S LENS:
 Domain: ${lens.domain}
 Principle: "${lens.concept}"
 Source: ${lens.source}
 Angle: "${lens.angle}"${adjacencyContext}
 
-STRUCTURE (follow this precisely):
-${newsHook ? `- Para 1 (3-4 sentences): Open with the news hook as a concrete moment. Bridge to the underlying pattern — why this keeps happening, what it reveals about human behavior or systems. Don't just summarize the news; use it to crack something open.` : `- Para 1 (3-4 sentences): Open with a concrete scene, counterintuitive claim, or sharp observation that makes the principle visible. Not abstract. Not "many people struggle with..." — show it in the real world.`}
-- Para 2 (3-4 sentences): Introduce the principle directly. Name the source. Explain the mechanism — why the world works this way. Make the reader feel they are learning something true, not being lectured.
-- Para 3 (3-4 sentences): Translate the principle to the reader's life. What does it look like when this plays out? What does knowing this change? Be concrete and specific — one domain (work, money, relationships, health, or learning), not vague.
-- Para 4 (2-3 sentences): Close with something durable — a sentence the reader would underline. It should feel true beyond today and slightly uncomfortable.
+STRUCTURE:
+- Para 1 (3-4 sentences): ${adjacencyContext ? "Open with the news hook as a concrete moment, then bridge to the underlying pattern it reveals about human behavior." : "Open with a concrete scene, counterintuitive claim, or sharp observation that makes the principle visible in the real world. Not abstract — show it happening."}
+- Para 2 (3-4 sentences): Introduce the principle. Name the source. Explain the mechanism — why the world works this way. Make the reader feel they are learning something true.
+- Para 3 (3-4 sentences): Translate it to one specific domain of the reader's life (work, money, relationships, health, or learning). Concrete and specific — not general advice.
+- Para 4 (2-3 sentences): Close with something durable. A sentence they would underline. Slightly uncomfortable. True beyond today.
 
-VOICE RULES:
-- Write like a columnist who has read widely and thought carefully, not a self-help coach
-- No hedging, no throat-clearing, no "it's worth noting"
-- No bullet points or headers — pure prose
-- Max 440 words total across all four paragraphs
-- First word of the piece must not be "The", "In", "It", "There", or "Today"
+VOICE: Columnist who has read widely and thought carefully. No hedging, no self-help tone, no "it's worth noting." No bullet points or headers in the body. Max 450 words across all four paragraphs. First word must not be "The", "In", "It", "There", or "Today".
 
 OUTPUT — return JSON only, no markdown:
 {
-  "title": "Headline that earns a click without being clickbait. Specific, not generic. Under 12 words.",
+  "ownedTitle": "Specific, earned headline. Under 12 words. Not clickbait.",
+  "summary": "One sentence (25-35 words) that captures the piece's core insight — used in the edition card preview.",
+  "bullets": ["Key point 1 (one sentence)", "Key point 2 (one sentence)", "Key point 3 (one sentence)"],
+  "header": "Short section header for the body (3-6 words, all caps style)",
+  "pullQuote": "The single most quotable sentence from the body.",
   "body": "Full four-paragraph piece as a single string with \\n\\n between paragraphs.",
-  "microAction": "One imperative sentence. A specific, zero-barrier thing to try this week. Starts with a verb. Max 18 words.",
-  "imageQuery": "3-5 words for an Unsplash search that captures the emotional/visual tone of this piece — abstract and atmospheric, not literal"
+  "writer": "The Signal",
+  "imageQuery": "3-5 words for Unsplash — atmospheric, abstract, captures the emotional tone of the piece"
 }`,
       }],
     });
@@ -1091,23 +1087,46 @@ OUTPUT — return JSON only, no markdown:
     const raw = msg.content[0]?.type === "text" ? msg.content[0].text : "";
     const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const parsed = JSON.parse(cleaned);
-    if (!parsed.title || !parsed.body) return null;
+    if (!parsed.ownedTitle || !parsed.body) return null;
 
+    // Fetch image
     const imgQuery = (parsed.imageQuery as string | undefined)?.trim();
-    const imageResult = imgQuery ? await fetchUnsplash(imgQuery, undefined, 1, imgQuery, blocked).catch(() => undefined) : undefined;
+    const imageResult = imgQuery ? await fetchUnsplash(imgQuery, "Insight", 1, imgQuery, blocked).catch(() => undefined) : undefined;
 
-    const result: S1Insight = {
-      title: parsed.title as string,
+    // Store as ArticleCommentary blob so getFullArticle returns it on the article page
+    const commentary: ArticleCommentary = {
+      ownedTitle: parsed.ownedTitle as string,
+      header: parsed.header as string,
+      pullQuote: parsed.pullQuote as string,
       body: parsed.body as string,
-      domain: lens.domain,
-      source: lens.source,
-      microAction: parsed.microAction as string,
-      newsHook,
+      summary: parsed.summary as string,
+      bullets: Array.isArray(parsed.bullets) ? parsed.bullets.slice(0, 3) : [],
+      writer: "The Signal",
+      imageQuery: imgQuery,
+    };
+    put(blobKey, JSON.stringify(commentary), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
+
+    // Build the Story shell — same shape as a regular story, slots into position 0
+    const story: Story = {
+      title: parsed.ownedTitle as string,
+      ownedTitle: parsed.ownedTitle as string,
+      source: "The Daily Signal",
+      section: "Insight",
+      link: syntheticLink,
+      pubDate: new Date().toISOString(),
+      summary: parsed.summary as string,
+      bullets: commentary.bullets,
+      pullquote: parsed.pullQuote as string,
+      cardStyle: "full",
       imageUrl: imageResult?.url,
       imageColor: imageResult?.color,
+      imageQuery: imgQuery,
+      generationStatus: "ok",
     };
-    put(blobKey, JSON.stringify(result), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
-    return result;
+
+    // Cache the story shell separately for fast re-reads
+    put(storyCacheKey, JSON.stringify(story), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
+    return story;
   } catch (e) {
     console.error("[s1-insight] generation failed", e);
     return null;
@@ -1133,8 +1152,8 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   const weeklySignalPromise = isSundayEvening(editionKey)
     ? getWeeklySignal(editionKey, blocked, () => { weeklySignalIsNew = true; }).catch(() => null)
     : Promise.resolve(null);
-  // S1 candidate passed as context so the insight can bridge from today's top uplift story
-  const s1Candidate = raw[0] ? { title: raw[0].title, summary: undefined, section: raw[0].section } : undefined;
+  // Pass top uplift candidate as context; insight may use it as an opening hook if adjacency is high
+  const s1Candidate = raw[0] ? { title: raw[0].title, section: raw[0].section } : undefined;
   const s1InsightPromise = getS1Insight(editionKey, s1Candidate, blocked).catch(() => null);
 
   // ── Comparative uplift preselection: score all uplift candidates, pick best S1/S2 before slot lock-in
@@ -1218,7 +1237,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
 
   const [synthesis, featureCreature, weeklySignal, s1Insight] = await Promise.all([synthesisPromise, fcPromise, weeklySignalPromise, s1InsightPromise]);
 
-  // Add FC, synthesis, weekly signal, and S1 insight images to blocked BEFORE fetching article images.
+  // Add all pre-fetched images to blocked BEFORE fetching article images
   for (const url of [featureCreature?.imageUrl, synthesis?.imageUrl, weeklySignal?.imageUrl, s1Insight?.imageUrl]) {
     if (url) blocked.add(unsplashPhotoId(url));
   }
@@ -1254,10 +1273,12 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     console.log(`[s1-post-filter] swapped "${filtered[0].title}" into S1 from position ${firstUplift}`);
   }
 
-  const stories: Story[] = filtered
+  // Prepend the insight story at S1; RSS stories shift to S2 onwards
+  const storiesWithInsight = s1Insight ? [s1Insight, ...filtered] : filtered;
+  const stories: Story[] = storiesWithInsight
     .map((s, i) => ({ ...s, cardStyle: CARD_STYLES[i] ?? "brief" as Story["cardStyle"] }));
 
-  const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined, weeklySignal: weeklySignal ?? undefined, s1Insight: s1Insight ?? undefined };
+  const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined, weeklySignal: weeklySignal ?? undefined };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
   await put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
     access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true,
@@ -1272,7 +1293,6 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     ...stories.map(s => s.imageUrl).filter(Boolean) as string[],
     ...(featureCreature?.imageUrl ? [featureCreature.imageUrl] : []),
     ...(synthesis.imageUrl ? [synthesis.imageUrl] : []),
-    ...(s1Insight?.imageUrl ? [s1Insight.imageUrl] : []),
   ];
   appendImageHistory(usedImageUrls).catch(() => {});
 

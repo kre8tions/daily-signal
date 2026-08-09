@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
-import { getArchiveList, generateHowTo, actionSlug } from "@/lib/stories";
+import { getArchiveList, generateHowTo, actionSlug, getEdition } from "@/lib/stories";
 import { head } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
@@ -13,15 +13,18 @@ interface Synthesis {
 }
 
 async function runBackfill() {
-  const editions = await getArchiveList();
+  const { key: currentKey } = getEdition();
+  const archived = await getArchiveList();
+  // Include current edition if not already in archive list
+  const allKeys = [currentKey, ...archived.map(e => e.key).filter(k => k !== currentKey)];
   let generated = 0;
   let skipped = 0;
 
-  for (const edition of editions) {
+  for (const editionKey of allKeys) {
     // Load synthesis blob for this edition
     let synthesis: Synthesis | null = null;
     try {
-      const blob = await head(`synthesis/v1/${edition.key}.json`);
+      const blob = await head(`synthesis/v1/${editionKey}.json`);
       if (blob) {
         const res = await fetch(blob.url);
         if (res.ok) synthesis = await res.json() as Synthesis;
