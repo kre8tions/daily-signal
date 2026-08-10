@@ -740,17 +740,43 @@ function WkActionGridCell({ action, actionIndex, weekly, stories, editionKey }: 
   );
 }
 
+// Abbreviations whose trailing period never ends a sentence.
+const ABBREV = new Set(["mr", "mrs", "ms", "dr", "prof", "sr", "jr", "st", "mt", "inc", "co", "ltd", "corp", "vs", "etc", "no", "ave", "dept", "est", "approx", "gen", "sen", "rep", "gov", "capt", "lt", "col", "sgt", "rev", "hon", "u.s", "u.k"]);
+
+// Extract the first sentence without breaking on initials ("Hanelle M."), abbreviations, or decimals.
+// A period only ends a sentence when followed by whitespace and a capital, or by end of string.
+// Falls back to the full text if the result comes out implausibly short, so any edge case we
+// haven't anticipated degrades to "too much text" rather than to a fragment like a person's name.
+function firstSentence(text: string, minChars = 30): string {
+  const t = text.trim();
+  for (let i = 0; i < t.length; i++) {
+    if (t[i] !== "." && t[i] !== "!" && t[i] !== "?") continue;
+    const rest = t.slice(i + 1);
+    if (rest.trim() && !/^["'”’)\]]*\s+["'“‘(]?[A-Z0-9]/.test(rest)) continue;
+    if (t[i] === ".") {
+      const before = t.slice(0, i);
+      // single capital letter = an initial, e.g. "Hanelle M."
+      if (/(^|[\s("'])[A-Za-z]$/.test(before)) continue;
+      if (ABBREV.has((before.match(/[A-Za-z.]+$/)?.[0] ?? "").toLowerCase())) continue;
+      if (/\d$/.test(before) && /^\d/.test(rest)) continue;
+    }
+    const candidate = t.slice(0, i + 1).trim();
+    if (candidate.length >= minChars) return candidate;
+  }
+  return t;
+}
+
 function WkLookingForwardGridCell({ weekly, editionKey }: { weekly: WeeklySignal; editionKey: string }) {
   if (!weekly.lookingForward) return null;
   const eSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
   const qFont = QUOTE_FONTS[Math.floor(seededRandom(eSeed + 66) * QUOTE_FONTS.length)];
-  const firstSentence = weekly.lookingForward.match(/[^.!?]+[.!?]+/)?.[0]?.trim() ?? weekly.lookingForward;
+  const openingLine = firstSentence(weekly.lookingForward);
   return (
     <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}>
       <div style={{ background: P.accent + "40", borderRadius: 20, boxShadow: P.shadow, paddingTop: 22, paddingBottom: 26, paddingLeft: 26, paddingRight: 26, display: "flex", flexDirection: "column", flex: 1, justifyContent: "flex-start" }}>
         <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.accent, marginBottom: 12, fontFamily: P.fontBody }}>Looking Forward</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginBottom: 2 }}>"</div>
-        <div style={{ fontSize: 22, fontWeight: qFont.weight, lineHeight: 1.35, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.2, textAlign: "left" as const }}>{firstSentence}</div>
+        <div style={{ fontSize: 22, fontWeight: qFont.weight, lineHeight: 1.35, color: P.ink, fontStyle: qFont.style as "italic" | "normal", fontFamily: qFont.family, letterSpacing: -0.2, textAlign: "left" as const }}>{openingLine}</div>
         <div style={{ fontSize: 10, color: P.accent, opacity: 0.5, fontFamily: P.fontHeading, marginTop: 2, textAlign: "left" as const }}>"</div>
       </div>
       <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible", zIndex: 10, isolation: "isolate" } as React.CSSProperties} xmlns="http://www.w3.org/2000/svg">
@@ -1211,7 +1237,7 @@ export async function EditionView({
                 ? <InsightHeaderRow editionKey={editionKey} color={P.accent} pageBg={P.pageBg} fontBody={P.fontBody} />
                 : <Pill section={s1.section} />}
               <h1 className="ds-card-h" style={hStyle}>{s1.ownedTitle || s1.title}</h1>
-              {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0 }}>{(s1.summary.match(/^[^.!?]+[.!?]/) ?? [s1.summary])[0].trim()}</p>}
+              {s1.summary && <p className="ds-card-body" style={{ ...bodyStyle, marginTop: 0, marginBottom: 0, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }}>{s1.summary.trim()}</p>}
               <MorePill story={s1} editionKey={editionKey} />
             </div>
           </a>
@@ -1342,7 +1368,9 @@ export async function EditionView({
         const rowStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 1200, marginTop: 0, marginBottom: 10, marginLeft: "auto", marginRight: "auto", alignItems: "stretch" };
 
         function renderStoryCard(s: Story, seedIdx: number) {
-          const summaryText = (s.summary!.match(/^[^.!?]+[.!?]/) ?? [s.summary!])[0].trim();
+          // summary is contractually one sentence — clamp visually rather than cutting on punctuation,
+          // which truncated "Hanelle M. Culpepper..." to "Hanelle M." on any initial or abbreviation.
+          const summaryText = s.summary!.trim();
           return (
             <a key={`sc-${seedIdx}`} href={`/article/${urlToSlug(s.link)}?e=${editionKey}`} style={{ textDecoration: "none", color: "inherit", display: "flex" }}>
               <div style={{ display: "flex", flexDirection: "column", borderRadius: 20, overflow: "hidden", background: P.cardBg, boxShadow: P.shadow, flex: 1 }}>
@@ -1357,7 +1385,7 @@ export async function EditionView({
                   {s.imageUrl && <PixelEdgeTop color={P.pageBg} seed={seedIdx + 2} height={28} />}
                   {!s.imageUrl && <Pill section={s.section} />}
                   <div className="ds-card-h" style={hStyle}>{s.ownedTitle || s.title}</div>
-                  {summaryText && <div className="ds-card-body" style={bodyStyle}>{summaryText}</div>}
+                  {summaryText && <div className="ds-card-body" style={{ ...bodyStyle, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }}>{summaryText}</div>}
                   <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", justifyContent: "flex-end" }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: P.accent, background: P.accent + "18", border: `1px solid ${P.accent}55`, borderRadius: 50, paddingTop: 6, paddingBottom: 6, paddingLeft: 16, paddingRight: 16, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
                   </div>
