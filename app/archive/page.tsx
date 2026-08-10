@@ -1,10 +1,18 @@
-import { getArchiveList } from "@/lib/stories";
+import { getArchiveList, getEditionForTimezone, editionRank } from "@/lib/stories";
 import { P } from "@/lib/palette";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 export default async function ArchivePage() {
-  const editions = await getArchiveList();
+  const headersList = await headers();
+  const timezone = headersList.get("x-vercel-ip-timezone") ?? "UTC";
+  const visitorRank = editionRank(getEditionForTimezone(timezone).key);
+
+  // Editions are built on the UTC+14 clock, so the archive holds keys that are still
+  // in the visitor's future. Drop them here the same way the edition page caps its
+  // Next link — this listing was missed when that fix landed.
+  const editions = (await getArchiveList()).filter(e => editionRank(e.key) <= visitorRank);
 
   return (
     <div style={{ minHeight: "100vh", background: P.articleBg, color: P.ink, fontFamily: P.fontBody, paddingBottom: 80 }}>

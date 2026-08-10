@@ -1622,6 +1622,16 @@ function sampleReferencePool(seed: number): string {
 
 const SLOT_ORDER_MAP: Record<string, number> = { early: 0, morning: 1, afternoon: 2, evening: 3, night: 4 };
 
+// Sortable rank for an edition key ("2026-08-10_evening" -> "2026081003").
+// Editions are BUILT on the UTC+14 clock, so keys ahead of the visitor's own edition
+// legitimately exist in storage. Every reader-facing surface must compare against
+// getEditionForTimezone(tz) and drop anything ranking higher, or the reader sees
+// content dated in their future. See CLAUDE.md "Build clock / Publish clock".
+export function editionRank(key: string): string {
+  const [d, s = ""] = key.split("_");
+  return d.replace(/-/g, "") + String(SLOT_ORDER_MAP[s] ?? 0).padStart(2, "0");
+}
+
 // Accessibility-first writers: original 9 + new 9 = 18
 // These writers share a core trait: reader feels smart, not impressed.
 // They exclusively write S1, S2, FC, Synthesis, and Weekly Signal slots.

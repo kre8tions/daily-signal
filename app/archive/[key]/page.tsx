@@ -1,11 +1,8 @@
-import { getArchivedPageData, getArchiveList, getEditionForTimezone, labelFromKey } from "@/lib/stories";
+import { getArchivedPageData, getArchiveList, getEditionForTimezone, labelFromKey, editionRank } from "@/lib/stories";
 import { EditionView } from "@/components/EditionView";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
-
-const SLOT_ORDER: Record<string, number> = { early: 0, morning: 1, afternoon: 2, evening: 3, night: 4 };
-const editionRank = (k: string) => { const [d, s = ""] = k.split("_"); return d.replace(/-/g, "") + String(SLOT_ORDER[s] ?? 0).padStart(2, "0"); };
 
 export default async function ArchiveEditionPage({ params }: { params: Promise<{ key: string }> }) {
   const { key } = await params;

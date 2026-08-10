@@ -1,4 +1,4 @@
-import { getPageData, getEditionForTimezone, getArchiveList } from "@/lib/stories";
+import { getPageData, getEditionForTimezone, getArchiveList, editionRank } from "@/lib/stories";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { EditionView } from "@/components/EditionView";
@@ -34,8 +34,6 @@ export default async function Home() {
     getPageData(edition),
     getArchiveList(),
   ]);
-  const SLOT_ORDER: Record<string, number> = { early: 0, morning: 1, afternoon: 2, evening: 3, night: 4 };
-  const editionRank = (key: string) => { const [d, s = ""] = key.split("_"); return d.replace(/-/g, "") + String(SLOT_ORDER[s] ?? 0).padStart(2, "0"); };
   const currentRank = editionRank(editionKey);
   // The requested slot may not be warmed yet — getPageData silently falls back to the
   // most recent available blob. Use the most recent archive entry at-or-before the
