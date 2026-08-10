@@ -1179,6 +1179,18 @@ OUTPUT — return JSON only, no markdown:
     };
     put(blobKey, JSON.stringify(commentary), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
 
+    // The article page renders this CTA as an action card with a "How?" pill, and /how
+    // is read-only — a missing blob 404s rather than generating. So the how-to has to be
+    // built here, at warm time, keyed by the same actionSlug the card will link to.
+    // Awaited (not fire-and-forget) so it completes inside the warm request; failure is
+    // swallowed because a missing how-to must never block the insight itself.
+    if (commentary.cta?.body) {
+      await generateHowTo(commentary.cta.body, actionSlug(commentary.cta.body), {
+        theme: parsed.ownedTitle as string,
+        hook: parsed.summary as string,
+      }).catch(() => null);
+    }
+
     // Build the Story shell — same shape as a regular story, slots into position 0
     const story: Story = {
       title: parsed.ownedTitle as string,

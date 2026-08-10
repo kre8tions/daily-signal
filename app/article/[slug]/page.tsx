@@ -1,9 +1,10 @@
-import { getPageData, getStoryBySlug, getFullArticle, getEdition, getWriterAssignments, urlToSlug, type Story, type ArticleCommentary } from "@/lib/stories";
+import { getPageData, getStoryBySlug, getFullArticle, getEdition, getWriterAssignments, urlToSlug, actionSlug, getHowTo, type Story, type ArticleCommentary } from "@/lib/stories";
 import { notFound } from "next/navigation";
 import { P, SECTION_COLORS } from "@/lib/palette";
 import type { Metadata } from "next";
 import { ShareButton } from "@/app/ShareButton";
 import { DecorativeDivider } from "@/components/DecorativeDivider";
+import { NextStepCard } from "@/components/NextStepCard";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,21 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
   const pubDate = new Date(editionDateStr + "T12:00:00Z").toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
   });
+
+  // S1 Insight gets the edition's action-card treatment for its CTA, with a How? pill
+  // into the how-to generated alongside the insight at warm time (see getS1Insight).
+  const isInsight = story.section === "Insight";
+  const ctaBody = fullArticle?.cta?.body;
+  // Only link the pill if the how-to blob is actually there. /how is read-only and 404s
+  // on a miss, and editions warmed before the how-to was generated alongside the insight
+  // have none — those render the card without a pill rather than a dead link.
+  const ctaHowSlug = isInsight && ctaBody ? actionSlug(ctaBody) : null;
+  const hasHowTo = ctaBody && ctaHowSlug ? Boolean(await getHowTo(ctaBody, ctaHowSlug)) : false;
+  const howHref = hasHowTo && ctaBody && ctaHowSlug
+    ? `/how/${ctaHowSlug}?a=${Buffer.from(ctaBody).toString("base64")}` +
+      `&as=${slug}&at=${encodeURIComponent(story.ownedTitle || story.title)}` +
+      (editionData.synthesis?.theme ? `&st=${encodeURIComponent(editionData.synthesis.theme)}` : "")
+    : null;
 
   // Deterministic style seed per article — pull quote style, etc.
   const slugSeed = slug.split("").reduce((a: number, c: string, i: number) => a + c.charCodeAt(0) * (i + 1), 0);
@@ -174,12 +190,25 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
           </div>
         )}
 
-        {/* CTA box — appears on ~20% of articles, seeded per story */}
+        {/* CTA. On the S1 Insight article this renders as the edition's action card —
+            same visual language, with a How? pill into the generated how-to. Every other
+            article keeps the plain dashed box: their CTAs have no how-to generated at
+            warm time, so a pill there would link straight to a 404. */}
         {fullArticle?.cta && (
-          <div style={{ background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 16, paddingTop: 22, paddingBottom: 22, paddingLeft: 28, paddingRight: 28, marginBottom: 28, display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{fullArticle.cta.header}</div>
-            <p style={{ fontSize: 16, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody, margin: 0 }}>{fullArticle.cta.body}</p>
-          </div>
+          isInsight ? (
+            <NextStepCard
+              action={fullArticle.cta.body}
+              href={howHref}
+              label={fullArticle.cta.header}
+              editionKey={editionKey}
+              idPrefix="ins"
+            />
+          ) : (
+            <div style={{ background: "transparent", border: `2px dashed ${P.accent}`, borderRadius: 16, paddingTop: 22, paddingBottom: 22, paddingLeft: 28, paddingRight: 28, marginBottom: 28, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2.5, textTransform: "uppercase" as const, color: P.accent, fontFamily: P.fontBody }}>{fullArticle.cta.header}</div>
+              <p style={{ fontSize: 16, lineHeight: 1.65, color: P.ink, fontFamily: P.fontBody, margin: 0 }}>{fullArticle.cta.body}</p>
+            </div>
+          )
         )}
 
         {/* Key Facts — shown on ~33% of articles that don't have a CTA */}

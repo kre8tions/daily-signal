@@ -3,13 +3,9 @@ import { P, QUOTE_FONT, QUOTE_FONTS, SECTION_COLORS, CURSIVE_FONT_FAMILY, CURSIV
 import { EditionCountdown } from "@/app/EditionCountdown";
 import { EmailCapture } from "@/app/EmailCapture";
 import { ShareButton } from "@/app/ShareButton";
+import { seededRandom, ACTION_CARD_EMOJIS, ACTION_CARD_SEEDS, MOVE_LABELS } from "@/lib/cards";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed + 1) * 10000;
-  return x - Math.floor(x);
-}
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
   const result = [...arr];
@@ -910,9 +906,8 @@ function BottomLineCard({ synthesis, editionKey }: { synthesis: Synthesis; editi
   );
 }
 
-const ACTION_CARD_EMOJIS = ["🎯", "⚡", "🔥"];
-const ACTION_CARD_SEEDS = [15, 16, 17];
-const MOVE_LABELS = ["Your Next Move", "One Move", "Take Action", "Begin Here", "First Step", "Act On It"];
+// ACTION_CARD_EMOJIS / ACTION_CARD_SEEDS / MOVE_LABELS now live in lib/cards.ts so the
+// article page's NextStepCard renders the identical card. Do not re-declare them here.
 const TAKEAWAY_LABELS = ["Today's Takeaway", "The Bottom Line", "Core Insight", "What It Means", "Key Takeaway", "The Upshot"];
 
 function StandaloneActionCard({ action, actionIndex, stories, synthesis, editionKey }: { action: string; actionIndex: number; stories: Story[]; synthesis: Synthesis; editionKey: string }) {
