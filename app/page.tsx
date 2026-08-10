@@ -9,7 +9,14 @@ async function getVisitorContext() {
   const headersList = await headers();
   const timezone = headersList.get("x-vercel-ip-timezone") ?? FALLBACK_TIMEZONE;
   const edition = getEditionForTimezone(timezone);
-  const dateStr = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: timezone }).format(new Date());
+  // Date follows the EDITION, not the wall clock. Between midnight and 6am the current
+  // edition is the previous day's Digest, so a wall-clock date would print tomorrow's
+  // day above yesterday's content — the label/content mismatch fixed in 745e3c3.
+  // Noon UTC + timeZone:"UTC" keeps the key's calendar date from drifting either way.
+  const [datePart] = edition.key.split("_");
+  const dateStr = new Date(`${datePart}T12:00:00Z`).toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric", timeZone: "UTC",
+  });
   return { edition, dateStr };
 }
 

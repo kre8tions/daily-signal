@@ -249,17 +249,32 @@ export function getEdition(): { label: string; key: string } {
 // (CLAUDE.md:29), and UTC approximates no American reader.
 export const FALLBACK_TIMEZONE = "America/Los_Angeles";
 
+function shiftDate(date: string, days: number): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 export function getEditionForTimezone(timezone: string): { label: string; key: string } {
   try {
     const now = new Date();
     // Use visitor's local date for the key — editions are built on UTC+14 clock but
     // visitors should see the edition for their local date, not the UTC+14 date.
     // "en-CA" locale formats as YYYY-MM-DD which matches our key format.
-    const keyDate = new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(now);
+    const localDate = new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(now);
+    // en-US with hour12:false reports midnight as "24", not "0" — normalise it, or the
+    // 00:00 hour skips the wrap correction below and lands on the coming evening.
     const h = parseInt(
       new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: timezone }).format(now),
       10
-    );
+    ) % 24;
+    // The evening slot spans 21:00–05:59, so hours 0–5 belong to the PREVIOUS day's
+    // evening edition. Without this a reader at 1am Monday is served Monday's Digest,
+    // which does not publish until 9pm that night — and the UTC+14 pre-warm has already
+    // built it, so the blob exists and gets served. Only the publish clock shifts here:
+    // getEdition() keeps the un-shifted behaviour because the build clock is meant to
+    // run ahead (CLAUDE.md:28), and the 15:44 UTC cron fires inside this window.
+    const keyDate = h < 6 ? shiftDate(localDate, -1) : localDate;
     return slotFromHour(h, keyDate);
   } catch {
     // An unusable timezone string must not fall through to getEdition() — that is the
@@ -267,7 +282,9 @@ export function getEditionForTimezone(timezone: string): { label: string; key: s
     // answer available at exactly the moment we know the input is untrustworthy.
     if (timezone !== FALLBACK_TIMEZONE) return getEditionForTimezone(FALLBACK_TIMEZONE);
     const now = new Date();
-    return slotFromHour(now.getUTCHours(), now.toISOString().slice(0, 10));
+    const h = now.getUTCHours();
+    const d = now.toISOString().slice(0, 10);
+    return slotFromHour(h, h < 6 ? shiftDate(d, -1) : d);
   }
 }
 
