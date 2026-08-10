@@ -1071,9 +1071,10 @@ Angle: "${lens.angle}"${adjacencyContext}
 STRUCTURE (five paragraphs, pure prose — no bullet points, no headers in the body):
 - Para 1 — HOOK: ${adjacencyContext ? "Open with the news hook as a concrete moment, then bridge to the underlying pattern it reveals about human behavior." : "Open with one specific named person in one specific moment — not a type of person, not a recurring pattern, not 'every June someone does X'. A name, a place, a moment. Show it happening. The reader should be able to picture exactly where they are."}
 - Para 2 — MECHANISM: State the principle and explain why the world works this way. Write it as something you know to be true. No citations, no named authors.
-- Para 3 — CASE: Ground the principle in one named case — a real person, company, product, year, or documented moment. Not hypothetical. The reader should be able to look it up.
-- Para 4 — APPLICATION: Translate to one specific domain of the reader's life — work, money, relationships, health, or learning. Make it concrete: what does the reader actually do differently? Ground it in a real moment, not a general principle.
-- Para 5 — CLOSE: One to three sentences. Something the reader would underline. Slightly uncomfortable. True beyond today.
+- Para 3 — CASE: Ground the principle in one named case — a real person, company, product, year, or documented moment. Not hypothetical. The reader should be able to look it up. Check what the example connotes, not just whether it is true: an example carrying suffering, cruelty, or condescension will undercut the warmth of the piece even when the science is sound.
+- Para 4 — APPLICATION: Serve the reader's own need. If the hook established something the reader lacks, this paragraph addresses the reader's lack — it does not train them to supply it to someone else. The reader should finish this paragraph better off, not with an assignment to improve others. One scenario only, fully inhabited. Not a list of situations to choose from — the reader can occupy one room, not three.
+- Para 5 — CLOSE: One to three sentences, and the strongest writing in the piece. The single most quotable sentence must live here, not in the hook. This is also where the promise made by the title gets paid — if the title named something the reader wants, this is the moment they get it. Slightly uncomfortable. True beyond today.
+- Somewhere in Para 4 or Para 5, return to the person named in the hook. One clause is enough. Never introduce a named person and abandon them.
 
 CRAFT RULES:
 - Vary sentence length. Short punches. Then one that earns it. Then short again.
@@ -1082,6 +1083,8 @@ CRAFT RULES:
 - No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...".
 - No academic hedging: never "one might argue", "it is worth noting", "this suggests that".
 - Vivid and specific — name the thing, don't describe it abstractly.
+- Every paragraph must carry at least one thing the reader can picture. The explanatory paragraph is where this discipline usually collapses — a stack of true assertions with nothing visible in it reads as a lecture no matter how well the sentences are shaped.
+- No defending a claim against an objection the reader hasn't made: never "This is not metaphor", "This isn't just self-help", "And no, this isn't woo". State it and move on.
 - You may use ONE surprising reference (a thinker, experiment, or moment) that creates a genuine connection. One sentence, then move on. If nothing fits cleanly, skip it.
 - No sentence earns its place unless it adds something the reader doesn't already know from the previous sentence.
 - First word must not be "The", "In", "It", "There", or "Today".
@@ -1089,21 +1092,21 @@ CRAFT RULES:
 
 OUTPUT — return JSON only, no markdown:
 {
-  "ownedTitle": "Specific, earned headline. Under 12 words. Not clickbait.",
+  "ownedTitle": "Name the experience the reader has already lived, not the conclusion the piece reaches. The reader should recognize themselves in it before they understand it. Do not use the explanatory vocabulary of Para 2 — the mechanism is the reveal, not the headline. Whatever the title promises, Para 5 must deliver. Avoid templates ('Why Your X Does Y', 'Your X Knew Before You Did'). Under 12 words. Not clickbait.",
   "summary": "One sentence (25-35 words) capturing the core insight — shown in the edition card preview.",
   "bullets": [
-    "Key takeaway 1 — one complete sentence, specific and actionable",
+    "Key takeaway 1 — one complete sentence, specific and actionable. Must be consistent with the body and the CTA: if the CTA names a duration, number, or action, no takeaway may contradict it.",
     "Key takeaway 2 — one complete sentence, specific and actionable",
     "Key takeaway 3 — one complete sentence, specific and actionable"
   ],
-  "header": "Section header for the body opening (3-6 words, all-caps — e.g. THE MECHANISM BENEATH IT)",
+  "header": "Section header sitting directly above paragraph 1 (3-6 words, all-caps). It heads the opening movement (Paras 1-3), so it must fit the scene the piece opens on — not the explanation that arrives later. Do not name the mechanism here.",
   "header2": "Second section header before paragraph 4 (3-6 words, all-caps). Must be specific to the domain addressed in Para 4 — not a generic phrase like 'WHAT THIS MEANS FOR YOU' or 'WHAT TUESDAY LOOKS LIKE'. E.g. 'WHERE THIS SHOWS UP AT WORK', 'THE CONVERSATION YOU'RE AVOIDING', 'HOW TO SPEND THE NEXT HOUR'.",
   "pullQuote": "Copy verbatim the single most quotable sentence from paragraph 2 or 3 of the body. Must appear word-for-word in the body text. Should stand alone without context.",
   "pullQuoteAfterPara": 2,
   "body": "Full five-paragraph piece as a single string with \\n\\n between paragraphs.",
   "cta": {
     "header": "Try This",
-    "body": "One specific, zero-barrier action the reader can do this week. Starts with a verb. Two sentences max."
+    "body": "One specific, zero-barrier action the reader can do this week. Starts with a verb. Two sentences max. It must extend the body, not restate it — if Para 4 already gave this instruction, the CTA has to add something Para 4 did not."
   },
   "hasKeyFacts": true,
   "writer": "${insightWriter.name}",
