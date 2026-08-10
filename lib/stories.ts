@@ -1087,6 +1087,8 @@ CRAFT RULES:
 - No defending a claim against an objection the reader hasn't made: never "This is not metaphor", "This isn't just self-help", "And no, this isn't woo". State it and move on.
 - You may use ONE surprising reference (a thinker, experiment, or moment) that creates a genuine connection. One sentence, then move on. If nothing fits cleanly, skip it.
 - No sentence earns its place unless it adds something the reader doesn't already know from the previous sentence.
+- Repetition for cadence is not information. A triad of negations ("Not willpower. Not belief. A room."), a stack of parallel clauses ("You have set intentions. You have cleared mornings. You have downloaded the app."), or a sentence restating the previous one in different words is filler even when it sounds good — especially when it sounds good. Use the three-beat construction at most once in the entire piece. Past that it stops being emphasis and becomes a tic the reader can hear. Cut it and reread: if nothing is lost, it was decoration.
+- Never announce that you are about to be specific or about to explain. No "Here is how it actually works", no "made specific", no "So here is". Just do the thing.
 - First word must not be "The", "In", "It", "There", or "Today".
 - Target 500-600 words total. Every word should pull weight.
 
