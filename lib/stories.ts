@@ -1069,10 +1069,10 @@ Principle: "${lens.concept}"
 Angle: "${lens.angle}"${adjacencyContext}
 
 STRUCTURE (five paragraphs, pure prose — no bullet points, no headers in the body):
-- Para 1 — HOOK: ${adjacencyContext ? "Open with the news hook as a concrete moment, then bridge to the underlying pattern it reveals about human behavior." : "Open with a concrete scene, counterintuitive claim, or sharp observation. Name a specific person, situation, or moment — not 'many people struggle with...' Show it happening."}
+- Para 1 — HOOK: ${adjacencyContext ? "Open with the news hook as a concrete moment, then bridge to the underlying pattern it reveals about human behavior." : "Open with one specific named person in one specific moment — not a type of person, not a recurring pattern, not 'every June someone does X'. A name, a place, a moment. Show it happening. The reader should be able to picture exactly where they are."}
 - Para 2 — MECHANISM: State the principle and explain why the world works this way. Write it as something you know to be true. No citations, no named authors.
 - Para 3 — CASE: Ground the principle in one named case — a real person, company, product, year, or documented moment. Not hypothetical. The reader should be able to look it up.
-- Para 4 — APPLICATION: Translate to one specific domain of the reader's life — work, money, relationships, health, or learning. What does this look like on a Tuesday afternoon?
+- Para 4 — APPLICATION: Translate to one specific domain of the reader's life — work, money, relationships, health, or learning. Make it concrete: what does the reader actually do differently? Ground it in a real moment, not a general principle.
 - Para 5 — CLOSE: One to three sentences. Something the reader would underline. Slightly uncomfortable. True beyond today.
 
 CRAFT RULES:
@@ -1097,7 +1097,7 @@ OUTPUT — return JSON only, no markdown:
     "Key takeaway 3 — one complete sentence, specific and actionable"
   ],
   "header": "Section header for the body opening (3-6 words, all-caps — e.g. THE MECHANISM BENEATH IT)",
-  "header2": "Second section header before paragraph 4 (3-6 words, all-caps — e.g. WHAT THIS MEANS FOR YOU)",
+  "header2": "Second section header before paragraph 4 (3-6 words, all-caps). Must be specific to the domain addressed in Para 4 — not a generic phrase like 'WHAT THIS MEANS FOR YOU' or 'WHAT TUESDAY LOOKS LIKE'. E.g. 'WHERE THIS SHOWS UP AT WORK', 'THE CONVERSATION YOU'RE AVOIDING', 'HOW TO SPEND THE NEXT HOUR'.",
   "pullQuote": "Copy verbatim the single most quotable sentence from paragraph 2 or 3 of the body. Must appear word-for-word in the body text. Should stand alone without context.",
   "pullQuoteAfterPara": 2,
   "body": "Full five-paragraph piece as a single string with \\n\\n between paragraphs.",
