@@ -26,7 +26,7 @@ Next.js 15 App Router (server components, no client except EditionCountdown/Emai
 5/day (~4h each): early, morning, afternoon, evening, night.
 Key format: `2026-06-29_morning`
 **Build clock: UTC+14** — cron fires 16 min before each UTC+14 boundary. `getEdition()` uses UTC+14. Do NOT change.
-**Publish clock: visitor's local timezone** via `x-vercel-ip-timezone` header. `getEditionForTimezone(tz)` uses visitor's LOCAL date (not UTC+14 date) for the edition key — ensures homepage date label and archive nav match what the reader sees as "today".
+**Publish clock: visitor's local timezone** via `x-vercel-ip-timezone` header, falling back to `FALLBACK_TIMEZONE` (never UTC — see Bug Fixes). `getEditionForTimezone(tz)` uses the visitor's LOCAL date, except between 00:00–05:59 where the current edition is still the *previous* day's Digest (the evening slot spans 21:00–05:59). The homepage date label is derived from the edition key, not the wall clock, so label and content always agree.
 UTC cron schedule: `44 2,6,14,18,22 * * *`
 
 Edition labels: early="First Light", morning="The Brief", afternoon="Midday", evening="The Digest", night="Night Dispatch"
@@ -214,6 +214,36 @@ Any meaningful change to the article generation pipeline — Pass 0 through Pass
 - **`getEditionForTimezone` used UTC+14 date (session 4)**: Visitor at 10pm local July 3 got key `2026-07-04_night`, creating two apparent "July 3 Night" editions. Fixed: now uses visitor's local date via `Intl.DateTimeFormat("en-CA", { timeZone })`.
 - **Archive Next Edition leaked future UTC+14 editions (session 4)**: Archive pages showed Next Edition into UTC+14-built-but-visitor-future editions. Fixed: archive page caps `nextEdition` at visitor's current edition rank using `x-vercel-ip-timezone`.
 - **S1FlightPaths: always 1 plane (session 4)**: Was probabilistic 1/2/3. Now hardcoded to 1.
+
+### Future-edition leaks (2026-08-10) — read this before touching edition keys
+Four fixes landed here; only the last was the bug that was actually visible. The first
+three were real but were each downstream of something else, so the symptom survived.
+- **Evening slot wraps midnight but its date did not** *(the actual cause)*: `slotFromHour`
+  returns `evening` for h≥21 **and** h<6, but paired both with the same `date`. Between
+  00:00 and 05:59 local that requested the *coming* evening's key — already built by the
+  UTC+14 pre-warm, so the blob existed and was served. At 1:45am Monday readers got
+  Monday's Digest, which publishes at 9pm that night. Fixed in `getEditionForTimezone`
+  only (h<6 → previous local date). **`getEdition()` must stay unshifted** — the build
+  clock is deliberately ahead and the 15:44 UTC cron fires at 05:44 UTC+14, inside the
+  wrap window. Also normalise the hour with `% 24`: `en-US` + `hour12:false` reports
+  midnight as `"24"`, which silently skips the correction at exactly 00:00.
+- **`getPageData` fell forward to UTC+14**: when a visitor's local blob was unwarmed it
+  served the UTC+14 edition relabeled with the visitor's label — the exact pattern
+  5387bbf reverted ("each edition key owns its label, no cross-slot serving"). The branch
+  survived that revert, and without 5e1a391's `sameDate` gate it could cross a date
+  boundary, making it broader than the version that was rejected. Now walks *backward*
+  via `getPreviousEditionKey` and returns that edition's own label.
+- **Archive listing had no visitor filter**: e800ade capped `nextEdition` on
+  `archive/[key]`, but `/archive` itself listed every key. Now filtered by `visitorRank`.
+  `editionRank` is exported from `lib/stories.ts` — do not re-inline it, it was copy-pasted
+  into three files before this.
+- **`?? "UTC"` default**: UTC is 7–8h ahead of the US west coast, so an absent
+  `x-vercel-ip-timezone` shifted readers forward. Now `FALLBACK_TIMEZONE`
+  (`America/Los_Angeles`). Any fallback must lean *behind* the audience, never ahead;
+  `getEditionForTimezone`'s catch must not fall through to `getEdition()`.
+- **Rule of thumb**: the build clock (UTC+14) is ahead of every reader by design. Future
+  keys legitimately exist in blob storage. Every reader-facing surface must therefore
+  cap at `getEditionForTimezone(tz)`, and no fallback anywhere may resolve forward.
 
 ## Open Items
 1. Share button on articles
