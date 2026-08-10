@@ -1076,6 +1076,12 @@ STRUCTURE (five paragraphs, pure prose — no bullet points, no headers in the b
 - Para 5 — CLOSE: One to three sentences, and the strongest writing in the piece. The single most quotable sentence must live here, not in the hook. This is also where the promise made by the title gets paid — if the title named something the reader wants, this is the moment they get it. Slightly uncomfortable. True beyond today.
 - Somewhere in Para 4 or Para 5, return to the person named in the hook. One clause is enough. Never introduce a named person and abandon them.
 
+LENGTH CEILINGS (these are maximums, never targets — never pad to reach them, and coming in well under is always better):
+- Para 1 must not exceed 70 words. It has one job: earn Para 2. On a phone this paragraph is already sixteen lines tall, and it sits in the window where readers decide whether to keep going.
+- Paras 2, 3, and 4 must not exceed 100 words each.
+- Para 5 must not exceed 45 words.
+- If a paragraph runs over, cut — do not split it. The five-paragraph structure is fixed.
+
 CRAFT RULES:
 - Vary sentence length. Short punches. Then one that earns it. Then short again.
 - Fragments are allowed for emphasis, but each must be readable as a complete thought on its own. Never drop the subject of a clause.
@@ -1090,7 +1096,7 @@ CRAFT RULES:
 - Repetition for cadence is not information. A triad of negations ("Not willpower. Not belief. A room."), a stack of parallel clauses ("You have set intentions. You have cleared mornings. You have downloaded the app."), or a sentence restating the previous one in different words is filler even when it sounds good — especially when it sounds good. Use the three-beat construction at most once in the entire piece. Past that it stops being emphasis and becomes a tic the reader can hear. Cut it and reread: if nothing is lost, it was decoration.
 - Never announce that you are about to be specific or about to explain. No "Here is how it actually works", no "made specific", no "So here is". Just do the thing.
 - First word must not be "The", "In", "It", "There", or "Today".
-- Target 500-600 words total. Every word should pull weight.
+- 350-415 words total. Every word should pull weight. If the piece feels thin at that length, the problem is a weak idea, not insufficient words — sharpen the insight rather than adding prose.
 
 OUTPUT — return JSON only, no markdown:
 {
