@@ -4,6 +4,55 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
+## s1-insight-craft-rules (2026-08-10) — CURRENT STABLE for S1 Insight
+
+*(Scope: `getS1Insight()` only. Does not touch the S2–S11 article pipeline or synthesis — the `synthesis-theme-dedup-model-brainstorm` entry below remains current for those.)*
+
+**What changed:**
+
+Eight rules added to the insight prompt after reading two live pieces end-to-end (Vera, 2026-08-09; Dan, 2026-08-10) against S1's stated intent:
+
+1. **APPLICATION must serve the reader's own need.** If the hook establishes something the reader lacks, Para 4 addresses *their* lack — it does not train them to supply it to someone else. One scenario, fully inhabited, not a list.
+2. **CLOSE holds the strongest sentence** and pays the promise the title made.
+3. **Return to the person named in the hook** in Para 4 or 5. One clause suffices.
+4. **Title names the lived experience, not the conclusion** — and must not use Para 2's explanatory vocabulary, since the mechanism is the reveal.
+5. **Every paragraph carries one visible thing.** Called out that the explanatory paragraph is where this collapses.
+6. **Key Facts bound to the CTA** — no contradicting a duration or number stated there.
+7. **No defensive clauses** ("This is not metaphor").
+8. **CASE connotation check** — an example carrying suffering or condescension undercuts the warmth even when the science is sound.
+
+Plus, from a second audit pass:
+- **Three-beat constructions capped at one per piece.** Triadic negation, anaphora stacks, and restatement pairs.
+- **No announce-sentences** — "Here is how it actually works", "made specific", "So here is".
+- **Length ceilings, not targets**: Para 1 ≤70 words, Paras 2–4 ≤100, Para 5 ≤45, total 350–415 (down from 500–600, which contradicted the ceilings).
+- **Weekday placeholders banned outright** in APPLICATION — a named day is a stand-in for specificity, not specificity itself.
+
+**Why:**
+
+- The APPLICATION rule is the one that mattered most. The Vera piece diagnosed the reader's own unmet need, established it as physiological, then handed them a technique for regulating *other* people. The reader arrived wounded and left with homework. The title promised "Someone Finally Heard You" and the body never paid it.
+- Peak-end: both audited pieces put their best sentence in the hook and declined for 450 words. Readers judge by peak and ending; if the peak lands at 15% the ending can never recover it. Hence rule 2.
+- The cadence rule exists because the existing "no sentence earns its place unless it adds something new" rule was *not* firing on filler. Those sentences do **rhythmic** work, and the model scores that as earning their place. One piece carried seven three-beat constructions in 525 words — individually good, collectively a metronome. Naming the specific constructions was necessary; the general principle wasn't enough.
+- Ceilings rather than targets is deliberate and reverses an earlier decision carefully: per-paragraph *sentence counts* were removed previously because a range invites padding. A ceiling can only shorten. The phrasing "these are maximums, never targets — never pad to reach them" is load-bearing.
+- The weekday ban came from a real leak, documented below.
+
+**Prompt-leak finding (worth generalising):**
+
+Two consecutive editions opened Para 4 with "So here is your Tuesday" and produced near-identical `header2` values. Root cause was **two** sources, and fixing one didn't help:
+1. The APPLICATION instruction itself said "What does this look like on a Tuesday afternoon?" — the model used that phrase for both the paragraph opener *and* the section header, from one source string.
+2. The **writer persona** for Dan (Daniel Pink) contained "translate lab findings into the reader's Tuesday afternoon". `${insightWriter.style}` is interpolated as the **first line of the prompt**, ahead of the lens, the structure, and every craft rule — so when Dan is drawn, that phrase is the most heavily weighted text in the whole request.
+
+Lesson: when debugging repeated phrasing, grep the persona strings before touching the instruction body. A phrase in a persona outranks the rules that follow it.
+
+**What to observe:**
+
+- Does the 350–415 ceiling read as tight or as thin? This cuts ~25% from current length. If pieces start feeling abrupt, the ceiling is wrong before the rules are.
+- Does the HOOK rule finally hold? It has now regressed twice to "Every summer, a handful of behavioral scientists…" — a recurring pattern wearing a scene's clothes. The instruction is explicit and is still being ignored, which suggests it needs a structural guard rather than stronger wording.
+- Does the title actually get paid by the CLOSE? "You Became Who You Ate Lunch With" was a strong title whose body never mentioned lunch.
+- Whether CASE examples stop over-reaching. Harlow's isolated monkeys for "being heard", AA for "you haven't written more" — both true, both carrying far more weight than the application can hold.
+- Whether `header2` stays domain-specific now that the Tuesday anchor is gone from both sources.
+
+---
+
 ## synthesis-theme-dedup-model-brainstorm (2026-07-23) — CURRENT STABLE
 
 **What changed (replaces the vocab-bank approach in `synthesis-theme-dedup-fifo-and-vocab-bank` below, same day):**
