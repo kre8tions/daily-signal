@@ -1,4 +1,4 @@
-import { getArchivedPageData, getArchiveList, getEditionForTimezone, labelFromKey, editionRank } from "@/lib/stories";
+import { getArchivedPageData, getArchiveList, getEditionForTimezone, labelFromKey, editionRank, FALLBACK_TIMEZONE } from "@/lib/stories";
 import { EditionView } from "@/components/EditionView";
 import { headers } from "next/headers";
 
@@ -8,7 +8,7 @@ export default async function ArchiveEditionPage({ params }: { params: Promise<{
   const { key } = await params;
 
   const headersList = await headers();
-  const timezone = headersList.get("x-vercel-ip-timezone") ?? "UTC";
+  const timezone = headersList.get("x-vercel-ip-timezone") ?? FALLBACK_TIMEZONE;
   const visitorEditionKey = getEditionForTimezone(timezone).key;
   const visitorRank = editionRank(visitorEditionKey);
 

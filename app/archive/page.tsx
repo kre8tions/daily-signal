@@ -1,4 +1,4 @@
-import { getArchiveList, getEditionForTimezone, editionRank } from "@/lib/stories";
+import { getArchiveList, getEditionForTimezone, editionRank, FALLBACK_TIMEZONE } from "@/lib/stories";
 import { P } from "@/lib/palette";
 import { headers } from "next/headers";
 
@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ArchivePage() {
   const headersList = await headers();
-  const timezone = headersList.get("x-vercel-ip-timezone") ?? "UTC";
+  const timezone = headersList.get("x-vercel-ip-timezone") ?? FALLBACK_TIMEZONE;
   const visitorRank = editionRank(getEditionForTimezone(timezone).key);
 
   // Editions are built on the UTC+14 clock, so the archive holds keys that are still

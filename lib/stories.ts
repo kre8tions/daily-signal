@@ -242,6 +242,13 @@ export function getEdition(): { label: string; key: string } {
   return slotFromHour(h, date);
 }
 
+// Used when x-vercel-ip-timezone is absent or unusable (VPN, hotspot carrier gateway,
+// local dev). Must lean BEHIND the audience, never ahead: UTC is 7-8h ahead of the US
+// west coast, so defaulting to it showed Pacific visitors the next slot — or the next
+// day — from mid-afternoon onward. Publish clock is the visitor's local time
+// (CLAUDE.md:29), and UTC approximates no American reader.
+export const FALLBACK_TIMEZONE = "America/Los_Angeles";
+
 export function getEditionForTimezone(timezone: string): { label: string; key: string } {
   try {
     const now = new Date();
@@ -255,7 +262,12 @@ export function getEditionForTimezone(timezone: string): { label: string; key: s
     );
     return slotFromHour(h, keyDate);
   } catch {
-    return getEdition();
+    // An unusable timezone string must not fall through to getEdition() — that is the
+    // UTC+14 build clock, up to 19h ahead of the reader, i.e. the most future-shifted
+    // answer available at exactly the moment we know the input is untrustworthy.
+    if (timezone !== FALLBACK_TIMEZONE) return getEditionForTimezone(FALLBACK_TIMEZONE);
+    const now = new Date();
+    return slotFromHour(now.getUTCHours(), now.toISOString().slice(0, 10));
   }
 }
 
@@ -1386,10 +1398,20 @@ export async function getPageData(edition?: { key: string; label: string }): Pro
     }
     return { ...archived, editionLabel };
   }
-  // Local-slot blob not built yet — fall back to current UTC+14 edition silently.
-  if (edition && editionKey !== utcEdition.key) {
-    const utcArchived = await getArchivedPageData(utcEdition.key);
-    if (utcArchived) return { ...utcArchived, editionLabel };
+  // Local-slot blob not built yet. Walk BACKWARD to the most recent edition that
+  // actually exists — never forward to the UTC+14 build clock, which is ahead of
+  // every visitor and served content dated in the reader's future.
+  //
+  // The returned edition carries its OWN label: 5387bbf ("each edition key owns its
+  // label, no cross-slot serving") reverted prefer-newer-slot precisely because it
+  // relabeled one edition's content as another's. The forward fallback this replaces
+  // was the same `{ ...other, editionLabel }` pattern, left behind by that revert.
+  let probe: string | null = editionKey;
+  for (let i = 0; i < 10 && probe; i++) {
+    probe = getPreviousEditionKey(probe);
+    if (!probe) break;
+    const earlier = await getArchivedPageData(probe);
+    if (earlier) return { ...earlier, editionLabel: labelFromKey(probe) };
   }
   return { stories: [], synthesis: { theme: "", hook: "", observation: "", takeaways: [], conclusion: "", actions: [] }, editionLabel };
 }

@@ -1,4 +1,4 @@
-import { getPageData, getEditionForTimezone, getArchiveList, editionRank } from "@/lib/stories";
+import { getPageData, getEditionForTimezone, getArchiveList, editionRank, FALLBACK_TIMEZONE } from "@/lib/stories";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { EditionView } from "@/components/EditionView";
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 async function getVisitorContext() {
   const headersList = await headers();
-  const timezone = headersList.get("x-vercel-ip-timezone") ?? "UTC";
+  const timezone = headersList.get("x-vercel-ip-timezone") ?? FALLBACK_TIMEZONE;
   const edition = getEditionForTimezone(timezone);
   const dateStr = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: timezone }).format(new Date());
   return { edition, dateStr };
