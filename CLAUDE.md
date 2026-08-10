@@ -23,13 +23,29 @@ Next.js 15 App Router (server components, no client except EditionCountdown/Emai
 - `CRON_SECRET` — protects all API endpoints
 
 ## Editions
-5/day (~4h each): early, morning, afternoon, evening, night.
+**4/day**, from `slotFromHour` boundaries [6, 11, 16, 21] local:
+| slot | window | length |
+|---|---|---|
+| `early` | 06:00–10:59 | 5h |
+| `morning` | 11:00–15:59 | 5h |
+| `afternoon` | 16:00–20:59 | 5h |
+| `evening` | 21:00–05:59 | 9h — **wraps midnight** |
+
+`night` is legacy: it is unreachable from `slotFromHour` and no new key uses it, but it
+survives in `SLOT_ORDER`, `SLOT_ORDER_MAP` and `KEY_SUFFIX_LABELS` so archived keys from
+the old 5-slot schedule still resolve. Do not remove it.
+
+The evening slot wrapping past midnight is the source of the 2026-08-10 future-edition
+bug — see Bug Fixes before touching slot logic.
+
 Key format: `2026-06-29_morning`
 **Build clock: UTC+14** — cron fires 16 min before each UTC+14 boundary. `getEdition()` uses UTC+14. Do NOT change.
 **Publish clock: visitor's local timezone** via `x-vercel-ip-timezone` header, falling back to `FALLBACK_TIMEZONE` (never UTC — see Bug Fixes). `getEditionForTimezone(tz)` uses the visitor's LOCAL date, except between 00:00–05:59 where the current edition is still the *previous* day's Digest (the evening slot spans 21:00–05:59). The homepage date label is derived from the edition key, not the wall clock, so label and content always agree.
-UTC cron schedule: `44 2,6,14,18,22 * * *`
+UTC cron schedule (`vercel.json` is authoritative): pre-warm at `44 6,15,20,1 * * *`,
+revalidate at `0 15 * * *`. Each pre-warm lands 16 min before a UTC+14 boundary —
+06:44→21:00, 15:44→06:00, 20:44→11:00, 01:44→16:00 UTC+14.
 
-Edition labels: early="First Light", morning="The Brief", afternoon="Midday", evening="The Digest", night="Night Dispatch"
+Edition labels: early="First Light", morning="The Brief", afternoon="Afternoon", evening="The Digest", night="Night Dispatch" (legacy)
 
 ## Generation Flow
 - **`buildPageData`** is the ONLY generation entrypoint
