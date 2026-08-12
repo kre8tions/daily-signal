@@ -777,25 +777,40 @@ async function loadImageHistory(): Promise<Set<string>> {
   } catch { return new Set(); }
 }
 
+// MUST be awaited by callers. This was fire-and-forget, and a floating promise in a
+// serverless function can be frozen before it completes — so an edition's images entered
+// history only sometimes, and the Feature Creature (whose query is the most deterministic
+// in the system) returned the identical photo on every miss. photo-1601506521937 ran across
+// five editions between 2026-08-07 and 2026-08-12 that way.
 async function appendImageHistory(urls: string[]): Promise<void> {
   if (!urls.length) return;
-  try {
-    let entries: { url: string; usedAt: string }[] = [];
+  const read = async (): Promise<{ url: string; usedAt: string }[]> => {
     const blob = await head(IMAGE_HISTORY_KEY);
-    if (blob) {
-      const res = await fetch(blob.url, { cache: "no-store" });
-      if (res.ok) entries = await res.json() as { url: string; usedAt: string }[];
-    }
+    if (!blob) return [];
+    const res = await fetch(blob.url, { cache: "no-store" });
+    return res.ok ? await res.json() as { url: string; usedAt: string }[] : [];
+  };
+  try {
     const cutoff = Date.now() - THIRTY_DAYS_MS;
-    const fresh = entries.filter(e => new Date(e.usedAt).getTime() > cutoff);
     const now = new Date().toISOString();
-    const freshIds = new Set(fresh.map(e => unsplashPhotoId(e.url)));
+    // Re-read immediately before the write and union, so a warm that overlaps another
+    // (a manual rewarm during a cron) cannot erase the other's entries. Read-modify-write
+    // with no merge silently dropped whole editions out of history.
+    const merged = new Map<string, { url: string; usedAt: string }>();
+    for (const pass of [await read(), await read()]) {
+      for (const e of pass) {
+        if (new Date(e.usedAt).getTime() > cutoff) merged.set(unsplashPhotoId(e.url), e);
+      }
+    }
     for (const url of urls) {
       const pid = unsplashPhotoId(url);
-      if (!freshIds.has(pid)) { fresh.push({ url: pid, usedAt: now }); freshIds.add(pid); }
+      if (!merged.has(pid)) merged.set(pid, { url: pid, usedAt: now });
     }
-    await put(IMAGE_HISTORY_KEY, JSON.stringify(fresh), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
-  } catch { /* non-fatal */ }
+    await put(IMAGE_HISTORY_KEY, JSON.stringify([...merged.values()]), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
+    console.log(`[image-history] recorded ${urls.length} images, ${merged.size} in 30-day window`);
+  } catch (e) {
+    console.error("[image-history] WRITE FAILED — images from this edition may repeat", e);
+  }
 }
 
 // ── Theme word history (fixed-size FIFO, not date-based — cheap to load, bounded prompt size) ──
@@ -1333,6 +1348,10 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   const { primary: raw, bench } = await fetchTopStories(editionKey);
   const writerSlots = getWriterAssignments(editionKey);
   const blocked = await loadImageHistory();
+  // Snapshot for the post-build audit below. `blocked` gets mutated during the build as hero
+  // images resolve, so the only way to check "did we reuse something history already knew
+  // about" is to keep the set as it was when loaded.
+  const historyAtStart = new Set(blocked);
 
   // Synthesis, FC, Weekly Signal, and S1 Insight run in background while articles are batched
   const synthesisPromise = getSynthesis(raw, editionKey);
@@ -1487,13 +1506,29 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     date: editionKey.split("_")[0], theme: synthesis.theme, imageUrl: stories[0]?.imageUrl,
   }).catch(() => {});
 
-  // Save all used image URLs to 30-day history to prevent cross-edition reuse
+  // Save all used image URLs to 30-day history to prevent cross-edition reuse.
+  // EVERY image the edition renders must be listed here. Anything omitted is fetched against
+  // `blocked` within its own edition and then free to recur forever: the FC's mid-article
+  // image, the articles' second images and the Weekly Signal image were all missing, and the
+  // weekly one was provably an oversight since it is added to `blocked` above.
   const usedImageUrls = [
     ...stories.map(s => s.imageUrl).filter(Boolean) as string[],
+    ...arts.map(a => a?.imageUrl2).filter(Boolean) as string[],
     ...(featureCreature?.imageUrl ? [featureCreature.imageUrl] : []),
+    ...(featureCreature?.imageUrl2 ? [featureCreature.imageUrl2] : []),
     ...(synthesis.imageUrl ? [synthesis.imageUrl] : []),
+    ...(weeklySignal?.imageUrl ? [weeklySignal.imageUrl] : []),
   ];
-  appendImageHistory(usedImageUrls).catch(() => {});
+  // Awaited — see appendImageHistory. Floating this call is what let images repeat.
+  await appendImageHistory(usedImageUrls);
+
+  // Audit: if anything we just published was already in history when the build started, the
+  // dedup failed and the reuse is on the page right now. Previously this was invisible — the
+  // only symptom was noticing the same photo weeks later. Log loudly instead.
+  const reused = usedImageUrls.filter(u => historyAtStart.has(unsplashPhotoId(u)));
+  if (reused.length) {
+    console.error(`[image-dedup] ${editionKey} PUBLISHED ${reused.length} IMAGE(S) ALREADY IN 30-DAY HISTORY: ${reused.map(unsplashPhotoId).join(", ")}`);
+  }
 
   // Send weekly signal email to ConvertKit subscribers on first generation
   if (weeklySignal && weeklySignalIsNew) {
@@ -2664,8 +2699,14 @@ Return JSON only, no markdown:
     const mediumLabel: Record<string, string> = { film: "film", tv: "TV series", anime: "anime", novel: "book cover", game: "video game", fantasy: "fantasy art" };
     const sourceQuery = `${FC_UNIVERSE.name} ${mediumLabel[FC_UNIVERSE.medium] ?? ""}`.trim();
     const moodQuery = (pass1.imageQuery as string | undefined)?.trim() || `${FC_UNIVERSE.name} ${FC_ANGLE.key}`;
-    const imageUrl = await fetchUnsplash(sourceQuery, "Culture", 1, undefined, blocked).then(r => r?.url)
-      ?? await fetchUnsplash(moodQuery, "Culture", 1, undefined, blocked).then(r => r?.url);
+    // Defence in depth. sourceQuery is the most deterministic query in the system — it is just
+    // the universe name plus its medium — so hardcoding page 1 meant that any miss in the image
+    // history returned the byte-identical photo. Seeding the page from the edition key means a
+    // repeated universe draws from a different slice of results even if dedup fails entirely.
+    const fcPage = 1 + Math.floor(mixedRandom(editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0)) * 4);
+    const imageUrl = await fetchUnsplash(sourceQuery, "Culture", fcPage, undefined, blocked).then(r => r?.url)
+      ?? await fetchUnsplash(moodQuery, "Culture", fcPage, undefined, blocked).then(r => r?.url)
+      ?? await fetchUnsplash(sourceQuery, "Culture", 1, undefined, blocked).then(r => r?.url);
 
     // ── Pass 2: scaffold — restructure the free-write into the para cadence ──
     const scaffoldMsg = await client.messages.create({
