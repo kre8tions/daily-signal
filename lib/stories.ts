@@ -24,6 +24,10 @@ export interface Story {
   pullquote?: string; cta?: { header: string; body: string }; hasKeyFacts?: boolean; cardStyle: "full" | "pullquote" | "brief";
   imageQuery?: string; content?: string; generationError?: string;
   generationStatus?: "ok" | "no_body" | "pass1_failed" | "missing";
+  // S1 Insight only: links of stories in the same edition that genuinely connect to the
+  // finished piece, chosen after it is written. May be absent or empty — "if applicable"
+  // has to include "not applicable", or we are back to forcing a connection that isn't there.
+  relatedLinks?: string[];
 }
 
 export interface Synthesis {
@@ -1043,7 +1047,63 @@ async function sendWeeklySignalBroadcast(weekly: WeeklySignal, editionKey: strin
 const INSIGHT_LINK_BASE = "https://dailysignal.cc/insight/";
 const INSIGHT_PROMPT_V = "v4"; // must match getFullArticle's PROMPT_V
 
-export async function getS1Insight(editionKey: string, newsCandidate?: { title: string; section?: string }, blocked?: Set<string>): Promise<Story | null> {
+/**
+ * Match edition stories to the FINISHED insight. Runs after the piece is written and the
+ * lineup is settled, so this can never influence the prose — the previous design injected a
+ * story into the prompt and produced four editions with the same opening paragraph.
+ *
+ * Returns 0-3 links. Returning none is a valid, expected outcome: the insight is generated
+ * from its lens and some days nothing in the edition genuinely connects. Any failure leaves
+ * the insight untouched rather than blocking it.
+ */
+async function attachInsightRelated(insight: Story, candidates: Story[]): Promise<Story> {
+  const pool = candidates.filter(s => s.summary).slice(0, 12);
+  if (pool.length === 0) return insight;
+  try {
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const list = pool.map((s, i) => `${i + 1}. ${s.ownedTitle || s.title} — ${s.summary}`).join("\n");
+    const msg = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 60,
+      messages: [{
+        role: "user",
+        content: `An essay and a list of today's news stories. Which stories, if any, would genuinely deepen the essay for someone who just finished reading it?
+
+ESSAY: "${insight.ownedTitle || insight.title}"
+${insight.summary ?? ""}
+${(insight.content ?? "").slice(0, 1200)}
+
+STORIES:
+${list}
+
+Pick at most 3, and only where the connection is real — a shared mechanism or tension, not a shared keyword. Two stories both mentioning books is not a connection. Most days the honest answer is one or none.
+
+Return only comma-separated numbers, or the word NONE.`,
+      }],
+    });
+    const text = msg.content[0]?.type === "text" ? msg.content[0].text.trim() : "";
+    if (/^none/i.test(text)) return insight;
+    const links = text.split(/[,\s]+/)
+      .map(n => parseInt(n, 10))
+      .filter(n => Number.isInteger(n) && n >= 1 && n <= pool.length)
+      .slice(0, 3)
+      .map(n => pool[n - 1].link);
+    const unique = [...new Set(links)];
+    console.log(`[insight-related] ${unique.length} matched for ${insight.ownedTitle || insight.title}`);
+    return unique.length ? { ...insight, relatedLinks: unique } : insight;
+  } catch (e) {
+    console.warn("[insight-related] failed, no related links:", e);
+    return insight;
+  }
+}
+
+// Generation reads NOTHING from the RSS pool. The piece is written from the lens alone.
+// An earlier design scored a news story for "adjacency" and injected it as the opening
+// scene; that candidate was `raw[0]` captured before preselection reordered the pool, so
+// a single evergreen post anchored four consecutive editions to the same first paragraph.
+// It also replaced the HOOK craft rules rather than adding to them, so the rules never ran.
+// Stories are matched to the finished piece afterwards — see attachInsightRelated.
+export async function getS1Insight(editionKey: string, blocked?: Set<string>): Promise<Story | null> {
   const syntheticLink = `${INSIGHT_LINK_BASE}${editionKey}`;
   const articleSlug = createHash("md5").update(syntheticLink).digest("hex").slice(0, 16);
   const blobKey = `articles/${INSIGHT_PROMPT_V}/${editionKey}/${articleSlug}.json`;
@@ -1069,20 +1129,6 @@ export async function getS1Insight(editionKey: string, newsCandidate?: { title: 
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-    // Score adjacency between the news candidate and today's lens (1-10, fast Haiku call)
-    let adjacencyContext = "";
-    if (newsCandidate?.title) {
-      const scoreMsg = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 16,
-        messages: [{ role: "user", content: `Rate 1-10 how naturally this news story connects to this personal-development principle. Return only the integer.\n\nNews: "${newsCandidate.title}"\nPrinciple: "${lens.concept}" (${lens.source})` }],
-      });
-      const score = parseInt(scoreMsg.content[0]?.type === "text" ? scoreMsg.content[0].text.trim() : "0") || 0;
-      if (score >= 6) {
-        adjacencyContext = `\n\nNEWS HOOK TO OPEN WITH (adjacency score ${score}/10): "${newsCandidate.title}" — use it as your opening scene or moment, then pivot to the principle.`;
-      }
-    }
-
     const msg = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 1400,
@@ -1095,10 +1141,10 @@ You are writing the lead story for The Daily Signal — a personal-development i
 TODAY'S LENS:
 Domain: ${lens.domain}
 Principle: "${lens.concept}"
-Angle: "${lens.angle}"${adjacencyContext}
+Angle: "${lens.angle}"
 
 STRUCTURE (five paragraphs, pure prose — no bullet points, no headers in the body):
-- Para 1 — HOOK: ${adjacencyContext ? "Open with the news hook as a concrete moment, then bridge to the underlying pattern it reveals about human behavior." : "Open with one specific named person in one specific moment — not a type of person, not a recurring pattern, not 'every June someone does X'. A name, a place, a moment. Show it happening. The reader should be able to picture exactly where they are."}
+- Para 1 — HOOK: Open with one specific named person in one specific moment — not a type of person, not a recurring pattern, not 'every June someone does X', not 'every summer people do Y'. A name, a place, a moment. Show it happening. The reader should be able to picture exactly where they are.
 - Para 2 — MECHANISM: State the principle and explain why the world works this way. Write it as something you know to be true. No citations, no named authors.
 - Para 3 — CASE: Ground the principle in one named case — a real person, company, product, year, or documented moment. Not hypothetical. The reader should be able to look it up. Check what the example connotes, not just whether it is true: an example carrying suffering, cruelty, or condescension will undercut the warmth of the piece even when the science is sound.
 - Para 4 — APPLICATION: Serve the reader's own need. If the hook established something the reader lacks, this paragraph addresses the reader's lack — it does not train them to supply it to someone else. The reader should finish this paragraph better off, not with an assignment to improve others. One scenario only, fully inhabited. Not a list of situations to choose from — the reader can occupy one room, not three. Define the moment by what the reader is doing, never by a day of the week: a named weekday is a stand-in for specificity, not specificity itself. Never write "Tuesday afternoon", "Monday morning", or any "So here is your [day]" opener. "The hour before the budget meeting" is a moment. "Tuesday" is a placeholder.
@@ -1206,6 +1252,9 @@ OUTPUT — return JSON only, no markdown:
       imageUrl,
       imageColor,
       imageQuery: imgQuery,
+      // The piece itself. attachInsightRelated needs the real text — matching on title and
+      // summary alone picks up shared keywords rather than a shared mechanism.
+      content: parsed.body as string,
       generationStatus: "ok",
     };
 
@@ -1237,9 +1286,9 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   const weeklySignalPromise = isSundayEvening(editionKey)
     ? getWeeklySignal(editionKey, blocked, () => { weeklySignalIsNew = true; }).catch(() => null)
     : Promise.resolve(null);
-  // Pass top uplift candidate as context; insight may use it as an opening hook if adjacency is high
-  const s1Candidate = raw[0] ? { title: raw[0].title, section: raw[0].section } : undefined;
-  const s1InsightPromise = getS1Insight(editionKey, s1Candidate, blocked).catch(() => null);
+  // Self-generated from the lens — takes no RSS input. Related stories are matched to the
+  // finished piece later, once the edition lineup is settled (attachInsightRelated).
+  const s1InsightPromise = getS1Insight(editionKey, blocked).catch(() => null);
 
   // ── Comparative uplift preselection: score all uplift candidates, pick best S1/S2 before slot lock-in
   const upliftRaw = raw.filter(r => r.section === "Psychology" || r.section === "HumanPotential");
@@ -1359,7 +1408,8 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   }
 
   // Prepend the insight story at S1; RSS stories shift to S2 onwards
-  const storiesWithInsight = s1Insight ? [s1Insight, ...filtered] : filtered;
+  const insightWithRelated = s1Insight ? await attachInsightRelated(s1Insight, filtered) : null;
+  const storiesWithInsight = insightWithRelated ? [insightWithRelated, ...filtered] : filtered;
   const stories: Story[] = storiesWithInsight
     .map((s, i) => ({ ...s, cardStyle: CARD_STYLES[i] ?? "brief" as Story["cardStyle"] }));
 

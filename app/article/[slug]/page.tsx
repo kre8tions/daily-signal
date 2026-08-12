@@ -78,10 +78,16 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
   const slugSeed = slug.split("").reduce((a: number, c: string, i: number) => a + c.charCodeAt(0) * (i + 1), 0);
   const pullQuoteStyle = slugSeed % 3; // 0=left border, 1=big quote marks, 2=dots divider only
 
-  // Related: same-section stories first, then others — cap at 3
+  // Related: same-section stories first, then others — cap at 3.
+  // The Insight has no same-section peers, so this used to fall through to whatever three
+  // stories came first in edition order. It now uses the matches picked against the finished
+  // piece at warm time, and shows nothing when none applied — an honest empty beats three
+  // arbitrary links, and "More From Today's Edition" below still offers a way onward.
   const sameSection = related.filter(s => s.section === story.section);
   const otherSection = related.filter(s => s.section !== story.section);
-  const relatedStories = [...sameSection, ...otherSection].slice(0, 3);
+  const relatedStories = isInsight
+    ? (story.relatedLinks ?? []).map(l => related.find(s => s.link === l)).filter((s): s is Story => Boolean(s))
+    : [...sameSection, ...otherSection].slice(0, 3);
   const moreFromEdition = related.filter(s => !relatedStories.find(r => r.link === s.link)).slice(0, 5);
 
   return (
