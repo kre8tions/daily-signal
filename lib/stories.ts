@@ -1127,6 +1127,13 @@ export async function getS1Insight(editionKey: string, blocked?: Set<string>): P
     const writerIdx = INSIGHT_WRITER_INDICES[(lensHash * 3 + 7) % INSIGHT_WRITER_INDICES.length];
     const insightWriter = WRITERS[writerIdx];
 
+    // A prescribed rhythm is a detectable rhythm — "short punches, then one that earns it"
+    // produces performed variance, which reads as machine-written. On 40% of editions we
+    // drop the instruction entirely and let the sentences fall where the thought falls.
+    // Seeded from the edition key, not the wall clock, so a given edition always renders
+    // the same way (same convention as synthFlip — see CLAUDE.md).
+    const freeRhythm = mixedRandom(lensHash) < 0.4;
+
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const msg = await client.messages.create({
@@ -1148,7 +1155,7 @@ STRUCTURE (five paragraphs, pure prose — no bullet points, no headers in the b
 - Para 2 — MECHANISM: State the principle and explain why the world works this way. Write it as something you know to be true. No citations, no named authors — in THIS paragraph only. The principle belongs in your own voice here; Para 3 is where it gets anchored to something real.
 - Para 3 — CASE: Ground the principle in one named case — a real person, company, product, year, or documented moment. Not hypothetical. VERIFIABILITY IS THE BAR, and it is absolute: if you cannot name the specific study, book, person, or documented event that makes this checkable, choose a different case. You may name it here — a bare name is allowed in this paragraph and nowhere else, because committing to a real source is what keeps the example honest. Never credit a method, programme, selection criterion, or finding to an organisation-plus-date unless it is a well-documented fact you are certain of: "In the early 1980s, NASA used this to assess candidates" reads as verifiable and is the easiest sentence in the piece to invent. Check what the example connotes, not just whether it is true: an example carrying suffering, cruelty, or condescension will undercut the warmth of the piece even when the science is sound. A confident, specific, checkable-looking claim that turns out to be false costs the publication more than a duller case that is true.
 - Para 4 — APPLICATION: Serve the reader's own need. If the hook established something the reader lacks, this paragraph addresses the reader's lack — it does not train them to supply it to someone else. The reader should finish this paragraph better off, not with an assignment to improve others. One scenario only, fully inhabited. Not a list of situations to choose from — the reader can occupy one room, not three. Define the moment by what the reader is doing, never by a day of the week: a named weekday is a stand-in for specificity, not specificity itself. Never write "Tuesday afternoon", "Monday morning", or any "So here is your [day]" opener. "The hour before the budget meeting" is a moment. "Tuesday" is a placeholder.
-- Para 5 — CLOSE: One to three sentences, and the strongest writing in the piece. The single most quotable sentence must live here, not in the hook. This is also where the promise made by the title gets paid — if the title named something the reader wants, this is the moment they get it. Slightly uncomfortable. True beyond today.
+- Para 5 — CLOSE: One to three sentences, and the strongest writing in the piece. The single most quotable sentence must live here, not in the hook. This is also where the promise made by the title gets paid — if the title named something the reader wants, this is the moment they get it. Slightly uncomfortable. True beyond today. It does NOT have to be an epigram. A neat closing inversion ("Your stress response was never the enemy. Your story about it was.") is the most machine-sounding sentence a piece can end on — strongest does not mean cleverest, and a plain ending that is simply true beats a symmetry that lands too well.
 - Somewhere in Para 4 or Para 5, return to the person named in the hook. One clause is enough. Never introduce a named person and abandon them.
 
 LENGTH CEILINGS (these are maximums, never targets — never pad to reach them, and coming in well under is always better):
@@ -1158,7 +1165,10 @@ LENGTH CEILINGS (these are maximums, never targets — never pad to reach them, 
 - If a paragraph runs over, cut — do not split it. The five-paragraph structure is fixed.
 
 CRAFT RULES:
-- Vary sentence length. Short punches. Then one that earns it. Then short again.
+- ${freeRhythm ? "Let the sentences fall where the thought falls. Do not perform variation — a prescribed rhythm becomes an audible one, and evenly alternating short and long reads as manufactured. Some paragraphs will come out lumpy. That is what unforced writing looks like." : "Vary sentence length. Short punches. Then one that earns it. Then short again."}
+- Em-dashes: TWO in the entire piece, maximum. Everything else becomes a full stop, a comma, or a rebuilt sentence. Em-dash frequency is the most reliable signal of machine-written prose — recent pieces ran one every ninety words, roughly eight times the rate of human editorial writing.
+- The "Not X. Y." construction: ONCE in the entire piece, maximum. This includes every variant, which are the same move wearing different clothes — "Not because A. Because B.", "It isn't X, it's Y.", "X wasn't A. It was B.", "not composure or experience. It was...". A human writer uses this two or three times in an essay for emphasis. Used as a default sentence shape it is the single clearest tell that no person wrote this.
+- Include exactly one concrete detail that serves no argument — something the writer would have noticed rather than deployed. Every other detail in the piece earns its keep, and that total efficiency is itself unnatural: real prose carries slack. Do not flag it or make it cute. Let it sit there.
 - Fragments are allowed for emphasis, but each must be readable as a complete thought on its own. Never drop the subject of a clause.
 - No semicolons — ever. Rewrite as two sentences.
 - No throat-clearing openers: never "In a world where...", "It's no secret that...", "Now more than ever...", "Here's the thing...".
@@ -1685,6 +1695,18 @@ const INSIGHT_WRITER_INDICES = [4, 7, 9, 16, 42, 45, 46, 67, 69, 71, 72, 74, 75,
 function seededRandom(seed: number): number {
   const x = Math.sin(seed + 1) * 10000;
   return x - Math.floor(x);
+}
+
+// Avalanche hash -> [0,1). Use this instead of seededRandom for probability gates keyed off
+// an edition hash: consecutive edition keys produce near-identical hashes, and Math.sin skews
+// low across those, so a nominal 40% gate measured 33% over 90 days. This lands within a
+// point of nominal and stays even across slots.
+function mixedRandom(n: number): number {
+  let h = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
 }
 
 const _REF_CATS: [string, string][] = [
