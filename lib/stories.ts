@@ -1044,6 +1044,21 @@ async function sendWeeklySignalBroadcast(weekly: WeeklySignal, editionKey: strin
 // as an ArticleCommentary blob (same format as regular articles), and returns a
 // Story that slots into position 0 of the edition. The article detail page renders
 // it identically to any other story — no custom routes or card components needed.
+// Requiring "one named person in one specific moment" fixed the old failure (every piece
+// opening "Every summer, behavioral scientists...") by mandating a single form — which then
+// became its own repetition: three consecutive pieces opened person + place + clock time,
+// two of them closing the hook on the same reversal. These rotate the FORM while keeping the
+// concreteness that the original rule was protecting. None of them permit a general "every
+// summer people do X" opening.
+const HOOK_MODES = [
+  "THE SCENE — one person in one specific moment. A name, a place, an hour. Show it happening; the reader should be able to picture exactly where they are.",
+  "THE OBJECT — open on a physical thing, described precisely enough that the reader sees it before they know why it matters. The person, if there is one, arrives after the object does.",
+  "THE NUMBER — open on one specific figure, stated flat, that does not add up. No preamble and no source-quoting. Let the reader feel the wrongness before you explain it.",
+  "THE OVERHEARD LINE — open on something someone actually said, in quotation marks, then place it: who said it, where, what was happening. The line lands before the context does.",
+  "THE PROCEDURE — describe, deadpan, the steps of something routinely done. Stay flat and technical until one step quietly exposes the problem. No commentary; the sequence does the work.",
+  "THE DOCUMENT — open on a form, a receipt, a message, a log entry, a line of a contract. Quote or describe it exactly. What it says, and what it fails to say, is the opening.",
+];
+
 const INSIGHT_LINK_BASE = "https://dailysignal.cc/insight/";
 const INSIGHT_PROMPT_V = "v4"; // must match getFullArticle's PROMPT_V
 
@@ -1133,6 +1148,7 @@ export async function getS1Insight(editionKey: string, blocked?: Set<string>): P
     // Seeded from the edition key, not the wall clock, so a given edition always renders
     // the same way (same convention as synthFlip — see CLAUDE.md).
     const freeRhythm = mixedRandom(lensHash) < 0.4;
+    const hookMode = HOOK_MODES[Math.floor(mixedRandom(lensHash * 3 + 991) * HOOK_MODES.length)];
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -1150,13 +1166,19 @@ Domain: ${lens.domain}
 Principle: "${lens.concept}"
 Angle: "${lens.angle}"
 
+TWO RULES THAT APPLY TO EVERY PARAGRAPH, NOT JUST THE ONE THAT NAMES THEM:
+1. NOTHING INVENTED IS EVER ATTACHED TO A REAL PERSON, ORGANISATION, OR DOCUMENTED EVENT — anywhere in the piece, hook included. Placing a real figure at a real event they did not attend, or adding sensory detail you cannot source, is the most damaging thing you can do here precisely because it reads as authoritative and is trivially checkable. If a detail would need to be true and you do not know that it is, either cut it or use an invented ordinary person instead.
+2. NO NAMED WEEKDAY ANYWHERE unless the specific day is itself the point. "On a Wednesday night" and "Tuesday afternoon" are placeholders wearing specificity's clothes — they add a word and no information. A time of day, a season, or an hour relative to an event all carry more.
+
 STRUCTURE (five paragraphs, pure prose — no bullet points, no headers in the body):
-- Para 1 — HOOK: Open with one specific named person in one specific moment — not a type of person, not a recurring pattern, not 'every June someone does X', not 'every summer people do Y'. A name, a place, a moment. Show it happening. The reader should be able to picture exactly where they are. Give them a full name that belongs to this person in this world, and avoid the defaults a writer reaches for on autopilot — never Mara, Sarah, Elena, or David. A placeholder name tells the reader the scene was assembled rather than observed.
+- Para 1 — HOOK, and today you are writing it in this mode: ${hookMode}
+  Whatever the mode, the opening is one concrete particular — never a type of person, never a recurring pattern, never 'every June someone does X' or 'every summer people do Y'. Do not end the hook on a defeat or reversal by reflex; that has become its own habit.
+  IF THE HOOK NAMES A PERSON, it must be an invented ordinary person — someone with no public record, whose life you are free to furnish. Give them a full name that belongs to them and to this world, and avoid the autopilot defaults: never Mara, Sarah, Elena, or David. Use a REAL, publicly known person here only if the scene is documented and you could point to where it is recorded — otherwise you are inventing socks and weather for someone who actually lived, which is the failure the global rules above forbid. The ordinary invented person is almost always the better choice: the hook needs a human being, not an authority.
 - Para 2 — MECHANISM: State the principle and explain why the world works this way. Write it as something you know to be true. No citations, no named authors — in THIS paragraph only. The principle belongs in your own voice here; Para 3 is where it gets anchored to something real.
 - Para 3 — CASE: Ground the principle in one named case — a real person, company, product, year, or documented moment. Not hypothetical. VERIFIABILITY IS THE BAR, and it is absolute: if you cannot name the specific study, book, person, or documented event that makes this checkable, choose a different case. You may name it here — a bare name is allowed in this paragraph and nowhere else, because committing to a real source is what keeps the example honest. Never credit a method, programme, selection criterion, or finding to an organisation-plus-date unless it is a well-documented fact you are certain of: "In the early 1980s, NASA used this to assess candidates" reads as verifiable and is the easiest sentence in the piece to invent. Check what the example connotes, not just whether it is true: an example carrying suffering, cruelty, or condescension will undercut the warmth of the piece even when the science is sound. A confident, specific, checkable-looking claim that turns out to be false costs the publication more than a duller case that is true.
 - Para 4 — APPLICATION: Serve the reader's own need. If the hook established something the reader lacks, this paragraph addresses the reader's lack — it does not train them to supply it to someone else. The reader should finish this paragraph better off, not with an assignment to improve others. One scenario only, fully inhabited. Not a list of situations to choose from — the reader can occupy one room, not three. Define the moment by what the reader is doing, never by a day of the week: a named weekday is a stand-in for specificity, not specificity itself. Never write "Tuesday afternoon", "Monday morning", or any "So here is your [day]" opener. "The hour before the budget meeting" is a moment. "Tuesday" is a placeholder.
 - Para 5 — CLOSE: One to three sentences, and the strongest writing in the piece. The single most quotable sentence must live here, not in the hook. This is also where the promise made by the title gets paid — if the title named something the reader wants, this is the moment they get it. Slightly uncomfortable. True beyond today. It does NOT have to be an epigram. A neat closing inversion ("Your stress response was never the enemy. Your story about it was.") is the most machine-sounding sentence a piece can end on — strongest does not mean cleverest, and a plain ending that is simply true beats a symmetry that lands too well.
-- Somewhere in Para 4 or Para 5, return to the person named in the hook. One clause is enough. Never introduce a named person and abandon them.
+- If the hook named a person, return to them somewhere in Para 4 or Para 5. One clause is enough. Never introduce a named person and abandon them. If the hook opened on an object, number, line, procedure or document instead, return to THAT — the thing the piece opened on must reappear once, so the reader feels the circle close.
 
 LENGTH CEILINGS (these are maximums, never targets — never pad to reach them, and coming in well under is always better):
 - Para 1 must not exceed 70 words. It has one job: earn Para 2. On a phone this paragraph is already sixteen lines tall, and it sits in the window where readers decide whether to keep going.
