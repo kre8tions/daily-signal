@@ -36,11 +36,19 @@ export async function GET(req: Request) {
     if (failed.length > 0) {
       failed.forEach(f => console.error(`[warm] missing summary: "${f.title}" — ${f.error}`));
     }
-    console.log(`[warm] ${editionKey} done — ${failed.length} failed, FC: ${!!pageData.featureCreature}, theme: "${pageData.synthesis.theme}"`);
+    // The insight failing is easy to miss: the edition still renders, it just leads with an
+    // RSS story instead of the column. Report it explicitly rather than leaving it to be
+    // spotted on the front page.
+    const insight = pageData.stories[0]?.section === "Insight"
+      ? { ok: true as const, title: pageData.stories[0].ownedTitle ?? pageData.stories[0].title }
+      : { ok: false as const, error: pageData.insightError ?? "unknown", promoted: pageData.stories[0]?.ownedTitle ?? pageData.stories[0]?.title ?? null };
+    if (!insight.ok) console.error(`[warm] ${editionKey} NO INSIGHT — ${insight.error}`);
+    console.log(`[warm] ${editionKey} done — ${failed.length} failed, insight: ${insight.ok}, FC: ${!!pageData.featureCreature}, theme: "${pageData.synthesis.theme}"`);
 
     return NextResponse.json({
       editionKey,
       theme: pageData.synthesis.theme,
+      insight,
       fc: pageData.featureCreature?.universe ?? null,
       startedAt,
       completedAt: new Date().toISOString(),

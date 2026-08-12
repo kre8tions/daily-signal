@@ -51,6 +51,9 @@ export interface PageData {
   stories: Story[]; synthesis: Synthesis; editionLabel: string;
   featureCreature?: FeatureCreature;
   weeklySignal?: WeeklySignal;
+  // Set only when the S1 Insight failed to generate and an RSS story was promoted into the
+  // lead slot in its place. Absent on a healthy edition.
+  insightError?: string;
 }
 
 // ── Slug helpers ──────────────────────────────────────────────────────────────
@@ -1118,7 +1121,15 @@ Return only comma-separated numbers, or the word NONE.`,
 // a single evergreen post anchored four consecutive editions to the same first paragraph.
 // It also replaced the HOOK craft rules rather than adding to them, so the rules never ran.
 // Stories are matched to the finished piece afterwards — see attachInsightRelated.
-export async function getS1Insight(editionKey: string, blocked?: Set<string>): Promise<Story | null> {
+export async function getS1Insight(
+  editionKey: string,
+  blocked?: Set<string>,
+  // Out-param. When generation fails the edition silently promotes an RSS story into S1 and
+  // nobody finds out until the wrong thing is noticed on the front page — which is exactly
+  // how 2026-08-12_morning shipped a product write-up as the lead. Filled in so /api/warm
+  // can report the miss.
+  status?: { error?: string; attempts?: number },
+): Promise<Story | null> {
   const syntheticLink = `${INSIGHT_LINK_BASE}${editionKey}`;
   const articleSlug = createHash("md5").update(syntheticLink).digest("hex").slice(0, 16);
   const blobKey = `articles/${INSIGHT_PROMPT_V}/${editionKey}/${articleSlug}.json`;
@@ -1133,7 +1144,15 @@ export async function getS1Insight(editionKey: string, blocked?: Set<string>): P
     }
   } catch { /* generate fresh */ }
 
-  try {
+  // Two attempts. The failure that dropped the column on 2026-08-12_morning was intermittent
+  // — the four editions either side of it generated fine on identical code — so a single
+  // retry covers the common causes (a truncated or non-JSON response, a transient API error)
+  // without masking a genuine, repeatable break.
+  const MAX_ATTEMPTS = 2;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+   if (status) status.attempts = attempt;
+   try {
     const { INSIGHT_LENSES } = await import("./palette");
     // Compute lens deterministically from editionKey directly — bypasses the _editionKeyHash
     // singleton which can be corrupted when multiple editions build concurrently.
@@ -1293,10 +1312,14 @@ OUTPUT — return JSON only, no markdown:
     // Cache the story shell separately for fast re-reads
     put(storyCacheKey, JSON.stringify(story), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
     return story;
-  } catch (e) {
-    console.error("[s1-insight] generation failed", e);
-    return null;
+   } catch (e) {
+    lastError = e;
+    console.error(`[s1-insight] attempt ${attempt}/${MAX_ATTEMPTS} failed for ${editionKey}`, e);
+   }
   }
+  if (status) status.error = lastError instanceof Error ? lastError.message : String(lastError);
+  console.error(`[s1-insight] GAVE UP after ${MAX_ATTEMPTS} attempts for ${editionKey} — S1 will fall back to an RSS story`);
+  return null;
 }
 
 // ── Assemble page data (cached per edition via Next.js data cache) ────────────
@@ -1320,7 +1343,8 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     : Promise.resolve(null);
   // Self-generated from the lens — takes no RSS input. Related stories are matched to the
   // finished piece later, once the edition lineup is settled (attachInsightRelated).
-  const s1InsightPromise = getS1Insight(editionKey, blocked).catch(() => null);
+  const insightStatus: { error?: string; attempts?: number } = {};
+  const s1InsightPromise = getS1Insight(editionKey, blocked, insightStatus).catch(() => null);
 
   // ── Comparative uplift preselection: score all uplift candidates, pick best S1/S2 before slot lock-in
   const upliftRaw = raw.filter(r => r.section === "Psychology" || r.section === "HumanPotential");
@@ -1445,7 +1469,15 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   const stories: Story[] = storiesWithInsight
     .map((s, i) => ({ ...s, cardStyle: CARD_STYLES[i] ?? "brief" as Story["cardStyle"] }));
 
-  const pageData: PageData = { stories, synthesis, editionLabel, featureCreature: featureCreature ?? undefined, weeklySignal: weeklySignal ?? undefined };
+  if (!s1Insight) {
+    console.error(`[build] ${editionKey} has NO S1 INSIGHT — "${stories[0]?.ownedTitle ?? stories[0]?.title}" was promoted into the lead slot`);
+  }
+  const pageData: PageData = {
+    stories, synthesis, editionLabel,
+    featureCreature: featureCreature ?? undefined,
+    weeklySignal: weeklySignal ?? undefined,
+    insightError: s1Insight ? undefined : (insightStatus.error ?? "insight generation returned null"),
+  };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
   await put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {
     access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true,
