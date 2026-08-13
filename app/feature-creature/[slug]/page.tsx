@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { head } from "@vercel/blob";
 import type { FeatureCreature } from "@/lib/stories";
 import { P, contrastColor, CURSIVE_FONT_FAMILY, CURSIVE_FONT_URL } from "@/lib/palette";
+import { FcTitle } from "@/components/FcTitle";
 import { ShareButton } from "@/app/ShareButton";
 import { DecorativeDivider } from "@/components/DecorativeDivider";
 import type { Metadata } from "next";
@@ -71,7 +72,9 @@ export default async function FeatureCreaturePage({ params }: { params: Promise<
         </div>
 
         {/* Title */}
-        <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: "clamp(32px, 6vw, 52px)", color, lineHeight: 1.1, marginBottom: 32, fontWeight: 700 }}>{fc.title}</div>
+        <div style={{ marginBottom: 32 }}>
+          <FcTitle title={fc.title} work={fc.universe} fontSize="clamp(32px, 6vw, 52px)" color={color} lineHeight={1.1} />
+        </div>
 
         {/* Hero image */}
         {fc.imageUrl && (

@@ -124,20 +124,28 @@ export const ACTION_EMOJI = ACTION_EMOJIS[_edition % ACTION_EMOJIS.length];
 
 // Cursive/handwritten font pool — rotates per edition
 // Each entry: [fontFamily CSS name, Google Fonts family param]
-const CURSIVE_FONTS: [string, string][] = [
-  ["Dancing Script",  "Dancing+Script:wght@700"],       // flowing elegant script
-  ["Pacifico",        "Pacifico"],                       // bold casual retro
-  ["Sacramento",      "Sacramento"],                     // thin tall calligraphy
-  ["Satisfy",         "Satisfy"],                        // bold brush script
-  ["Caveat",          "Caveat:wght@700"],                // casual ballpoint
-  ["Kalam",           "Kalam:wght@700"],                 // natural handwritten
-  ["Pinyon Script",   "Pinyon+Script"],                  // elegant ink calligraphy
-  ["Cookie",          "Cookie"],                         // rounded flowing script
-  ["Allura",          "Allura"],                         // thin calligraphy
-  ["Amatic SC",       "Amatic+SC:wght@700"],             // tall thin print-hand
+// Third value is the em size at which uppercase body-font text sits just under this script's
+// cap height — used by FcTitle to set the name of the work in sans without it towering over
+// or disappearing into the script. Derived from measured actualBoundingBoxAscent of each face
+// against Raleway at the same px, then taken to 92% of an exact cap match: matching exactly
+// reads as too dominant, because every letter of the uppercase sans is at cap height while the
+// script's lowercase sits far below it. Do not replace these with a single constant — the
+// spread across the pool is 0.81 to 1.15, so one number is wrong for most of them.
+const CURSIVE_FONTS: [string, string, number][] = [
+  ["Dancing Script",  "Dancing+Script:wght@700", 0.93],  // flowing elegant script
+  ["Pacifico",        "Pacifico",                1.15],  // bold casual retro
+  ["Sacramento",      "Sacramento",              0.99],  // thin tall calligraphy
+  ["Satisfy",         "Satisfy",                 1.01],  // bold brush script
+  ["Caveat",          "Caveat:wght@700",         0.89],  // casual ballpoint
+  ["Kalam",           "Kalam:wght@700",          0.88],  // natural handwritten
+  ["Pinyon Script",   "Pinyon+Script",           0.98],  // elegant ink calligraphy
+  ["Cookie",          "Cookie",                  0.88],  // rounded flowing script
+  ["Allura",          "Allura",                  0.81],  // thin calligraphy
+  ["Amatic SC",       "Amatic+SC:wght@700",      0.99],  // tall thin print-hand
 ];
 export const CURSIVE_FONT_FAMILY = CURSIVE_FONTS[_edition % CURSIVE_FONTS.length][0];
 export const CURSIVE_FONT_URL = `https://fonts.googleapis.com/css2?family=${CURSIVE_FONTS[_edition % CURSIVE_FONTS.length][1]}&display=swap`;
+export const CURSIVE_CAP_SCALE = CURSIVE_FONTS[_edition % CURSIVE_FONTS.length][2];
 
 // ── Writer lenses — applied on top of base voice for Psychology/HumanPotential articles ──
 export type WriterLens = { name: string; prompt: string };

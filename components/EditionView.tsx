@@ -4,6 +4,7 @@ import { EditionCountdown } from "@/app/EditionCountdown";
 import { EmailCapture } from "@/app/EmailCapture";
 import { ShareButton } from "@/app/ShareButton";
 import { seededRandom, ACTION_CARD_EMOJIS, ACTION_CARD_SEEDS, MOVE_LABELS } from "@/lib/cards";
+import { FcTitle } from "@/components/FcTitle";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1283,7 +1284,7 @@ export async function EditionView({
                   <div style={{ paddingTop: 14, paddingLeft: 22, paddingRight: 22, paddingBottom: 50, display: "flex", flexDirection: "column", gap: 8, flexShrink: 0, position: "relative" }}>
                     {!fc.imageUrl && <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span style={{ background: color + "33", color, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, fontFamily: P.fontBody, paddingTop: 4, paddingBottom: 4, paddingLeft: 10, paddingRight: 10, borderRadius: 20 }}>{emoji} Feature Creature</span><span style={{ fontSize: 10, color: P.pageBg, fontFamily: P.fontBody, opacity: 0.5 }}>{fc.universe}</span></div>}
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color, fontFamily: P.fontBody }}>{fc.angleLabel}</div>
-                    <div style={{ fontFamily: `'${CURSIVE_FONT_FAMILY}', cursive`, fontSize: 26, color: P.pageBg, lineHeight: 1.15, fontWeight: 700 }}>{fc.title}</div>
+                    <FcTitle title={fc.title} work={fc.universe} fontSize={26} color={P.pageBg} />
                     {fc.synopsis && <div style={{ fontSize: 15, lineHeight: 1.65, color: P.pageBg, fontFamily: P.fontBody, opacity: 0.75 }}>{fc.synopsis}</div>}
                     <a href={`/feature-creature/${slug}`} style={{ position: "absolute", bottom: 18, right: 18, textDecoration: "none" }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: P.pageBg, background: P.pageBg + "22", border: `1px solid ${P.pageBg}55`, borderRadius: 50, paddingTop: 8, paddingBottom: 8, paddingLeft: 20, paddingRight: 20, fontFamily: P.fontBody, letterSpacing: 0.3, whiteSpace: "nowrap" as const }}>More</span>
