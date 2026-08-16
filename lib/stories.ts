@@ -1111,6 +1111,20 @@ const HOOK_MODES = [
   "THE DOCUMENT — open on a form, a receipt, a message, a log entry, a line of a contract. Quote or describe it exactly. What it says, and what it fails to say, is the opening.",
 ];
 
+// Same failure the hook had. "Name the lived experience, built from Para 1's concrete detail"
+// is satisfiable by exactly one syntactic frame, and the model found it: "The Move You've Been
+// Staring At Too Long" / "The Year You Quit Too Soon" / "The Room You Walked Through Without
+// Seeing" — three consecutive editions, one shape. Readers habituate to a headline frame in two
+// or three exposures. Rotating the form is what fixed the hooks; same treatment here.
+const TITLE_MODES = [
+  "THE LIVED DETAIL — a number and an act, lifted from the piece. 'Fifteen Years of Calling It Nerves'. Concrete enough that it could only belong to this article.",
+  "THE FLAT FACT — state the thing that should not be true, plainly and without commentary. No irony, no wink. Let the reader do the reacting.",
+  "THE READER'S OWN QUESTION — the question they are already asking, in the words they would use. Not a rhetorical question the piece answers smugly.",
+  "THE NAMED THING — put the specific person, place, work or object at the front and let it carry the weight. Works only if that name appears in the piece.",
+  "THE INSTRUCTION — a short imperative. What to do, stated as if to one person. No hedging, no 'try to'.",
+  "THE OVERHEARD FRAGMENT — a phrase in quotation marks, something a person would actually say, then nothing else. Let it sit unexplained.",
+];
+
 const INSIGHT_LINK_BASE = "https://dailysignal.cc/insight/";
 const INSIGHT_PROMPT_V = "v4"; // must match getFullArticle's PROMPT_V
 
@@ -1217,6 +1231,7 @@ export async function getS1Insight(
     // the same way (same convention as synthFlip — see CLAUDE.md).
     const freeRhythm = mixedRandom(lensHash) < 0.4;
     const hookMode = HOOK_MODES[Math.floor(mixedRandom(lensHash * 3 + 991) * HOOK_MODES.length)];
+    const titleMode = TITLE_MODES[Math.floor(mixedRandom(lensHash * 7 + 4441) * TITLE_MODES.length)];
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -1275,7 +1290,7 @@ CRAFT RULES:
 
 OUTPUT — return JSON only, no markdown:
 {
-  "ownedTitle": "Name the experience the reader has already lived, not the conclusion the piece reaches. The reader should recognize themselves in it before they understand it. Do not use the explanatory vocabulary of Para 2 — the mechanism is the reveal, not the headline. Whatever the title promises, Para 5 must deliver. Under 12 words. Not clickbait. TWO TESTS, both mandatory: (1) It must OPEN a gap, never close one. A title asserting what the reader already knows leaves them nothing to resolve — if someone can nod at it and move on, it has failed. 'You Already Know Stress Is Coming' fails; it concedes there is nothing to learn. (2) Build it from the concrete material in Para 1, not from the abstract principle — the specific detail, the number, the thing the person was doing. 'Fifteen Years of Calling It Nerves' beats 'You Already Know Stress Is Coming' because it is made of the scene. Avoid templates: 'Why Your X Does Y', 'Your X Knew Before You Did', 'You Already Know...'.",
+  "ownedTitle": "Write it in this mode today: ${titleMode} — Name the experience the reader has already lived, not the conclusion the piece reaches. Do not use the explanatory vocabulary of Para 2; the mechanism is the reveal, not the headline. Whatever the title promises, Para 5 must deliver. Under 12 words. Not clickbait. THREE TESTS, all mandatory: (1) It must OPEN a gap, never close one — if someone can nod at it and move on, it has failed. 'You Already Know Stress Is Coming' fails; it concedes there is nothing to learn. (2) Build it from the concrete material in Para 1, not the abstract principle. 'Fifteen Years of Calling It Nerves' works because it is made of the scene. A container noun with a definite article in front of it is FALSE specificity — 'The Move', 'The Year', 'The Room' presuppose a particular one the reader does not have yet, and name nothing. (3) It may not blame the reader. 'The Year You Quit Too Soon' and 'The Room You Walked Through Without Seeing' tell them they failed before they have read a word; occasional accusation is sharp, habitual accusation is scolding. BANNED FRAMES: 'The [noun] You [verb]...' in any form, 'Why Your X Does Y', 'Your X Knew Before You Did', 'You Already Know...'.",
   "summary": "One sentence (25-35 words) capturing the core insight — shown in the edition card preview.",
   "bullets": [
     "Key takeaway 1 — one complete sentence, specific and actionable. Must be consistent with the body and the CTA: if the CTA names a duration, number, or action, no takeaway may contradict it.",
