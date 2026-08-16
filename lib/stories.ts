@@ -329,6 +329,24 @@ const MORBID_RE = /^(dead|dies|died|death|killed|kill|murder|murdered|shooting|s
 // Detect obituary headlines
 const OBIT_RE = /\b(dead|dies|died|has died|passed away|obituary|obit|in memoriam)\b/i;
 
+// Serious-subject detector. The section fallbacks are written for the *section*, not the
+// story, so a Culture piece about a terminal diagnosis drew "creative performance stage
+// expression" and published a film set with lightsabers above a metastatic breast cancer
+// headline. Anything matching here routes to neutral imagery instead of its section pool.
+const GRAVE_RE = /\b(cancer|tumou?rs?|terminal|diagnos\w+|prognos\w+|metasta\w+|palliative|hospice|chemo\w*|dementia|alzheimer\w*|parkinson\w*|illness|disease|overdose|addiction|suicide|self.harm|grief|grieving|bereave\w*|famine|refugees?|earthquake|wildfire|shooting|massacre|casualt\w+|fatal\w*|abuse|assault|trafficking)\b/i;
+
+// Calm and human rather than mournful — these have to sit correctly above a hard diagnosis
+// AND above a treatment breakthrough, since the regex above cannot tell those apart. An
+// array rather than one string so a fallback does not mean one photo for every grave story.
+const GRAVE_FALLBACKS = [
+  "quiet window morning light",
+  "still water calm horizon",
+  "empty chair soft daylight",
+  "hands resting wooden table",
+  "long hallway natural light",
+  "open field overcast quiet",
+];
+
 export async function fetchUnsplash(headline: string, section?: string, page = 1, imageQuery?: string, blocked?: Set<string>): Promise<{ url: string; color?: string } | undefined> {
   const key = process.env.UNSPLASH_ACCESS_KEY;
   if (!key) return undefined;
@@ -357,22 +375,38 @@ export async function fetchUnsplash(headline: string, section?: string, page = 1
     Arts: "art design studio gallery",
     Faith: "light candle meditation spiritual",
   };
+  // Stable per-headline seed: the same story always resolves to the same image, but two
+  // different stories hitting the same fallback string do not land on the same photo.
+  const headlineSeed = headline.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
+  const isGrave = GRAVE_RE.test(headline);
+
   const fallback = isObit
     ? "portrait tribute memorial flowers"
-    : (section && sectionFallback[section]) ?? "news media editorial";
+    : isGrave
+      ? GRAVE_FALLBACKS[headlineSeed % GRAVE_FALLBACKS.length]
+      : (section && sectionFallback[section]) ?? "news media editorial";
 
-  const queries = [
-    ...(personQuery ? [personQuery, `${personQuery} portrait`] : []),
-    ...(imageQuery ? [imageQuery] : []),
-    words.slice(0, 3).join(" "),
-    words.slice(0, 2).join(" "),
-    fallback,
-  ].filter(Boolean);
+  // The fallback query is a fixed string reused across every story that reaches it, so
+  // holding page at 1 guaranteed the same handful of photos forever — that is how one film
+  // set image recurred for six days. Vary the page for the fallback only; the headline- and
+  // imageQuery-derived searches are already distinct per story.
+  const fallbackPage = 1 + (headlineSeed % 4);
 
-  for (const q of queries) {
+  const queries: { q: string; page: number }[] = [
+    ...(personQuery ? [{ q: personQuery, page }, { q: `${personQuery} portrait`, page }] : []),
+    ...(imageQuery ? [{ q: imageQuery, page }] : []),
+    { q: words.slice(0, 3).join(" "), page },
+    { q: words.slice(0, 2).join(" "), page },
+    { q: fallback, page: fallbackPage },
+    // Last resort: the same fallback on page 1, so a high page with thin results still
+    // returns something rather than leaving the story imageless.
+    { q: fallback, page: 1 },
+  ].filter(x => x.q.trim());
+
+  for (const { q, page: qPage } of queries) {
     try {
       const res = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&orientation=landscape&per_page=10&page=${page}&client_id=${key}`,
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&orientation=landscape&per_page=10&page=${qPage}&client_id=${key}`,
         { cache: "no-store" }
       );
       if (!res.ok) continue;
