@@ -350,7 +350,10 @@ const RSS_STORIES_PER_EDITION = 7;
 // dark then would remove the only email touchpoint.
 const DARK_DAY = 6;
 
-const OBIT_RE = /\b(dead|dies|died|has died|passed away|obituary|obit|in memoriam)\b/i;
+// "dead" alone is too broad — it blocked "Dead Simple Ways to Improve Your Morning" and
+// "The Dead Sea Is Shrinking". Require a death context around it; the other terms are
+// unambiguous on their own.
+const OBIT_RE = /\b(dies|died|passed away|obituary|obit|in memoriam)\b|\bdead\s+at\b|\bfound\s+dead\b|\b(is|was)\s+dead\b|\bdead\s*[,.]/i;
 
 // Serious-subject detector. The section fallbacks are written for the *section*, not the
 // story, so a Culture piece about a terminal diagnosis drew "creative performance stage
@@ -576,7 +579,18 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
     return { status: "fulfilled" as const, value: pool.slice(0, 3) };
   });
 
-  const all = dedupeByTopic(results.flatMap((r) => r.status === "fulfilled" ? r.value : []));
+  // Deaths never enter the pool. The engagement modes exist to rebut the prevailing reading
+  // and find the angle nobody took; aimed at a person who died days ago that is structurally
+  // guaranteed to produce a piece arguing against sympathy, and it did. This is a hard filter
+  // rather than a score because the fitness gate is advisory and was scoped to S1/S2 only.
+  const deathFiltered = dedupeByTopic(results.flatMap((r) => r.status === "fulfilled" ? r.value : []));
+  // Title only. Matching the body would block any article that merely mentions someone who
+  // died — a tech piece noting "Steve Jobs died in 2011" is not an obituary.
+  const all = deathFiltered.filter(item => {
+    if (!OBIT_RE.test(item.title)) return true;
+    console.log(`[obit-filter] excluded from pool: "${item.title}"`);
+    return false;
+  });
   const CREATIVE = ["Entertainment", "Arts", "Culture", "Film", "Faith"];
   const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [], psychology: RawItem[] = [], humanPotential: RawItem[] = [], food: RawItem[] = [], sports: RawItem[] = [], comics: RawItem[] = [], anime: RawItem[] = [];
   for (const item of all) {
@@ -2336,7 +2350,14 @@ export async function clearEditionCache(editionKey: string): Promise<void> {
 // Static editorial guidelines shared across every article — cached via prompt caching.
 // Represents ~1800-2000 tokens; moving it to the system parameter means 8 of every 9
 // Pass 1 calls per warm run hit the cache at $0.10/1M instead of $1.00/1M.
-const PASS1_SYSTEM = `You are writing for a curious, independently-minded adult who is building a life with intention — a creative practice, a considered career, a way of thinking they have chosen deliberately. They want to understand the world so they can make better decisions and see things other people miss. They are skeptical of received wisdom, equally unimpressed by institutions and by contrarianism. Write for someone who came to think, not to be told what to think. They came to read about the subject — the film, the discovery, the person, the idea — not about the journalism covering it.
+const PASS1_SYSTEM = `FACTUAL INTEGRITY — this outranks every other instruction here, including voice, angle and structure.
+Nothing invented is ever attached to a real person, organisation or documented event. Not a date, not an occupation, not a family relationship, not a sensory detail, not a statistic. A confident, specific, checkable-looking claim that turns out to be false costs far more than a duller one that is true, and the danger scales with how authoritative it sounds. "In the early 1980s, NASA used this to assess candidates" is the shape to distrust: an institution plus a date, verifiable-sounding, trivially invented. A real person placed at a real event they did not attend is the same failure wearing better clothes.
+If you cannot name the study, book, person or documented moment that makes a claim checkable, do not make the claim — pick a different one. Never put a number in a headline that the body does not support.
+Where two people share a surname, a family or a story, keep them separate. Conflating relatives is a common and catastrophic error.
+
+ABOUT REAL PEOPLE, specifically. Never assert or imply, for a named living or recently deceased person or their family: a cause of death, a medical or psychiatric condition, addiction, criminal conduct, abuse, or parental neglect — unless it is documented, attributed, and you are certain. Someone's own public disclosure may be referred to as their disclosure; it is not licence to build a causal explanation of their life or death from it. When a cause is not established, say so plainly rather than assembling one. Their relatives are private people who did not choose coverage, and an argument that reflects on their conduct needs the same evidence a direct accusation would.
+
+You are writing for a curious, independently-minded adult who is building a life with intention — a creative practice, a considered career, a way of thinking they have chosen deliberately. They want to understand the world so they can make better decisions and see things other people miss. They are skeptical of received wisdom, equally unimpressed by institutions and by contrarianism. Write for someone who came to think, not to be told what to think. They came to read about the subject — the film, the discovery, the person, the idea — not about the journalism covering it.
 
 YOUR READER ARRIVES COLD. They have not read the source article. They do not know what we are talking about. Your first move is always to establish the subject: name the thing, anchor the reader, give them a foothold. Prefer fusing the subject and your real opinion into that same first sentence when the material supports it — don't let sentence 1 be pure neutral fact-establishment with the actual claim deferred to paragraph 2. If no claim is ready yet in sentence 1, land it by sentence 2 at the latest — never later. Don't force a dramatic pivot into sentence 1 if it would feel manufactured; a confident, specific claim beats an artificial twist.
 
@@ -2416,7 +2437,11 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const analysis = await analyzeSource(client, story);
 
   // ── Fitness gate: protect S1/S2 from weak sources ────────────────────────────
-  if (analysis && typeof analysis.fitness === "number" && analysis.fitness <= 3 && slotIndex <= 1) {
+  // fitness 1 is rejected at EVERY slot, not just S1/S2. Obituaries score 1, and the old
+  // `slotIndex <= 1` scoping let one through at a lower slot: a piece about a person who had
+  // died two days earlier, run through the contrarian-argument modes, arguing that her family
+  // rather than the industry was responsible. Nothing below S2 was gated at all.
+  if (analysis && typeof analysis.fitness === "number" && (analysis.fitness === 1 || (analysis.fitness <= 3 && slotIndex <= 1))) {
     console.warn(`[fitness-gate] slot ${slotIndex} rejected: score=${analysis.fitness} — ${analysis.fitness_reason} (${story.title})`);
     throw new Error(`Fitness gate: score ${analysis.fitness} — ${analysis.fitness_reason}`);
   }
