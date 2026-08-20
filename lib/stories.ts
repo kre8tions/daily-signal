@@ -244,6 +244,18 @@ function slotFromHour(h: number, date: string): { label: string; key: string } {
   return                         { label: "The Digest",  key: `${date}_evening`   };
 }
 
+/**
+ * True when this edition key falls on the dark day and should not be built.
+ *
+ * Keyed off the edition's OWN date, never the cron's UTC weekday — editions are dated on the
+ * UTC+14 clock, so a cron firing Friday UTC builds a Saturday edition. Filtering by cron
+ * day-of-week in vercel.json would skip the wrong day.
+ */
+export function isDarkDay(editionKey: string): boolean {
+  const [date] = editionKey.split("_");
+  return new Date(`${date}T12:00:00Z`).getUTCDay() === DARK_DAY;
+}
+
 export function getEdition(): { label: string; key: string } {
   const { h, date } = utc14Now();
   return slotFromHour(h, date);
@@ -327,6 +339,17 @@ const NAME_RE = /^(coco|gauff|lebron|elon|trump|biden|taylor|swift|bezos|musk|zu
 // Words that produce morbid/wrong images when used as search queries
 const MORBID_RE = /^(dead|dies|died|death|killed|kill|murder|murdered|shooting|stabbed|crash|crashes|fatal|fatally|suicide|overdose|cancer|disease|illness|sick|hospital|obituary|obit|funeral|buried|burial|skeleton|corpse|victim|victims|massacre|genocide|tragedy|tragic|devastat)$/i;
 // Detect obituary headlines
+// RSS stories per edition. The S1 Insight is prepended on top of these, so the edition shows
+// RSS_STORIES_PER_EDITION + 1 cards. Changing this number alone is NOT enough — corePoolRaw
+// below is a hand-ordered composition template and the pool is truncated positionally, so the
+// template has to be rebalanced to match or whole sections drop out of every edition.
+const RSS_STORIES_PER_EDITION = 7;
+
+// Editions are not built on this weekday (0 = Sunday ... 6 = Saturday). Sunday must stay:
+// the Weekly Signal generates on Sunday evening and fires the ConvertKit broadcast, so going
+// dark then would remove the only email touchpoint.
+const DARK_DAY = 6;
+
 const OBIT_RE = /\b(dead|dies|died|has died|passed away|obituary|obit|in memoriam)\b/i;
 
 // Serious-subject detector. The section fallbacks are written for the *section*, not the
@@ -571,9 +594,25 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
   // slot extras REPLACE random s2-s9 slots (never s1, never append)
   const uplift = [...psychology, ...humanPotential]; // combined self-improvement pool
   const upl = uplift.slice(0, 3), sci = science.slice(0, 2), cre = creative.slice(0, 4), tec = tech.slice(0, 3);
-  const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1), ...comics.slice(0, 1), ...anime.slice(0, 1)];
-  // S1 = best uplift story; S2 = second uplift or science; rows 1+2 are always high-engagement
-  const corePoolRaw = [upl[0] ?? sci[0], upl[1] ?? sci[0], upl[2] ?? sci[1], cre[0], sci[0] ?? upl[0], cre[1], cre[2], cre[3], tec[0], tec[1], tec[2]].filter(Boolean);
+  // Two extras, not four. These REPLACE core positions, so with a 7-slot pool four of them
+  // could displace more than half the edition; at nine that was proportionate, at seven it
+  // is not.
+  const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1), ...comics.slice(0, 1), ...anime.slice(0, 1)].slice(0, 2);
+  // Hand-ordered composition, NOT a ranked list — position determines section mix, so the
+  // trailing `slice` below cuts by category rather than by quality. The previous 11-entry
+  // template was already losing tec[1] and tec[2] to slice(0, 9) unnoticed, and simply
+  // lowering that number to 7 would have deleted Technology from every edition.
+  // Rebalanced for 7 RSS stories (8 cards with the S1 Insight prepended):
+  //   S2 uplift · S3 uplift · S4 creative · S5 science · S6 creative · S7 tech · S8 creative
+  const corePoolRaw = [
+    upl[0] ?? sci[0],
+    upl[1] ?? sci[0],
+    cre[0],
+    sci[0] ?? upl[2],
+    cre[1],
+    tec[0],
+    cre[2] ?? tec[1],
+  ].filter(Boolean);
   const seenLinks = new Set<string>();
   const corePool = corePoolRaw.filter(i => { if (seenLinks.has(i.link)) return false; seenLinks.add(i.link); return true; });
   // Seeded Fisher-Yates shuffle of s2-s11 indices to pick replacement positions
@@ -590,7 +629,7 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
   for (const pos of Array.from(replaceAt).sort((a, b) => a - b)) {
     if (ei < slotExtras.length) mutablePool[pos] = slotExtras[ei++];
   }
-  const pool = mutablePool.filter(Boolean).slice(0, 9);
+  const pool = mutablePool.filter(Boolean).slice(0, RSS_STORIES_PER_EDITION);
   // Deals and negative/dark stories must never appear in S1–S3; push them toward the end
   const isNeg = (s: RawItem) => NEGATIVE_RE.test(s.title) || DEAL_RE.test(s.title) || DEAL_RE.test(s.content);
   const negative = pool.filter(isNeg);
@@ -1387,7 +1426,7 @@ OUTPUT — return JSON only, no markdown:
 }
 
 // ── Assemble page data (cached per edition via Next.js data cache) ────────────
-const CARD_STYLES: Story["cardStyle"][] = ["full", "pullquote", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief", "brief"];
+const CARD_STYLES: Story["cardStyle"][] = ["full", "pullquote", "brief", "brief", "brief", "brief", "brief", "brief"];
 
 export async function buildPageData(editionKey: string, editionLabel: string): Promise<PageData> {
   // Set edition key hash so FC_UNIVERSE, FC_ANGLE, and P Proxies resolve correctly during generation
