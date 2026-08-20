@@ -2195,6 +2195,8 @@ async function selectMode(
         role: "user",
         content: `You are ${writerName}. You have read this article and its editorial analysis. Using your knowledge of this subject — the players, the history, the debates in this field — choose the single mode of engagement that would produce the most insightful, conversation-sparking response. Do not pick mechanically. Pick based on what you actually know about this topic and what would make a reader think differently.
 
+BEFORE CHOOSING, CHECK THE SUBJECT. If this story involves a real person's death, illness, addiction, bereavement, abuse, or a disaster with human casualties, then The Rebuttal, The Unstated Assumption, The Paradox and The Beneficiary Question are UNAVAILABLE. Those modes work by attacking the prevailing reading, and aimed at someone's suffering they produce a piece arguing against sympathy — which is how this pipeline once published an argument that a recently deceased actor's family, rather than her industry, was to blame. Use The Zoom Out, The Historical Echo, The Zoom In or The Extension instead, and write about the subject rather than against the people in it. If none of the permitted modes yields something worth reading, say so in "reasoning" and pick The Zoom Out.
+
 ARTICLE: ${story.title}
 SOURCE: ${story.source}
 GENRE: ${analysis.genre}
@@ -2602,12 +2604,12 @@ ${proseBody}
           content: `Shape the opening structure of this article. Preserve ALL ideas and the original voice word-for-word where possible. Do not add new ideas, do not delete content.
 
 Three jobs only:
-1. Enforce the sentence limits on the first 5 paragraphs (structure below). Content beyond paragraph 5 is preserved verbatim in "remainder" — do not touch it.
+1. Fit the first 5 paragraphs to the sentence budgets below by COMPRESSING — tighten, merge, cut weak clauses. Never satisfy a budget by stopping mid-thought or dropping the sentence that completes an idea. A paragraph one sentence over budget is far better than one that ends unfinished. Content beyond paragraph 5 is preserved verbatim in "remainder" — do not touch it.
 2. Break any sentence over 20 words at a natural clause boundary — em-dash, "and", "but", "because", "which", "so". Keep both halves punchy. NEVER break at a semicolon — rewrite to remove it entirely.
 3. Remove throat-clearing openers ("Here's the thing", "Here's the structure", "The truth is", "What's interesting is", "Let's be clear", "Make no mistake" — any setup phrase before the real point). Remove colons used as setup-payoff splits ("X: Y") — rewrite as a direct statement.
 
 Structure for first 5 paragraphs:
-- para1: EXACTLY 1 sentence — the hook. Irreversible opener. No exceptions.
+- para1: 1 sentence, 2 at the very most — the hook. Irreversible opener. Prefer one; take the second only when the claim genuinely cannot land without it. NEVER leave the thought unfinished to hit the count: if it will not compress, use the second sentence.
 - para2: up to 2 sentences — deepens or reframes the hook. Creates tension.
 - para3: 2-3 sentences — first insight or evidence. The "here's why" moment.
 - para4: 3-4 sentences — the turn. Complication, contradiction, or escalation.
@@ -2630,18 +2632,29 @@ Return JSON only:
       const raw2 = (pass2msg.content[0]?.type === "text" ? pass2msg.content[0].text : undefined) ?? "{}";
       const text2 = raw2.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
       const scaffold = JSON.parse(text2);
-      const limits: Record<string, number> = { para1: 1, para2: 2, para3: 3, para4: 4, para5: 5 };
+      // Sentence budgets are enforced by the Pass 2 PROMPT, not by cutting the prose here.
+      // This used to slice each paragraph to a sentence count and discard the rest, which is
+      // why articles ended mid-thought: "The real product isn't the plan or the expertise."
+      // was para5 truncated, not a cliffhanger. It also contradicted PASS1_SYSTEM, which
+      // permits the claim to land in sentence 2 while this cut para1 to one sentence.
+      // An overrun is now logged and published intact — a slightly long paragraph is always
+      // better than a severed one.
+      const limits: Record<string, number> = { para1: 2, para2: 2, para3: 3, para4: 4, para5: 5 };
       const paraKeys = ["para1", "para2", "para3", "para4", "para5"];
+      const sentenceCount = (s: string) => {
+        const ABBREV2 = /\b(Mr|Mrs|Ms|Dr|Prof|St|Jr|Sr|vs|etc|No|Vol|pp)\.|\b[A-Z]\.(?=\s?[A-Z])|(?<=\d)\.(?=\d)/g;
+        return (s.replace(ABBREV2, m => m.slice(0, -1) + "\x00").match(/[^.!?]*[.!?]+["']?\s*/g) ?? [s]).length;
+      };
       if (scaffold.para1 && scaffold.para2 && scaffold.para3) {
+        for (const k of paraKeys) {
+          const v = scaffold[k] as string | undefined;
+          if (v && sentenceCount(v) > limits[k]) {
+            console.log(`[shape] ${k} ran ${sentenceCount(v)} sentences over a budget of ${limits[k]} — kept intact (${story.title})`);
+          }
+        }
         const shaped = paraKeys
           .filter(k => scaffold[k])
-          .map(k => {
-            const val = (scaffold[k] as string | undefined) ?? "";
-            const ABBREV2 = /\b(Mr|Mrs|Ms|Dr|Prof|St|Jr|Sr|vs|etc|No|Vol|pp)\.|\b[A-Z]\.(?=\s?[A-Z])|(?<=\d)\.(?=\d)/g;
-            const safe = val.replace(ABBREV2, (m) => m.slice(0, -1) + "\x00");
-            const matches = safe.match(/[^.!?]*[.!?]+["']?\s*/g) ?? [safe];
-            return matches.slice(0, limits[k]).join(" ").trim().replace(/\x00/g, ".");
-          })
+          .map(k => ((scaffold[k] as string | undefined) ?? "").trim())
           .join("\n\n");
         const remainderRaw = (scaffold.remainder as string | undefined)?.trim() ?? "";
         const remainder = remainderRaw
@@ -2856,20 +2869,28 @@ Return JSON only:
     const text2 = raw2.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const scaffold = JSON.parse(text2);
 
-    function trimSentences(s: string, max: number): string {
-      // Split on sentence-ending punctuation but NOT on honorific/abbreviation dots
-      // (Mr. Mrs. Dr. Prof. St. Jr. Sr. vs. etc. — a dot followed by a capital only counts if preceded by ≥2 chars)
-      const ABBREV = /\b(Mr|Mrs|Ms|Dr|Prof|St|Jr|Sr|vs|etc|No|Vol|pp)\./g;
-      const placeholder = s.replace(ABBREV, (m) => m.slice(0, -1) + "\x00");
-      const matches = placeholder.match(/[^.!?]*[.!?]+["']?/g) ?? [placeholder];
-      return matches.slice(0, max).join(" ").trim().replace(/\x00/g, ".");
-    }
-    const limits: Record<string, number> = { para1: 1, para2: 1, para3: 2, para4: 3, para5: 3 };
+    // Same change as the article path: the scaffold prompt sets the sentence budgets, and
+    // paragraphs that overrun are published intact rather than sliced. The FC limits were
+    // tighter still (para1 and para2 capped at one sentence each), so this path was severing
+    // thoughts more aggressively than any other in the pipeline.
+    const limits: Record<string, number> = { para1: 2, para2: 2, para3: 2, para4: 3, para5: 3 };
     const paraKeys = ["para1", "para2", "para3", "para4", "para5"];
+    const fcSentenceCount = (s: string) => {
+      const ABBREV = /\b(Mr|Mrs|Ms|Dr|Prof|St|Jr|Sr|vs|etc|No|Vol|pp)\./g;
+      return (s.replace(ABBREV, m => m.slice(0, -1) + "\x00").match(/[^.!?]*[.!?]+["']?/g) ?? [s]).length;
+    };
+    if (scaffold.para1 && scaffold.para2 && scaffold.para3) {
+      for (const k of paraKeys) {
+        const v = scaffold[k] as string | undefined;
+        if (v && fcSentenceCount(v) > limits[k]) {
+          console.log(`[fc-shape] ${k} ran ${fcSentenceCount(v)} sentences over a budget of ${limits[k]} — kept intact`);
+        }
+      }
+    }
     const body = scaffold.para1 && scaffold.para2 && scaffold.para3
       ? paraKeys
           .filter(k => scaffold[k])
-          .map(k => trimSentences(scaffold[k], limits[k]))
+          .map(k => (scaffold[k] as string).trim())
           .join("\n\n")
       : (pass1.body ?? "");
     const fcPullQuote: string = scaffold.pullQuote ?? pass1.pullQuote ?? "";
