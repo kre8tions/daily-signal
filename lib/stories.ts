@@ -2395,6 +2395,106 @@ Voice rules:
 - Never reference the source article or your own process. You chose to write about this subject — write about it directly.
 - No semicolons — ever. Rewrite as two sentences. Exception: if the semicolon or colon separates parallel items in a list rather than two independent clauses, do not split into two sentences — use commas and "and" instead (e.g. "legally, financially, and socially available" — never "legally, financially. Socially available"). Only split into two sentences when both resulting halves are independently complete, grammatical sentences on their own.`;
 
+// Slots at or above this index use the single-call path. RSS_STORIES_PER_EDITION is 7, so
+// this is the last two (S7 and S8 on the page, since the Insight occupies S1).
+const SINGLE_PASS_FROM_SLOT = RSS_STORIES_PER_EDITION - 2;
+
+function isBriefStyle(story: Story): boolean {
+  return story.cardStyle === "brief";
+}
+
+interface SinglePassResult {
+  ownedTitle?: string; summary?: string; bullets?: string[]; imageQuery?: string;
+  imageQuery2?: string; header?: string; header2?: string; pullQuote?: string;
+  pullQuoteAfterPara?: number; body?: string; cta?: { header: string; body: string };
+}
+
+/**
+ * One call: structured prose plus every metadata field. Mirrors getS1Insight's shape, and
+ * inherits PASS1_SYSTEM so the factual-integrity and anti-tell rules apply identically to
+ * both paths. Returns null on any failure so the caller can fall back to multi-pass — a
+ * degraded article is acceptable, a missing one is not.
+ */
+async function singlePassArticle(
+  client: Anthropic,
+  story: Story,
+  relatedStories: Story[],
+  analysis: SourceAnalysis | null,
+  modeSelection: ModeSelection | null,
+  writer: (typeof WRITERS)[number] | null,
+  lens: { prompt: string } | null,
+  hasCta: boolean,
+  refSeed: number,
+): Promise<SinglePassResult | null> {
+  try {
+    const voice = writer
+      ? `${writer.style}${lens ? `\n\n${lens.prompt}` : ""}`
+      : `You write "The Signal Take" — a short, sharp editorial for a news digest. Direct, a little irreverent, never preachy.${lens ? `\n\n${lens.prompt}` : ""}`;
+    const brief = [
+      analysis ? genreInstruction(analysis) : "",
+      modeSelection ? `MODE: ${modeSelection.mode}\nWHY: ${modeSelection.reasoning}` : "",
+      modeSelection?.claim ? `YOUR COMMITTED CLAIM: ${modeSelection.claim}\nBuild from it, complicate it. Everything serves or sharpens this claim.` : "",
+    ].filter(Boolean).join("\n");
+    const titleMode = TITLE_MODES[Math.floor(mixedRandom(refSeed * 7 + 4441) * TITLE_MODES.length)];
+
+    const msg = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1600,
+      system: [{ type: "text" as const, text: PASS1_SYSTEM, cache_control: { type: "ephemeral" as const } }],
+      messages: [{
+        role: "user",
+        content: `${voice}
+
+${brief}
+
+STORY: ${story.title}
+SOURCE: ${story.source}
+SECTION: ${story.section}
+${story.content ? `EXCERPT: ${story.content.slice(0, 500)}` : story.summary ? `SUMMARY: ${story.summary}` : ""}
+
+TODAY'S OTHER STORIES (weave one in only if the parallel is genuinely non-obvious):
+${relatedStories.slice(0, 6).map(s => `- ${s.title} (${s.section})`).join("\n")}
+
+Write the piece and its metadata together, in one pass. 250-350 words of prose total.
+
+PARAGRAPH BUDGETS — fit them by COMPRESSING, never by stopping mid-thought. A paragraph one sentence over is far better than one that ends unfinished:
+- para1: 1-2 sentences. The hook. Name the subject and land a real claim.
+- para2: up to 2. Deepen or reframe it.
+- para3: 2-3. First evidence or insight.
+- para4: 3-4. The turn — complication, contradiction, escalation.
+- para5: 3-5. The landing. Must connect to something the reader can see in their own work or thinking, not just a conclusion about the subject. Ends on a declarative sentence, never a question.
+
+FORBIDDEN: colons in the prose; semicolons; throat-clearing openers; 'this teaches us'; endings that stay inside the subject world; named cases dropped in without setup.
+
+Return JSON only, no markdown:
+{
+  "ownedTitle": "5-9 words. Write it in this mode: ${titleMode} THREE HARD TESTS: every number, name and claim in the title must appear in your body below — never assert a statistic the piece does not make; it must OPEN a gap, not close one; it may not blame the reader. No colons. No abstract category nouns. No container noun behind a definite article ('The Move', 'The Year'). Must differ from the source headline.",
+  "summary": "2 sentences — what the piece argues and why it matters to someone thinking about their own life. Name a specific person, product or place from the article where one exists.",
+  "bullets": ["≤15 words, specific or reframe-inducing", "≤15 words", "≤15 words"],
+  "header": "3-5 words. Magazine sub-headline above para1. Specific, no colons.",
+  "header2": "3-5 words. Second sub-headline, sits before para4. Covers the turn.",
+  "pullQuote": "One sentence lifted VERBATIM from your body — the most arresting line. Must appear word-for-word in the body.",
+  "pullQuoteAfterPara": 4,
+  "imageQuery": "4-6 words for Unsplash. Concrete scene. No names, brands, text or logos.",
+  "imageQuery2": "4-6 different words for a second image. Texture, environment, light.",
+  "body": "The five paragraphs as one string, separated by \\n\\n. Prose only, no labels."${hasCta ? `,
+  "cta": { "header": "2-4 words, active verb phrase", "body": "1 sentence. A specific thing to do, read or try that connects to this piece." }` : ""}
+}`,
+      }],
+    });
+
+    const raw = msg.content[0]?.type === "text" ? msg.content[0].text : "";
+    const parsed = JSON.parse(raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()) as SinglePassResult;
+    if (!parsed.ownedTitle || !parsed.body) return null;
+    // The pull quote is rendered as a verbatim lift; drop it rather than show a near-miss.
+    if (parsed.pullQuote && !parsed.body.includes(parsed.pullQuote)) parsed.pullQuote = "";
+    return parsed;
+  } catch (e) {
+    console.warn("[single-pass] generation failed", e);
+    return null;
+  }
+}
+
 export async function getFullArticle(story: Story, relatedStories: Story[], editionKey: string, writerIndex?: number, readOnly = false, slotIndex = 99): Promise<ArticleCommentary> {
   const slug = createHash("md5").update(story.link).digest("hex").slice(0, 16);
   const refSeed = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0) + (writerIndex ?? 0) * 997 + parseInt(slug.slice(0, 8), 16);
@@ -2473,6 +2573,47 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   const writerName = writer?.name ?? "The Signal editor";
   const lens = getLens(story.section, refSeed);
   const modeSelection = analysis ? await selectMode(client, story, analysis, writerName) : null;
+
+  // ── Single-pass path (trial, last two slots only) ───────────────────────────
+  // Writes structured prose AND every metadata field in one call, the way getS1Insight does,
+  // replacing Pass 1 + 1.5 + 2. Two reasons to want it: three calls become one, and the title
+  // and pull quote are written WITH the body instead of extracted from it afterwards — which
+  // is why extracted titles drift from the piece they sit above.
+  //
+  // Restricted to the final two slots so it can be compared against multi-pass articles in the
+  // same edition, same feed, same writer pool. The load it has to carry in one shot — voice,
+  // committed claim, structure, factual integrity, anti-tell rules, title tests, image query —
+  // is proven on Sonnet in the insight, not on Haiku here. If these two read worse than the
+  // rest of the edition, delete this block; nothing else depends on it.
+  if (slotIndex >= SINGLE_PASS_FROM_SLOT && slotIndex !== 99) {
+    const single = await singlePassArticle(client, story, relatedStories, analysis, modeSelection, writer, lens, hasCta, refSeed);
+    if (single) {
+      const spImageUrl2 = (!isBriefStyle(story) && hasImg2 && single.imageQuery2)
+        ? await fetchUnsplash(single.imageQuery2, story.section, 1).then(r => r?.url)
+        : undefined;
+      const spCommentary: ArticleCommentary = {
+        ownedTitle: single.ownedTitle ?? "",
+        summary: single.summary ?? undefined,
+        bullets: single.bullets?.length ? single.bullets.slice(0, 3) : undefined,
+        imageQuery: single.imageQuery ?? undefined,
+        header: single.header ?? "",
+        header2: single.header2 ?? "",
+        pullQuote: single.pullQuote ?? "",
+        pullQuoteAfterPara: single.pullQuoteAfterPara ?? 4,
+        imageUrl2: spImageUrl2 ?? undefined,
+        body: breakLongSentences(single.body ?? ""),
+        writer: writer?.name ?? "",
+        cta: single.cta ?? undefined,
+        hasKeyFacts,
+      };
+      console.log(`[single-pass] slot ${slotIndex} "${spCommentary.ownedTitle}"`);
+      try {
+        await put(blobKey, JSON.stringify(spCommentary), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
+      } catch { /* non-fatal */ }
+      return spCommentary;
+    }
+    console.warn(`[single-pass] slot ${slotIndex} failed — falling through to multi-pass (${story.title})`);
+  }
 
   // ── Pass 1: pure prose — voice leads, brief follows ──────────────────────────
   const voiceInstruction = writer
