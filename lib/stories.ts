@@ -618,14 +618,24 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
   // lowering that number to 7 would have deleted Technology from every edition.
   // Rebalanced for 7 RSS stories (8 cards with the S1 Insight prepended):
   //   S2 uplift · S3 uplift · S4 creative · S5 science · S6 creative · S7 tech · S8 creative
+  // The first seven entries set the composition; everything after is DEPTH, and it is not
+  // optional. This list is deduped by link and then sliced to RSS_STORIES_PER_EDITION, so a
+  // list of exactly seven collapses below target whenever a category is thin or two positions
+  // resolve to the same story. A seven-entry version shipped on 2026-08-19 and produced
+  // editions of one, two and five cards: three of its slots fell back to sci[0], dedup removed
+  // the duplicates, and gate rejections took the rest. The previous template carried eleven
+  // entries for a target of nine — the slack was doing real work and I removed it.
+  // Every fallback here resolves to a DIFFERENT index so no two positions can collide.
   const corePoolRaw = [
     upl[0] ?? sci[0],
-    upl[1] ?? sci[0],
-    cre[0],
+    upl[1] ?? sci[1],
+    cre[0] ?? tec[0],
     sci[0] ?? upl[2],
-    cre[1],
-    tec[0],
-    cre[2] ?? tec[1],
+    cre[1] ?? tec[1],
+    tec[0] ?? cre[2],
+    cre[2] ?? sci[1],
+    // Reserve — only reached when something above is missing or deduped away.
+    upl[2], sci[1], cre[3], tec[1], tec[2],
   ].filter(Boolean);
   const seenLinks = new Set<string>();
   const corePool = corePoolRaw.filter(i => { if (seenLinks.has(i.link)) return false; seenLinks.add(i.link); return true; });
@@ -1533,16 +1543,23 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   const failedSlots = arts.map((a, i) => (!a?.summary ? i : -1)).filter(i => i >= 0);
   if (failedSlots.length > 0 && bench.length > 0) {
     await new Promise(r => setTimeout(r, 800));
+    // Keep trying bench stories for a slot until one survives the gates or the bench runs out.
+    // This used to take a single attempt per slot, so any bench story that was also gated left
+    // a permanent hole — the mechanism behind editions publishing one and two cards.
     for (const slot of failedSlots) {
-      if (benchIdx >= bench.length) break;
-      const benchItem = bench[benchIdx++];
-      const storyShell: Story = { ...benchItem, cardStyle: CARD_STYLES[slot] ?? "brief" };
-      const relatedShells = activeRaw.filter((_, j) => j !== slot).slice(0, 5).map(r2 => ({ ...r2, cardStyle: "brief" as const }));
-      try {
-        const result = await getFullArticle(storyShell, relatedShells, editionKey, writerSlots[slot], false, slot);
-        arts[slot] = result;
-        activeRaw[slot] = benchItem;
-      } catch { /* leave slot as failed */ }
+      while (benchIdx < bench.length && !arts[slot]?.summary) {
+        const benchItem = bench[benchIdx++];
+        const storyShell: Story = { ...benchItem, cardStyle: CARD_STYLES[slot] ?? "brief" };
+        const relatedShells = activeRaw.filter((_, j) => j !== slot).slice(0, 5).map(r2 => ({ ...r2, cardStyle: "brief" as const }));
+        try {
+          const result = await getFullArticle(storyShell, relatedShells, editionKey, writerSlots[slot], false, slot);
+          if (result?.summary) {
+            arts[slot] = result;
+            activeRaw[slot] = benchItem;
+          }
+        } catch { /* try the next bench story */ }
+      }
+      if (!arts[slot]?.summary) console.warn(`[backfill] slot ${slot} unfilled — bench exhausted`);
     }
   }
 
@@ -1575,6 +1592,9 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
 
   // Only include stories where article generation succeeded (has summary)
   const filtered = allStories.filter(s => s.summary);
+  if (filtered.length < RSS_STORIES_PER_EDITION) {
+    console.error(`[build] ${editionKey} SHORT: ${filtered.length}/${RSS_STORIES_PER_EDITION} stories survived (pool ${raw.length}, bench ${bench.length}) — edition will publish thin`);
+  }
 
   // Fix 2: Post-filter section check — if filter cascade left a non-uplift story at position 0,
   // swap with the first uplift-section story in the remaining list
