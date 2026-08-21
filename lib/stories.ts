@@ -775,7 +775,7 @@ ${synthWriter.voiceReminder}
 Return JSON only, no markdown:
 {
   "themeCandidates": [
-    "Candidate 1 — financial/economic register (think: tariff, ledger, debt, windfall, custody, currency — draw your own word from this register, don't just reuse these examples): 2-4 words, an evocative noun phrase naming today's specific underlying tension, grounded in the actual stories above, not generic.",
+    "Candidate 1 — financial/economic register (think: tariff, ledger, debt, windfall, custody, currency — draw your own word from this register, don't just reuse these examples): 2-4 words, an evocative noun phrase naming today's specific underlying tension, grounded in the actual stories above, not generic. RETURN THE PHRASE ONLY — no 'Candidate 1', no register name, no colon, no explanation. Just the two-to-four words, exactly as they would print on the page.",
     "Candidate 2 — spatial/structural register (think: threshold, bottleneck, scaffolding, architecture, chokepoint): same format, a genuinely different register from candidate 1.",
     "Candidate 3 — legal/institutional register (think: mandate, charter, amnesty, jurisdiction, dispensation): same format, different register again.",
     "Candidate 4 — theatrical/performative register (think: mask, rehearsal, costume, choreography, pretense): same format, different register again.",
@@ -815,6 +815,25 @@ Return JSON only, no markdown:
     // targeted follow-up call only if every candidate also collides. Never loops, never throws
     // past this block — collision just means we keep the original theme and publish anyway.
     // A rare repeat is a far smaller cost than a failed edition.
+    // Candidates come back mirroring the field spec's own labelling — "Candidate 1 —
+    // financial/economic register: The Attention Deficit" — and the collision path below
+    // promotes one into `theme` verbatim, which is how that string reached the front page.
+    // Strip the scaffolding wherever a theme is set, including the model's first choice.
+    const cleanTheme = (s: string): string => {
+      // Parentheticals go FIRST — the register hints contain their own colons
+      // ("(think: mask, rehearsal)"), which otherwise get mistaken for the label separator.
+      let t = s.trim().replace(/\s*\([^)]*\)\s*/g, " ").trim();
+      if (/^candidate\s*\d+\b/i.test(t)) {
+        // Take whatever follows the LAST label separator — the model uses ":" or an em-dash,
+        // and sometimes both ("Candidate 3 — legal/institutional register — The Phrase").
+        const cut = Math.max(t.lastIndexOf(":"), t.lastIndexOf("—"), t.lastIndexOf("–"));
+        t = cut >= 0 ? t.slice(cut + 1) : t.replace(/^candidate\s*\d+\s*[—–-]\s*/i, "");
+      }
+      return t.replace(/^["'\s]+|["'\s]+$/g, "").trim();
+    };
+    if (parsed.theme) parsed.theme = cleanTheme(parsed.theme);
+    if (Array.isArray(parsed.themeCandidates)) parsed.themeCandidates = parsed.themeCandidates.map(cleanTheme);
+
     let collidingWord = parsed.theme ? themeCoreWord(parsed.theme) : null;
     if (collidingWord && recentWords.has(collidingWord)) {
       const original = parsed.theme.trim();
@@ -1180,10 +1199,10 @@ const HOOK_MODES = [
 // Seeing" — three consecutive editions, one shape. Readers habituate to a headline frame in two
 // or three exposures. Rotating the form is what fixed the hooks; same treatment here.
 const TITLE_MODES = [
-  "THE LIVED DETAIL — a number and an act, lifted from the piece. 'Fifteen Years of Calling It Nerves'. Concrete enough that it could only belong to this article.",
+  "THE LIVED DETAIL — a number and an act, lifted from the piece. 'Fifteen Years of Calling It Nerves'. Concrete enough that it could only belong to this article. The detail alone is not a title: pair it with the claim, or the reader learns a fact about a stranger and nothing about the piece.",
   "THE FLAT FACT — state the thing that should not be true, plainly and without commentary. No irony, no wink. Let the reader do the reacting.",
   "THE READER'S OWN QUESTION — the question they are already asking, in the words they would use. Not a rhetorical question the piece answers smugly.",
-  "THE NAMED THING — put the specific person, place, work or object at the front and let it carry the weight. Works only if that name appears in the piece.",
+  "THE NAMED THING — put the specific person, place, work or object at the front, then say what happened to it or what it proves. The name alone carries nothing: a sketchbook, a tally sheet or a person's name tells the reader who is in the piece, never what it is about. Works only if that name appears in the piece.",
   "THE INSTRUCTION — a short imperative. What to do, stated as if to one person. No hedging, no 'try to'.",
   "THE OVERHEARD FRAGMENT — a phrase in quotation marks, something a person would actually say, then nothing else. Let it sit unexplained.",
 ];
@@ -1319,7 +1338,7 @@ TWO RULES THAT APPLY TO EVERY PARAGRAPH, NOT JUST THE ONE THAT NAMES THEM:
 STRUCTURE (five paragraphs, pure prose — no bullet points, no headers in the body):
 - Para 1 — HOOK, and today you are writing it in this mode: ${hookMode}
   Whatever the mode, the opening is one concrete particular — never a type of person, never a recurring pattern, never 'every June someone does X' or 'every summer people do Y'. Do not end the hook on a defeat or reversal by reflex; that has become its own habit.
-  IF THE HOOK NAMES A PERSON, it must be an invented ordinary person — someone with no public record, whose life you are free to furnish. Give them a full name that belongs to them and to this world, and avoid the autopilot defaults: never Mara, Sarah, Elena, or David. Use a REAL, publicly known person here only if the scene is documented and you could point to where it is recorded — otherwise you are inventing socks and weather for someone who actually lived, which is the failure the global rules above forbid. The ordinary invented person is almost always the better choice: the hook needs a human being, not an authority.
+  IF THE HOOK NAMES A PERSON, it must be an invented ordinary person — someone with no public record, whose life you are free to furnish. Give them a full name that belongs to them and to this world, and avoid the autopilot defaults: never Mara, Sarah, Elena, David, or Callum. A blocklist always trails the habit, so apply the underlying test too — if the name you have chosen is the first plausible one that came to mind, discard it and pick again from a different naming tradition. Use a REAL, publicly known person here only if the scene is documented and you could point to where it is recorded — otherwise you are inventing socks and weather for someone who actually lived, which is the failure the global rules above forbid. The ordinary invented person is almost always the better choice: the hook needs a human being, not an authority.
 - Para 2 — MECHANISM: State the principle and explain why the world works this way. Write it as something you know to be true. No citations, no named authors — in THIS paragraph only. The principle belongs in your own voice here; Para 3 is where it gets anchored to something real.
 - Para 3 — CASE: Ground the principle in one named case — a real person, company, product, year, or documented moment. Not hypothetical. VERIFIABILITY IS THE BAR, and it is absolute: if you cannot name the specific study, book, person, or documented event that makes this checkable, choose a different case. You may name it here — a bare name is allowed in this paragraph and nowhere else, because committing to a real source is what keeps the example honest. Never credit a method, programme, selection criterion, or finding to an organisation-plus-date unless it is a well-documented fact you are certain of: "In the early 1980s, NASA used this to assess candidates" reads as verifiable and is the easiest sentence in the piece to invent. Check what the example connotes, not just whether it is true: an example carrying suffering, cruelty, or condescension will undercut the warmth of the piece even when the science is sound. A confident, specific, checkable-looking claim that turns out to be false costs the publication more than a duller case that is true.
 - Para 4 — APPLICATION: Serve the reader's own need. If the hook established something the reader lacks, this paragraph addresses the reader's lack — it does not train them to supply it to someone else. The reader should finish this paragraph better off, not with an assignment to improve others. One scenario only, fully inhabited. Not a list of situations to choose from — the reader can occupy one room, not three. Define the moment by what the reader is doing, never by a day of the week: a named weekday is a stand-in for specificity, not specificity itself. Never write "Tuesday afternoon", "Monday morning", or any "So here is your [day]" opener. "The hour before the budget meeting" is a moment. "Tuesday" is a placeholder.
@@ -1353,7 +1372,7 @@ CRAFT RULES:
 
 OUTPUT — return JSON only, no markdown:
 {
-  "ownedTitle": "Write it in this mode today: ${titleMode} — Name the experience the reader has already lived, not the conclusion the piece reaches. Do not use the explanatory vocabulary of Para 2; the mechanism is the reveal, not the headline. Whatever the title promises, Para 5 must deliver. Under 12 words. Not clickbait. THREE TESTS, all mandatory: (1) It must OPEN a gap, never close one — if someone can nod at it and move on, it has failed. 'You Already Know Stress Is Coming' fails; it concedes there is nothing to learn. (2) Build it from the concrete material in Para 1, not the abstract principle. 'Fifteen Years of Calling It Nerves' works because it is made of the scene. A container noun with a definite article in front of it is FALSE specificity — 'The Move', 'The Year', 'The Room' presuppose a particular one the reader does not have yet, and name nothing. (3) It may not blame the reader. 'The Year You Quit Too Soon' and 'The Room You Walked Through Without Seeing' tell them they failed before they have read a word; occasional accusation is sharp, habitual accusation is scolding. BANNED FRAMES: 'The [noun] You [verb]...' in any form, 'Why Your X Does Y', 'Your X Knew Before You Did', 'You Already Know...'.",
+  "ownedTitle": "Write it in this mode today: ${titleMode} — Name the experience the reader has already lived, not the conclusion the piece reaches. Whatever the title promises, Para 5 must deliver. Under 12 words. Not clickbait. FOUR TESTS, all mandatory: (0) THE READER MUST BE ABLE TO SAY WHAT THIS PIECE IS ABOUT from the title alone — not merely feel curious. This is the test these headlines keep failing. 'Callum Forde's Sketchbook Was Empty for Three Years' and 'Lorraine's Tally Sheet Had No Column for This' are concrete, specific and completely opaque: they name the SCENE from Para 1, which is only the illustration, and hide the subject entirely. Take the concrete anchor from Para 1 and the subject or claim from Para 2, and put both in the one line. 'Good Intentions Don't Fire Neurons' passes — it names a subject and makes a claim. Do not use Para 2's technical vocabulary, but the reader must still know what the piece concerns. A title that only works once the reader has read the article has failed. (1) It must OPEN a gap, never close one — if someone can nod at it and move on, it has failed. 'You Already Know Stress Is Coming' fails; it concedes there is nothing to learn. (2) Build it from the concrete material in Para 1, not the abstract principle. 'Fifteen Years of Calling It Nerves' works because it is made of the scene. A container noun with a definite article in front of it is FALSE specificity — 'The Move', 'The Year', 'The Room' presuppose a particular one the reader does not have yet, and name nothing. (3) It may not blame the reader. 'The Year You Quit Too Soon' and 'The Room You Walked Through Without Seeing' tell them they failed before they have read a word; occasional accusation is sharp, habitual accusation is scolding. BANNED FRAMES: 'The [noun] You [verb]...' in any form, 'Why Your X Does Y', 'Your X Knew Before You Did', 'You Already Know...'.",
   "summary": "One sentence (25-35 words) capturing the core insight — shown in the edition card preview.",
   "bullets": [
     "Key takeaway 1 — one complete sentence, specific and actionable. Must be consistent with the body and the CTA: if the CTA names a duration, number, or action, no takeaway may contradict it.",
