@@ -136,25 +136,31 @@ function dedupeByTopic(items: RawItem[]): RawItem[] {
 // ── Feeds (expanded) ──────────────────────────────────────────────────────────
 export const FEEDS = [
   // Psychology / Self-Improvement — behavior, habits, overcoming fear, human potential
-  { url: "https://greatergood.berkeley.edu/feeds/greatergood",                source: "Greater Good",        section: "Psychology"    },
+  // Feeds verified live 2026-08-24. FIVE were returning 404 and three were frozen years back
+  // (Elemental last posted Apr 2022, Freakonomics Dec 2022, James Clear Jan 2020) — 8 of 18
+  // uplift feeds dead. Psychology and HumanPotential are the ONLY sections that can fill S1/S2
+  // through the section gate, so this starved the two slots that matter most and left the pool
+  // falling back on science. Re-verify with a parseURL sweep before assuming supply is healthy.
   { url: "https://behavioralscientist.org/feed/",                             source: "Behavioral Scientist", section: "Psychology"   },
-  { url: "https://www.psychologytoday.com/us/front-page/feed",                source: "Psychology Today",    section: "Psychology"    },
-  { url: "https://elemental.medium.com/feed",                                 source: "Elemental",           section: "Psychology"    },
-  { url: "https://www.vox.com/future-perfect/rss",                            source: "Vox Future Perfect",  section: "Psychology"    },
   { url: "https://nesslabs.com/feed",                                          source: "Ness Labs",           section: "Psychology"    },
+  { url: "https://www.raptitude.com/feed/",                                    source: "Raptitude",            section: "Psychology"      },
+  { url: "https://psyche.co/feed",                                             source: "Psyche",               section: "Psychology"      },
+  { url: "https://bakadesuyo.com/feed",                                        source: "Barking Up the Wrong Tree", section: "Psychology" },
   // Human Potential — Outliers-style, high achievers, overcomers, lessons from exceptional people
   { url: "https://fs.blog/feed/",                                             source: "Farnam Street",       section: "HumanPotential" },
   { url: "https://bigthink.com/feed/",                                        source: "Big Think",           section: "HumanPotential" },
-  { url: "https://freakonomics.com/feed/",                                    source: "Freakonomics",        section: "HumanPotential" },
-  { url: "https://www.inc.com/rss.xml",                                       source: "Inc.",                section: "HumanPotential" },
   { url: "https://www.fastcompany.com/leadership/rss",                        source: "Fast Company Ideas",  section: "HumanPotential" },
   { url: "https://feeds.kottke.org/main",                                     source: "Kottke",              section: "HumanPotential" },
   { url: "https://dariusforoux.com/feed",                                     source: "Darius Foroux",       section: "HumanPotential" },
-  { url: "https://jamesclear.com/feed",                                        source: "James Clear",          section: "HumanPotential" },
   { url: "https://sive.rs/en.atom",                                            source: "Derek Sivers",         section: "HumanPotential" },
   { url: "https://www.scotthyoung.com/blog/feed/",                             source: "Scott H. Young",       section: "HumanPotential" },
-  { url: "https://www.raptitude.com/feed/",                                    source: "Raptitude",            section: "Psychology"      },
-  { url: "https://theconversation.com/us/psychology/articles.atom",            source: "The Conversation",     section: "Psychology"      },
+  // Practical / body / solutions — added 2026-08-24 to rebuild uplift supply
+  { url: "https://www.artofmanliness.com/feed/",                               source: "Art of Manliness",     section: "HumanPotential" },
+  { url: "https://www.outsideonline.com/feed/",                                source: "Outside",              section: "HumanPotential" },
+  { url: "https://www.strongerbyscience.com/feed/",                            source: "Stronger by Science",  section: "HumanPotential" },
+  { url: "https://reasonstobecheerful.world/feed/",                            source: "Reasons to be Cheerful", section: "HumanPotential" },
+  { url: "https://www.positive.news/feed/",                                    source: "Positive News",        section: "HumanPotential" },
+  { url: "https://www.goodgoodgood.co/articles/rss.xml",                       source: "Good Good Good",       section: "HumanPotential" },
   // Technology — emerging tech, innovation, futurism (no policy)
   { url: "https://www.theverge.com/rss/index.xml",                          source: "The Verge",           section: "Technology"    },
   { url: "https://feeds.arstechnica.com/arstechnica/index",                 source: "Ars Technica",        section: "Technology"    },
