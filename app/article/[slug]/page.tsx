@@ -120,6 +120,14 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
           {fullArticle?.writer && <span style={{ fontWeight: 700, color: P.inkMid }}>{fullArticle.writer}</span>}
           {fullArticle?.writer && <span>·</span>}
           <span>{pubDate}</span>
+          {/* Back to the edition this article belongs to. Sits left of Share so the pair reads
+              as "where this came from" then "send it on". */}
+          <a
+            href={editionHint ? `/archive/${editionKey}` : "/"}
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: sectionColor, background: sectionColor + "18", border: `1px solid ${sectionColor}55`, borderRadius: 50, paddingTop: 5, paddingBottom: 5, paddingLeft: 13, paddingRight: 13, fontFamily: P.fontBody, textDecoration: "none", whiteSpace: "nowrap" as const }}
+          >
+            <span aria-hidden>&#8592;</span> Edition
+          </a>
           <ShareButton
             title={fullArticle?.ownedTitle || story.ownedTitle || story.title}
             url={`https://dailysignal.cc/article/${slug}?e=${editionKey}`}

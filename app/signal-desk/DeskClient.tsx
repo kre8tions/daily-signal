@@ -74,7 +74,15 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                     {edition.isCurrent && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: P.accent, background: P.accent + "22", padding: "2px 7px", borderRadius: 20 }}>● Live</span>}
                     {dateDisplay && <span style={{ fontSize: 10, fontWeight: 600, color: P.inkLight, opacity: 0.6, marginLeft: "auto" }}>{dateDisplay}{slotDisplay ? ` · ${slotDisplay}` : ""}</span>}
                   </div>
-                  {edition.theme && <div style={{ fontSize: 20, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading }}>{edition.theme}</div>}
+                  {edition.theme && (
+                    <a
+                      href={edition.isCurrent ? "/" : `/archive/${edition.key}`}
+                      style={{ fontSize: 20, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading, textDecoration: "none", display: "inline-flex", alignItems: "baseline", gap: 8 }}
+                    >
+                      {edition.theme}
+                      <span style={{ fontSize: 12, color: P.accent, fontWeight: 700 }} aria-hidden>&#8599;</span>
+                    </a>
+                  )}
                 </div>
               );
             })()}

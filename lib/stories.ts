@@ -2650,7 +2650,16 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   // NOTE ON SLOT NUMBERING: slotIndex counts RSS stories only. The S1 Insight is prepended
   // afterwards, so slotIndex 0 and 1 are S2 and S3 on the page. These gates protect the two
   // lead RSS stories, not the lead card.
-  if (analysis && typeof analysis.fitness === "number" && analysis.fitness <= 3 && slotIndex <= 1) {
+  // Threshold is <= 2, not <= 3. The scale defines 3 as "Real subject with identifiable tension
+  // ... a legitimate starting point" — rejecting it contradicts the scale's own wording. 1 and 2
+  // (wire copy, PR, announcement) are still refused.
+  //
+  // This mattered little at 11 story slots and is crippling at 7: slotIndex 0 and 1 carry BOTH
+  // this gate AND the section gate (Psychology/HumanPotential only), and uplift feeds syndicate
+  // short excerpts that score 3. Both lead slots were rejecting nearly everything, the bench was
+  // being exhausted behind them, and editions published 2-4 cards short. An empty slot is
+  // strictly worse than a legitimate starting point.
+  if (analysis && typeof analysis.fitness === "number" && analysis.fitness <= 2 && slotIndex <= 1) {
     console.warn(`[fitness-gate] slot ${slotIndex} rejected: score=${analysis.fitness} — ${analysis.fitness_reason} (${story.title})`);
     throw new Error(`Fitness gate: score ${analysis.fitness} — ${analysis.fitness_reason}`);
   }
