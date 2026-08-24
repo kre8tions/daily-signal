@@ -2200,7 +2200,7 @@ interface SourceAnalysis {
   missed: string;          // angle the source didn't pursue
   fitness: number;         // 1–5: source quality for this pipeline
   fitness_reason: string;  // one sentence explaining the score
-  uplift_score: number;    // 1–5: relevance to reader's own life (S1/S2 gate)
+  uplift_score: number;    // 1–5: relevance to reader's own life (gates the lead RSS slots)
   uplift_reason: string;   // one sentence explaining the uplift score
   subject?: { name: string; type: "film" | "tv_show" | "book" | "album" | "game" | "person" | "other"; year?: string };
 }
@@ -2222,7 +2222,13 @@ SOURCE: ${story.source}
 SECTION: ${story.section}
 ${content}
 
-FITNESS SCORING (1–5) — how strong is this source for an insight-driven editorial pipeline:
+FITNESS SCORING (1–5) — how strong is this source for an insight-driven editorial pipeline.
+SCORE THE SUBJECT'S POTENTIAL, NOT THE EXCERPT'S COMPLETENESS. You are usually shown a one- or
+two-sentence RSS teaser, not the article. A thin excerpt about a real study, event or argument is
+NOT wire copy — judge what a well-read writer could reach for on this subject, including what they
+already know about it, not how much the feed chose to syndicate. Reserve 1 and 2 for material that
+would still be empty with the full article in hand: pure announcement, rumour, listing, caption.
+"The excerpt provides only stage-setting" is a description of the feed, not a verdict on the story.
 5: Genuine finding, study result, or observed phenomenon. Tension is real. The argument lives in the source. Reader relevance is clear.
 4: Real counter-intuitive result or strong position. Some angle-finding needed but the source provides the core.
 3: Real subject with identifiable tension. Article must find its own angle but source is a legitimate starting point.
@@ -2633,27 +2639,34 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
   // ── Pass 0: source analysis — genre, position, tension, missed angle ──
   const analysis = await analyzeSource(client, story);
 
-  // ── Fitness gate: protect S1/S2 from weak sources ────────────────────────────
-  // fitness 1 is rejected at EVERY slot, not just S1/S2. Obituaries score 1, and the old
-  // `slotIndex <= 1` scoping let one through at a lower slot: a piece about a person who had
-  // died two days earlier, run through the contrarian-argument modes, arguing that her family
-  // rather than the industry was responsible. Nothing below S2 was gated at all.
-  if (analysis && typeof analysis.fitness === "number" && (analysis.fitness === 1 || (analysis.fitness <= 3 && slotIndex <= 1))) {
+  // ── Fitness gate: protect the two lead RSS slots (page S2/S3) from weak sources ──
+  // Reverted 2026-08-25: rejecting fitness===1 at EVERY slot emptied the editions. It was added
+  // to stop obituaries reaching lower slots, but OBIT_RE now hard-filters those from the pool
+  // before generation, so the gate was redundant for its purpose while doing real damage —
+  // analyzeSource scores the RSS EXCERPT, and most feeds syndicate a one-line teaser, so a
+  // large share of perfectly good stories scored 1 for "no finding" when the finding simply
+  // was not in the excerpt. Editions dropped to 1-3 cards.
+  //
+  // NOTE ON SLOT NUMBERING: slotIndex counts RSS stories only. The S1 Insight is prepended
+  // afterwards, so slotIndex 0 and 1 are S2 and S3 on the page. These gates protect the two
+  // lead RSS stories, not the lead card.
+  if (analysis && typeof analysis.fitness === "number" && analysis.fitness <= 3 && slotIndex <= 1) {
     console.warn(`[fitness-gate] slot ${slotIndex} rejected: score=${analysis.fitness} — ${analysis.fitness_reason} (${story.title})`);
     throw new Error(`Fitness gate: score ${analysis.fitness} — ${analysis.fitness_reason}`);
   }
 
-  // ── Uplift gate: S1/S2 block score ≤2; S3 blocks score ≤1 (clearly irrelevant stories) ─────
+  // ── Uplift gate: slotIndex 0-1 (page S2/S3) block ≤2; slotIndex 2 (page S4) blocks ≤1 ─────
   const upliftBlock = slotIndex <= 1 ? 2 : slotIndex === 2 ? 1 : -1;
   if (analysis && typeof analysis.uplift_score === "number" && upliftBlock >= 0 && analysis.uplift_score <= upliftBlock) {
     console.warn(`[uplift-gate] slot ${slotIndex} rejected: uplift=${analysis.uplift_score} — ${analysis.uplift_reason} (${story.title})`);
     throw new Error(`Uplift gate: score ${analysis.uplift_score} — ${analysis.uplift_reason}`);
   }
 
-  // ── Section gate: S1/S2 must be uplift (Psychology or HumanPotential) ────────
+  // ── Section gate: the two lead RSS slots (page S2/S3) must be Psychology or HumanPotential.
+  //    The page's S1 is the Insight, which bypasses getFullArticle and every gate in it. ──
   if (slotIndex <= 1 && story.section !== "Psychology" && story.section !== "HumanPotential") {
     console.warn(`[section-gate] slot ${slotIndex} rejected: section=${story.section} (${story.title})`);
-    throw new Error(`Section gate: S1/S2 requires uplift section, got ${story.section}`);
+    throw new Error(`Section gate: lead RSS slots require uplift section, got ${story.section}`);
   }
 
   // ── Pass 0.5: mode selection — writer chooses engagement mode based on subject knowledge ──
