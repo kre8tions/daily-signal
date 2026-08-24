@@ -161,6 +161,15 @@ export const FEEDS = [
   { url: "https://reasonstobecheerful.world/feed/",                            source: "Reasons to be Cheerful", section: "HumanPotential" },
   { url: "https://www.positive.news/feed/",                                    source: "Positive News",        section: "HumanPotential" },
   { url: "https://www.goodgoodgood.co/articles/rss.xml",                       source: "Good Good Good",       section: "HumanPotential" },
+  { url: "https://www.runnersworld.com/rss/all.xml/",                          source: "Runner's World",       section: "HumanPotential" },
+  // Youth / young-adult — EXPERIMENT added 2026-08-24, capped at 1 per edition via slotExtras.
+  // Supply here is genuinely poor: YR Media and Well+Good return malformed XML, The Mighty,
+  // mindbodygreen and Greatist 404, Her Campus serves Portuguese, Seventeen is empty, and
+  // Youth Today is institutional policy rather than uplift. Teen Vogue is the only live
+  // English general-interest feed with volume, and it leans product listicles — expect the
+  // fitness/deal gates to reject most of it. Judge it in Signal Desk; remove this line if the
+  // dropped-story rows fill with it.
+  { url: "https://www.teenvogue.com/feed/rss",                                 source: "Teen Vogue",           section: "Youth"          },
   // Technology — emerging tech, innovation, futurism (no policy)
   { url: "https://www.theverge.com/rss/index.xml",                          source: "The Verge",           section: "Technology"    },
   { url: "https://feeds.arstechnica.com/arstechnica/index",                 source: "Ars Technica",        section: "Technology"    },
@@ -608,7 +617,7 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
     return false;
   });
   const CREATIVE = ["Entertainment", "Arts", "Culture", "Film", "Faith"];
-  const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [], psychology: RawItem[] = [], humanPotential: RawItem[] = [], food: RawItem[] = [], sports: RawItem[] = [], comics: RawItem[] = [], anime: RawItem[] = [];
+  const tech: RawItem[] = [], creative: RawItem[] = [], science: RawItem[] = [], psychology: RawItem[] = [], humanPotential: RawItem[] = [], food: RawItem[] = [], sports: RawItem[] = [], comics: RawItem[] = [], anime: RawItem[] = [], youth: RawItem[] = [];
   for (const item of all) {
     if (item.section === "Technology") tech.push(item);
     else if (item.section === "Science") science.push(item);
@@ -618,6 +627,7 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
     else if (item.section === "Sports") sports.push(item);
     else if (item.section === "Comics") comics.push(item);
     else if (item.section === "Anime") anime.push(item);
+    else if (item.section === "Youth") youth.push(item);
     else if (CREATIVE.includes(item.section)) creative.push(item);
   }
   // S1/S2: alternate between Psychology and HumanPotential (Outliers-style) — highest engagement slots
@@ -627,7 +637,7 @@ export async function fetchTopStories(editionKey: string): Promise<{ primary: Ra
   // Two extras, not four. These REPLACE core positions, so with a 7-slot pool four of them
   // could displace more than half the edition; at nine that was proportionate, at seven it
   // is not.
-  const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1), ...comics.slice(0, 1), ...anime.slice(0, 1)].slice(0, 2);
+  const slotExtras = [...food.slice(0, 1), ...sports.slice(0, 1), ...comics.slice(0, 1), ...anime.slice(0, 1), ...youth.slice(0, 1)].slice(0, 2);
   // Hand-ordered composition, NOT a ranked list — position determines section mix, so the
   // trailing `slice` below cuts by category rather than by quality. The previous 11-entry
   // template was already losing tec[1] and tec[2] to slice(0, 9) unnoticed, and simply
