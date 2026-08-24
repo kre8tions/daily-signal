@@ -53,7 +53,7 @@ export default async function ArchivePage() {
                   <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
                     {e.theme && <div style={{ fontSize: 15, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading, textTransform: P.dark ? "uppercase" as const : "none" as const, lineHeight: 1.2 }}>{e.theme}</div>}
                     <div style={{ fontSize: 11, color: P.inkLight, fontFamily: P.fontBody }}>{e.label}</div>
-                    <div style={{ marginTop: "auto", paddingTop: 10, fontSize: 12, color: P.accent, fontFamily: P.fontBody, fontWeight: 700 }}>Read edition →</div>
+                    <div style={{ marginTop: "auto", paddingTop: 10, fontSize: 12, color: P.accent, fontFamily: P.fontBody, fontWeight: 700 }}>Read edition &gt;</div>
                   </div>
                 </a>
               );

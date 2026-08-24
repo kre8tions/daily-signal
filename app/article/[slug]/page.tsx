@@ -126,7 +126,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
             href={editionHint ? `/archive/${editionKey}` : "/"}
             style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: sectionColor, background: sectionColor + "18", border: `1px solid ${sectionColor}55`, borderRadius: 50, paddingTop: 5, paddingBottom: 5, paddingLeft: 13, paddingRight: 13, fontFamily: P.fontBody, textDecoration: "none", whiteSpace: "nowrap" as const }}
           >
-            <span aria-hidden>&#8592;</span> Edition
+            <span aria-hidden>&lt;</span> Edition
           </a>
           <ShareButton
             title={fullArticle?.ownedTitle || story.ownedTitle || story.title}
@@ -267,7 +267,7 @@ export default async function ArticlePage({ params, searchParams }: { params: Pr
 
         {/* Archive link */}
         <div style={{ borderTop: `1px solid ${P.tint}44`, paddingTop: 20, display: "flex", justifyContent: "center" }}>
-          <a href="/archive" style={{ fontSize: 12, color: P.inkLight, textDecoration: "none", fontFamily: P.fontBody, letterSpacing: 1 }}>View Past Editions →</a>
+          <a href="/archive" style={{ fontSize: 12, color: P.inkLight, textDecoration: "none", fontFamily: P.fontBody, letterSpacing: 1 }}>View Past Editions &gt;</a>
         </div>
 
       </div>

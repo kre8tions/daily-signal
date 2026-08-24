@@ -23,7 +23,7 @@ export default async function ArchiveEditionPage({ params }: { params: Promise<{
         <div style={{ fontSize: 32 }}>👾</div>
         <div style={{ fontSize: 18, fontWeight: 700 }}>Edition not available</div>
         <div style={{ fontSize: 14, opacity: 0.6 }}>This edition was archived before persistent storage was set up.</div>
-        <a href="/archive" style={{ marginTop: 8, fontSize: 13, color: "#FAED26", textDecoration: "none" }}>← Back to Archive</a>
+        <a href="/archive" style={{ marginTop: 8, fontSize: 13, color: "#FAED26", textDecoration: "none" }}>&lt; Back to Archive</a>
       </div>
     );
   }

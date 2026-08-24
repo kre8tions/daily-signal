@@ -50,7 +50,7 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
     <div style={{ minHeight: "100vh", background: P.pageBg, color: P.ink, fontFamily: P.fontBody, paddingBottom: 80 }}>
       <div style={{ borderBottom: `1px solid ${P.tint}44`, padding: "18px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <a href="/" style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.inkLight, textDecoration: "none" }}>← Home</a>
+          <a href="/" style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: P.inkLight, textDecoration: "none" }}>&lt; Home</a>
           <span style={{ color: P.tint }}>|</span>
           <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: P.accent }}>Signal Desk</span>
         </div>
@@ -80,7 +80,7 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                       style={{ fontSize: 20, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading, textDecoration: "none", display: "inline-flex", alignItems: "baseline", gap: 8 }}
                     >
                       {edition.theme}
-                      <span style={{ fontSize: 12, color: P.accent, fontWeight: 700 }} aria-hidden>&#8599;</span>
+                      <span style={{ fontSize: 12, color: P.accent, fontWeight: 700 }} aria-hidden>&gt;</span>
                     </a>
                   )}
                 </div>
@@ -167,7 +167,7 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                         </td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, whiteSpace: "nowrap" as const }}>
                           {isCard ? (row.source ? <span style={{ color: P.inkLight, fontSize: 12 }}>{row.source}</span> : na) : (
-                            <a href={row.link} target="_blank" rel="noopener noreferrer" style={{ color: P.inkLight, textDecoration: "none", fontSize: 12 }}>{row.source} ↗</a>
+                            <a href={row.link} target="_blank" rel="noopener noreferrer" style={{ color: P.inkLight, textDecoration: "none", fontSize: 12 }}>{row.source} &gt;</a>
                           )}
                         </td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const }}>

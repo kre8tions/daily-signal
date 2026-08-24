@@ -1181,7 +1181,7 @@ async function sendWeeklySignalBroadcast(weekly: WeeklySignal, editionKey: strin
   </div>` : ""}
 
   <div style="text-align:center;margin-top:32px;">
-    <a href="${archiveUrl}" style="display:inline-block;background:#1a1a2e;color:#f8f7f4;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:13px;font-weight:700;letter-spacing:0.5px;">Read This Edition →</a>
+    <a href="${archiveUrl}" style="display:inline-block;background:#1a1a2e;color:#f8f7f4;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:13px;font-weight:700;letter-spacing:0.5px;">Read This Edition &gt;</a>
   </div>
 
   ${weekly.writerName ? `<div style="font-size:12px;color:#aaa;text-align:center;margin-top:24px;">— ${weekly.writerName}</div>` : ""}

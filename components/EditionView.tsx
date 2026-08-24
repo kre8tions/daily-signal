@@ -1031,7 +1031,7 @@ function BottomLineGridCell({ synthesis, editionKey }: { synthesis: Synthesis; e
 function NavPill({ href, label, sub, align }: { href: string; label: string; sub: string; align: "left" | "right" }) {
   return (
     <a href={href} style={{ display: "flex", flexDirection: "column", gap: 2, textDecoration: "none", alignItems: align === "right" ? "flex-end" : "flex-start", background: P.cardBg, borderRadius: 14, padding: "12px 20px", border: `1px solid ${P.tint}44`, flex: 1, maxWidth: 300 }}>
-      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: P.inkLight, fontFamily: P.fontBody }}>{align === "left" ? "← " : ""}{sub}{align === "right" ? " →" : ""}</span>
+      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: P.inkLight, fontFamily: P.fontBody }}>{align === "left" ? "< " : ""}{sub}{align === "right" ? " >" : ""}</span>
       <span style={{ fontSize: 13, fontWeight: 700, color: P.ink, fontFamily: P.fontHeading, lineHeight: 1.2 }}>{label}</span>
     </a>
   );
