@@ -555,6 +555,25 @@ const USED_LINKS_DAYS = 7;
  */
 async function loadUsedLinks(editionKey: string): Promise<Set<string>> {
   const cutoff = Date.now() - USED_LINKS_DAYS * 864e5;
+
+  // A REWARM rebuilds an edition key that already published. clearEditionCache removes the
+  // article/synthesis/FC blobs but NOT archive/editions/{key}.json, so the previous build's
+  // stories are still readable — and without this a rewarm happily republishes exactly what it
+  // just ran. getPreviousEditionKey walks backwards from the key and never includes the key
+  // itself, so neither path below would otherwise see them.
+  const selfLinks: string[] = [];
+  try {
+    const own = await head(`archive/editions/${editionKey}.json`);
+    if (own) {
+      const res = await fetch(own.url, { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json() as { stories: { link: string }[] };
+        selfLinks.push(...data.stories.map(s => s.link).filter(Boolean));
+      }
+    }
+  } catch { /* first build of this key — nothing to exclude */ }
+  if (selfLinks.length) console.log(`[used-links] rewarm — excluding ${selfLinks.length} links from this key's previous build`);
+
   try {
     const blob = await head(USED_LINKS_KEY);
     if (blob) {
@@ -562,15 +581,17 @@ async function loadUsedLinks(editionKey: string): Promise<Set<string>> {
       if (res.ok) {
         const entries = await res.json() as { link: string; usedAt: string }[];
         const fresh = entries.filter(e => new Date(e.usedAt).getTime() > cutoff).map(e => e.link);
-        if (fresh.length) return new Set(fresh);
+        if (fresh.length) return new Set([...fresh, ...selfLinks]);
       }
     }
   } catch { /* fall through to the archive walk */ }
 
-  // Cold start: read the last 8 editions directly. Bounded, so it cannot melt the blob store.
+  // Cold start. 28 editions is ~7 days at 4/day, matching the rolling window — the earlier
+  // 8 covered barely two days, so a story that ran three days ago sailed straight back in
+  // while the rolling blob was still filling. Still a fraction of the 150 this replaced.
   const keys: string[] = [];
   let cur = editionKey;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 28; i++) {
     const prev = getPreviousEditionKey(cur);
     if (!prev) break;
     keys.push(prev);
@@ -586,7 +607,7 @@ async function loadUsedLinks(editionKey: string): Promise<Set<string>> {
       return data.stories.map(s => s.link);
     } catch { return []; }
   }));
-  const set = new Set(results.flat());
+  const set = new Set([...results.flat(), ...selfLinks]);
   console.log(`[used-links] cold start — ${set.size} links from ${keys.length} recent editions`);
   return set;
 }
