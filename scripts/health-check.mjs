@@ -37,6 +37,7 @@ const recentKeys = () => {
 
 async function checkEditions() {
   const seenImages = new Map();
+  const seenStories = new Map();   // source URL -> first edition that ran it
   let checked = 0;
   for (const key of recentKeys()) {
     let html;
@@ -63,8 +64,25 @@ async function checkEditions() {
       if (prior && prior !== key) problems.push(`${key}: image ${id} already used in ${prior}`);
       else if (!prior) seenImages.set(id, key);
     }
+
+    // Same RSS item running in more than one edition. Article slugs are base64 of the source
+    // URL, so decoding them matches exactly rather than by headline. Measured at 9% on
+    // 2026-08-25: loadUsedLinks was walking back 150 editions and fetching every archive blob,
+    // and enough of those 300 calls failed silently that the dedup set came back partial.
+    const slugs = new Set([...html.matchAll(/\/article\/([A-Za-z0-9_-]{16,})/g)].map(m => m[1]));
+    for (const slug of slugs) {
+      let url;
+      try { url = Buffer.from(slug.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"); }
+      catch { continue; }
+      if (!url.startsWith("http") || url.includes("/insight/")) continue;   // insight links are synthetic
+      const prior = seenStories.get(url);
+      if (prior && prior !== key) {
+        const host = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+        problems.push(`${key}: story also in ${prior} — ${host}${url.slice(url.indexOf(host) + host.length, url.indexOf(host) + host.length + 42)}`);
+      } else if (!prior) seenStories.set(url, key);
+    }
   }
-  notes.push(`${checked} editions checked, ${seenImages.size} distinct images`);
+  notes.push(`${checked} editions checked, ${seenImages.size} distinct images, ${seenStories.size} distinct stories`);
 }
 
 async function checkFeeds() {
