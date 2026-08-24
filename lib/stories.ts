@@ -1493,7 +1493,7 @@ OUTPUT — return JSON only, no markdown:
       header2: parsed.header2 as string | undefined,
       pullQuote: parsed.pullQuote as string,
       pullQuoteAfterPara: 2,
-      body: parsed.body as string,
+      body: capEmDashes(parsed.body as string),
       summary: parsed.summary as string,
       bullets: Array.isArray(parsed.bullets) ? parsed.bullets.slice(0, 3) : [],
       writer: insightWriter.name,
@@ -1532,7 +1532,7 @@ OUTPUT — return JSON only, no markdown:
       imageQuery: imgQuery,
       // The piece itself. attachInsightRelated needs the real text — matching on title and
       // summary alone picks up shared keywords rather than a shared mechanism.
-      content: parsed.body as string,
+      content: capEmDashes(parsed.body as string),
       generationStatus: "ok",
     };
 
@@ -2227,6 +2227,33 @@ function removeDuplicateSentences(text: string): string {
   }).filter(p => p.length > 0).join("\n\n");
 }
 
+/**
+ * Hard-cap em-dashes. The rule is stated in PASS1_SYSTEM, in the insight prompt and in the
+ * single-pass prompt, and prose-lint measured 62 across 15 published articles — an average of
+ * four against a cap of two. A rule this mechanical competing with forty others does not hold,
+ * and em-dash frequency is the most reliable machine-written signal there is, so it gets
+ * enforced rather than requested.
+ *
+ * Keeps the first `max` and rewrites the rest: a following clause of four or more words becomes
+ * its own sentence (the house rule is "rewrite as two sentences"), anything shorter becomes a
+ * comma, since splitting three words off would strand a fragment.
+ */
+function capEmDashes(text: string, max = 2): string {
+  const parts = text.split(/\s*—\s*/);
+  if (parts.length - 1 <= max) return text;
+  let out = parts[0];
+  for (let i = 1; i < parts.length; i++) {
+    const rest = parts[i];
+    if (i <= max) { out += " — " + rest; continue; }
+    const firstClause = rest.split(/(?<=[.!?])\s/)[0] ?? rest;
+    const words = firstClause.split(/\s+/).filter(Boolean).length;
+    out += words >= 4
+      ? ". " + rest.charAt(0).toUpperCase() + rest.slice(1)
+      : ", " + rest;
+  }
+  return out;
+}
+
 function breakLongSentences(text: string): string {
   const BREAK_AT = [" — ", "; ", ", and ", ", but ", ", because ", ", which ", ", so ", ", yet "];
   return text.split("\n\n").map(para => {
@@ -2769,7 +2796,7 @@ export async function getFullArticle(story: Story, relatedStories: Story[], edit
         pullQuote: single.pullQuote ?? "",
         pullQuoteAfterPara: single.pullQuoteAfterPara ?? 4,
         imageUrl2: spImageUrl2 ?? undefined,
-        body: breakLongSentences(single.body ?? ""),
+        body: capEmDashes(breakLongSentences(single.body ?? "")),
         writer: writer?.name ?? "",
         cta: single.cta ?? undefined,
         hasKeyFacts,
@@ -3008,7 +3035,7 @@ Return JSON only:
     pullQuote: extractedPullQuote,
     pullQuoteAfterPara,
     imageUrl2: imageUrl2 ?? undefined,
-    body: breakLongSentences(body),
+    body: capEmDashes(breakLongSentences(body)),
     writer: writer?.name ?? "",
     cta: pass1.cta ?? undefined,
     hasKeyFacts,

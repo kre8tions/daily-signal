@@ -68,7 +68,9 @@ function lintArticle(edition, title, body, pullQuote) {
 
   const dashes = (body.match(/—/g) ?? []).length;
   stats.emDashes += dashes;
-  if (dashes > EM_DASH_CAP) add("warn", edition, title, `${dashes} em-dashes (cap ${EM_DASH_CAP})`);
+  // capEmDashes() enforces this in code now, so anything over cap means a generation path is
+  // skipping it — that is a bug, not a style lapse. Hence ERROR rather than warn.
+  if (dashes > EM_DASH_CAP) add("ERROR", edition, title, `${dashes} em-dashes (cap ${EM_DASH_CAP}) — capEmDashes not applied on this path`);
 
   let notCount = 0;
   for (const re of NOT_X_Y) notCount += (body.match(re) ?? []).length;
