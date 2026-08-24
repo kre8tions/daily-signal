@@ -113,7 +113,9 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                   {(() => {
                     let storyCount = 0;
                     return edition.rows.map((row, i) => {
-                    const writer = writers[row.writerIdx % writers.length];
+                    // -1 marks an unknown writer (editions built before the index was recorded).
+                    // Modulo would wrap it to the last writer and invent an attribution.
+                    const writer = row.writerIdx >= 0 ? writers[row.writerIdx % writers.length] : null;
                     const isCard = row.cardType === "synthesis" || row.cardType === "fc";
                     const isFailed = row.cardType === "failed";
                     const storyNum = isCard || isFailed ? null : ++storyCount;
@@ -164,11 +166,11 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" as const, color: sectionColor, background: sectionColor + "22", padding: "3px 8px", borderRadius: 20 }}>{row.section}</span>
                         </td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, textAlign: "center" as const }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: P.accent, fontFamily: "monospace" }}>W{writer.id}</span>
+                          {writer ? <span style={{ fontSize: 11, fontWeight: 700, color: P.accent, fontFamily: "monospace" }}>W{writer.id}</span> : na}
                         </td>
-                        <td style={{ padding: "10px 10px", verticalAlign: "top" as const, fontWeight: 600, whiteSpace: "nowrap" as const }}>{writer.name}</td>
-                        <td style={{ padding: "10px 10px", verticalAlign: "top" as const, color: P.inkMid, fontSize: 12, whiteSpace: "nowrap" as const, fontStyle: "italic" }}>{writer.inspiration}</td>
-                        <td style={{ padding: "10px 10px", verticalAlign: "top" as const, color: P.inkLight, fontSize: 12, lineHeight: 1.4, minWidth: 220 }}>{writer.personality}</td>
+                        <td style={{ padding: "10px 10px", verticalAlign: "top" as const, fontWeight: 600, whiteSpace: "nowrap" as const }}>{writer?.name ?? na}</td>
+                        <td style={{ padding: "10px 10px", verticalAlign: "top" as const, color: P.inkMid, fontSize: 12, whiteSpace: "nowrap" as const, fontStyle: "italic" }}>{writer?.inspiration ?? na}</td>
+                        <td style={{ padding: "10px 10px", verticalAlign: "top" as const, color: P.inkLight, fontSize: 12, lineHeight: 1.4, minWidth: 220 }}>{writer?.personality ?? na}</td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, minWidth: 260 }}>
                           {row.generationError
                             ? <span style={{ fontSize: 11, color: "#e05c5c", fontFamily: "monospace", lineHeight: 1.4, display: "block", wordBreak: "break-word" as const }}>{row.generationError}</span>

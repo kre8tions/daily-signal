@@ -17,7 +17,7 @@ type FCData = { title?: string; universe?: string; angleLabel?: string; editionK
 
 type Diagnostics = {
   target: number; survived: number; poolSize: number; benchSize: number;
-  failures: { title: string; section: string; status?: string; error?: string }[];
+  failures: { title: string; section: string; status?: string; error?: string; writerIdx?: number }[];
 } | undefined;
 
 function buildRows(stories: StoryLike[], editionKey: string, fc: FCData, synthTheme?: string, diagnostics?: Diagnostics) {
@@ -31,7 +31,7 @@ function buildRows(stories: StoryLike[], editionKey: string, fc: FCData, synthTh
   // They are the reason an edition is thin, and they are invisible everywhere else.
   const failureRows = (diagnostics?.failures ?? []).map(f => ({
     title: f.title, ownedTitle: "", source: "", section: f.section,
-    link: "", slug: "", writerIdx: 0, cardType: "failed" as const,
+    link: "", slug: "", writerIdx: f.writerIdx ?? -1, cardType: "failed" as const,
     generationError: f.error, generationStatus: f.status ?? "dropped",
   }));
   const synthRow = {

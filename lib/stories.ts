@@ -62,7 +62,7 @@ export interface PageData {
     survived: number;
     poolSize: number;
     benchSize: number;
-    failures: { title: string; section: string; status?: string; error?: string }[];
+    failures: { title: string; section: string; status?: string; error?: string; writerIdx?: number }[];
   };
 }
 
@@ -1642,12 +1642,19 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     survived: filtered.length,
     poolSize: raw.length,
     benchSize: bench.length,
-    failures: allStories.filter(s => !s.summary).map(s => ({
-      title: s.ownedTitle || s.title,
-      section: s.section,
-      status: s.generationStatus,
-      error: s.generationError,
-    })),
+    failures: allStories
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => !s.summary)
+      .map(({ s, i }) => ({
+        title: s.ownedTitle || s.title,
+        section: s.section,
+        status: s.generationStatus,
+        error: s.generationError,
+        // The real writer for that slot. Without this the desk defaulted every failed row
+        // to index 0 (Rex), which read as "Rex breaks everything" when Rex is in fact the
+        // least-used writer in the pool at 0.4% of slots.
+        writerIdx: writerSlots[i],
+      })),
   };
   if (filtered.length < RSS_STORIES_PER_EDITION) {
     console.error(`[build] ${editionKey} SHORT: ${filtered.length}/${RSS_STORIES_PER_EDITION} stories survived (pool ${raw.length}, bench ${bench.length}) — edition will publish thin`);
