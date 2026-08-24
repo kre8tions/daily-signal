@@ -54,6 +54,16 @@ export interface PageData {
   // Set only when the S1 Insight failed to generate and an RSS story was promoted into the
   // lead slot in its place. Absent on a healthy edition.
   insightError?: string;
+  // Build diagnostics, surfaced in Signal Desk. `failures` records stories that were
+  // generated and then DISCARDED — without this they vanish at the `filter(s => s.summary)`
+  // step and never reach the blob, so a thin edition gives no clue why it was thin.
+  diagnostics?: {
+    target: number;
+    survived: number;
+    poolSize: number;
+    benchSize: number;
+    failures: { title: string; section: string; status?: string; error?: string }[];
+  };
 }
 
 // ── Slug helpers ──────────────────────────────────────────────────────────────
@@ -1611,8 +1621,23 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
 
   // Only include stories where article generation succeeded (has summary)
   const filtered = allStories.filter(s => s.summary);
+  const buildDiagnostics = {
+    target: RSS_STORIES_PER_EDITION,
+    survived: filtered.length,
+    poolSize: raw.length,
+    benchSize: bench.length,
+    failures: allStories.filter(s => !s.summary).map(s => ({
+      title: s.ownedTitle || s.title,
+      section: s.section,
+      status: s.generationStatus,
+      error: s.generationError,
+    })),
+  };
   if (filtered.length < RSS_STORIES_PER_EDITION) {
     console.error(`[build] ${editionKey} SHORT: ${filtered.length}/${RSS_STORIES_PER_EDITION} stories survived (pool ${raw.length}, bench ${bench.length}) — edition will publish thin`);
+    for (const f of buildDiagnostics.failures) {
+      console.error(`[build]   dropped "${f.title}" (${f.section}) status=${f.status ?? "?"} error=${f.error ?? "none"}`);
+    }
   }
 
   // Fix 2: Post-filter section check — if filter cascade left a non-uplift story at position 0,
@@ -1637,6 +1662,7 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
     featureCreature: featureCreature ?? undefined,
     weeklySignal: weeklySignal ?? undefined,
     insightError: s1Insight ? undefined : (insightStatus.error ?? "insight generation returned null"),
+    diagnostics: buildDiagnostics,
   };
   cacheSet(`edition_${editionKey}`, pageData, SEVEN_DAYS);
   await put(`archive/editions/${editionKey}.json`, JSON.stringify(pageData), {

@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
 
-type Row = { title: string; ownedTitle: string; source: string; section: string; link: string; slug: string; writerIdx: number; cardType: "story" | "synthesis" | "fc"; generationError?: string; generationStatus?: string };
-type Edition = { key: string; label: string; theme: string; isCurrent: boolean; rows: Row[] };
+type Row = { title: string; ownedTitle: string; source: string; section: string; link: string; slug: string; writerIdx: number; cardType: "story" | "synthesis" | "fc" | "failed"; generationError?: string; generationStatus?: string };
+type Diagnostics = { target: number; survived: number; poolSize: number; benchSize: number; failures: { title: string; section: string; status?: string; error?: string }[] };
+type Edition = { key: string; label: string; theme: string; isCurrent: boolean; rows: Row[]; diagnostics?: Diagnostics; insightError?: string };
 type Writer = { id: number; name: string; inspiration: string; personality: string };
 type Palette = { pageBg: string; cardBg: string; ink: string; inkMid: string; inkLight: string; accent: string; tint: string; fontBody: string; fontHeading: string };
 
@@ -36,7 +37,7 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
     );
   }
 
-  const COLS = ["#", "Status", "Our Headline", "Original Headline", "Source", "Section", "W#", "Pseudonym", "Modeled After", "Personality"];
+  const COLS = ["#", "Status", "Our Headline", "Original Headline", "Source", "Section", "W#", "Pseudonym", "Modeled After", "Personality", "Error"];
 
   const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
     ok:           { label: "✓ OK",         color: "#22c55e" },
@@ -77,6 +78,26 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                 </div>
               );
             })()}
+            {(() => {
+              const d = edition.diagnostics;
+              const short = d ? d.survived < d.target : false;
+              if (!d && !edition.insightError) return null;
+              return (
+                <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8, alignItems: "center", marginBottom: 10, fontSize: 11, fontFamily: "monospace" }}>
+                  {d && (
+                    <span style={{ fontWeight: 700, letterSpacing: 0.5, color: short ? "#e05c5c" : "#22c55e", background: (short ? "#e05c5c" : "#22c55e") + "1f", padding: "4px 10px", borderRadius: 20 }}>
+                      {short ? "SHORT" : "FULL"} {d.survived}/{d.target} stories
+                    </span>
+                  )}
+                  {d && <span style={{ color: P.inkLight }}>pool {d.poolSize} · bench {d.benchSize} · dropped {d.failures.length}</span>}
+                  {edition.insightError && (
+                    <span style={{ fontWeight: 700, color: "#e05c5c", background: "#e05c5c1f", padding: "4px 10px", borderRadius: 20 }}>
+                      NO INSIGHT — {edition.insightError}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
@@ -94,11 +115,12 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                     return edition.rows.map((row, i) => {
                     const writer = writers[row.writerIdx % writers.length];
                     const isCard = row.cardType === "synthesis" || row.cardType === "fc";
-                    const storyNum = isCard ? null : ++storyCount;
+                    const isFailed = row.cardType === "failed";
+                    const storyNum = isCard || isFailed ? null : ++storyCount;
                     const na = <span style={{ color: P.inkLight, opacity: 0.35 }}>—</span>;
                     const sectionColor = row.cardType === "synthesis" ? P.accent : row.cardType === "fc" ? "#8B5CF6" : P.inkLight;
                     return (
-                      <tr key={i} style={{ borderBottom: `1px solid ${P.tint}33`, background: isCard ? P.tint + "18" : "transparent" }}>
+                      <tr key={i} style={{ borderBottom: `1px solid ${P.tint}33`, background: isFailed ? "#e05c5c18" : isCard ? P.tint + "18" : "transparent" }}>
                         <td style={{ padding: "10px 10px", color: P.inkLight, fontSize: 11, verticalAlign: "top" as const }}>{storyNum ?? ""}</td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, whiteSpace: "nowrap" as const }}>
                           {isCard ? (
@@ -147,6 +169,11 @@ export function DeskClient({ allEditions, writers, palette: P }: { allEditions: 
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, fontWeight: 600, whiteSpace: "nowrap" as const }}>{writer.name}</td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, color: P.inkMid, fontSize: 12, whiteSpace: "nowrap" as const, fontStyle: "italic" }}>{writer.inspiration}</td>
                         <td style={{ padding: "10px 10px", verticalAlign: "top" as const, color: P.inkLight, fontSize: 12, lineHeight: 1.4, minWidth: 220 }}>{writer.personality}</td>
+                        <td style={{ padding: "10px 10px", verticalAlign: "top" as const, minWidth: 260 }}>
+                          {row.generationError
+                            ? <span style={{ fontSize: 11, color: "#e05c5c", fontFamily: "monospace", lineHeight: 1.4, display: "block", wordBreak: "break-word" as const }}>{row.generationError}</span>
+                            : na}
+                        </td>
                       </tr>
                     );
                   });

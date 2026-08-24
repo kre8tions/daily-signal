@@ -15,12 +15,24 @@ const writers = WRITERS.map((w, i) => ({
 type StoryLike = { title: string; ownedTitle?: string; source: string; section: string; link: string; generationError?: string; generationStatus?: string };
 type FCData = { title?: string; universe?: string; angleLabel?: string; editionKey?: string } | null | undefined;
 
-function buildRows(stories: StoryLike[], editionKey: string, fc: FCData, synthTheme?: string) {
+type Diagnostics = {
+  target: number; survived: number; poolSize: number; benchSize: number;
+  failures: { title: string; section: string; status?: string; error?: string }[];
+} | undefined;
+
+function buildRows(stories: StoryLike[], editionKey: string, fc: FCData, synthTheme?: string, diagnostics?: Diagnostics) {
   const writerSlots = getWriterAssignments(editionKey);
   const storyRows = stories.map((s, i) => ({
     title: s.title, ownedTitle: s.ownedTitle ?? "", source: s.source, section: s.section,
     link: s.link, slug: urlToSlug(s.link), writerIdx: writerSlots[i] ?? 0, cardType: "story" as const,
     generationError: s.generationError, generationStatus: s.generationStatus,
+  }));
+  // Stories that were generated and then discarded at the `filter(s => s.summary)` step.
+  // They are the reason an edition is thin, and they are invisible everywhere else.
+  const failureRows = (diagnostics?.failures ?? []).map(f => ({
+    title: f.title, ownedTitle: "", source: "", section: f.section,
+    link: "", slug: "", writerIdx: 0, cardType: "failed" as const,
+    generationError: f.error, generationStatus: f.status ?? "dropped",
   }));
   const synthRow = {
     title: synthTheme ?? "", ownedTitle: "", source: "", section: "Synthesis",
@@ -30,12 +42,13 @@ function buildRows(stories: StoryLike[], editionKey: string, fc: FCData, synthTh
     title: fc.title ?? "", ownedTitle: fc.angleLabel ?? "", source: fc.universe ?? "", section: "Feature Creature",
     link: "", slug: fc.editionKey ? `/feature-creature/${fc.editionKey}` : "", writerIdx: getFCWriterIndex(editionKey), cardType: "fc" as const,
   } : null;
-  return [synthRow, ...(fcRow ? [fcRow] : []), ...storyRows];
+  return [synthRow, ...(fcRow ? [fcRow] : []), ...storyRows, ...failureRows];
 }
 
 export default async function SignalDeskPage() {
   const { key: currentKey } = getEdition();
-  const { stories: currentStories, synthesis: currentSynthesis, editionLabel, featureCreature: currentFC } = await getPageData();
+  const { stories: currentStories, synthesis: currentSynthesis, editionLabel, featureCreature: currentFC,
+          diagnostics: currentDiagnostics, insightError: currentInsightError } = await getPageData();
 
   const archiveList = await getArchiveList();
   const archivedKeys = archiveList.map(e => e.key).filter(k => k !== currentKey);
@@ -53,7 +66,9 @@ export default async function SignalDeskPage() {
       label: r.value.data.editionLabel ?? r.value.key,
       theme: r.value.data.synthesis?.theme ?? "",
       isCurrent: false,
-      rows: buildRows(r.value.data.stories, r.value.key, r.value.data.featureCreature ?? null, r.value.data.synthesis?.theme),
+      rows: buildRows(r.value.data.stories, r.value.key, r.value.data.featureCreature ?? null, r.value.data.synthesis?.theme, r.value.data.diagnostics),
+      diagnostics: r.value.data.diagnostics,
+      insightError: r.value.data.insightError,
     }))
     .sort((a, b) => {
       const [aDate, aSlot = ""] = a.key.split("_");
@@ -63,7 +78,7 @@ export default async function SignalDeskPage() {
       return SLOT_ORDER.indexOf(bSlot) - SLOT_ORDER.indexOf(aSlot);
     });
 
-  const currentEdition = { key: currentKey, label: editionLabel, theme: currentSynthesis?.theme ?? "", isCurrent: true, rows: buildRows(currentStories, currentKey, currentFC, currentSynthesis?.theme) };
+  const currentEdition = { key: currentKey, label: editionLabel, theme: currentSynthesis?.theme ?? "", isCurrent: true, rows: buildRows(currentStories, currentKey, currentFC, currentSynthesis?.theme, currentDiagnostics), diagnostics: currentDiagnostics, insightError: currentInsightError };
   const SLOT_ORDER_ALL = ["early", "morning", "afternoon", "evening", "night"];
   const allEditions = [currentEdition, ...archivedEditions].sort((a, b) => {
     const [aDate, aSlot = ""] = a.key.split("_");
