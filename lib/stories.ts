@@ -538,16 +538,44 @@ function getPreviousEditionKey(editionKey: string): string | null {
   return `${d.toISOString().slice(0, 10)}_night`;
 }
 
+const USED_LINKS_KEY = "used-links/v1.json";
+const USED_LINKS_DAYS = 7;
+
+/**
+ * Links published in recent editions, so the same RSS item is not run twice.
+ *
+ * This used to walk back 150 edition keys and fetch every archive blob — 300 network calls on
+ * each build, with `catch { return [] }` swallowing every failure. At that concurrency a large
+ * share of them failed, so the set came back partial and adjacent editions still repeated
+ * stories: three items appeared in both 2026-08-23_afternoon and _evening. One rolling blob
+ * replaces the lot, mirroring the image history.
+ *
+ * Falls back to walking back a SMALL number of editions when the blob is missing, which covers
+ * the first few builds after this ships and any case where the history is lost.
+ */
 async function loadUsedLinks(editionKey: string): Promise<Set<string>> {
+  const cutoff = Date.now() - USED_LINKS_DAYS * 864e5;
+  try {
+    const blob = await head(USED_LINKS_KEY);
+    if (blob) {
+      const res = await fetch(blob.url, { cache: "no-store" });
+      if (res.ok) {
+        const entries = await res.json() as { link: string; usedAt: string }[];
+        const fresh = entries.filter(e => new Date(e.usedAt).getTime() > cutoff).map(e => e.link);
+        if (fresh.length) return new Set(fresh);
+      }
+    }
+  } catch { /* fall through to the archive walk */ }
+
+  // Cold start: read the last 8 editions directly. Bounded, so it cannot melt the blob store.
   const keys: string[] = [];
   let cur = editionKey;
-  for (let i = 0; i < 150; i++) {
+  for (let i = 0; i < 8; i++) {
     const prev = getPreviousEditionKey(cur);
     if (!prev) break;
     keys.push(prev);
     cur = prev;
   }
-  if (!keys.length) return new Set();
   const results = await Promise.all(keys.map(async (key) => {
     try {
       const blob = await head(`archive/editions/${key}.json`);
@@ -558,7 +586,34 @@ async function loadUsedLinks(editionKey: string): Promise<Set<string>> {
       return data.stories.map(s => s.link);
     } catch { return []; }
   }));
-  return new Set(results.flat());
+  const set = new Set(results.flat());
+  console.log(`[used-links] cold start — ${set.size} links from ${keys.length} recent editions`);
+  return set;
+}
+
+/** MUST be awaited. A floating write is how the image history silently stopped recording. */
+async function appendUsedLinks(links: string[]): Promise<void> {
+  if (!links.length) return;
+  const read = async (): Promise<{ link: string; usedAt: string }[]> => {
+    const blob = await head(USED_LINKS_KEY);
+    if (!blob) return [];
+    const res = await fetch(blob.url, { cache: "no-store" });
+    return res.ok ? await res.json() as { link: string; usedAt: string }[] : [];
+  };
+  try {
+    const cutoff = Date.now() - USED_LINKS_DAYS * 864e5;
+    const now = new Date().toISOString();
+    // Re-read immediately before writing and union, so overlapping builds cannot clobber.
+    const merged = new Map<string, { link: string; usedAt: string }>();
+    for (const pass of [await read(), await read()]) {
+      for (const e of pass) if (new Date(e.usedAt).getTime() > cutoff) merged.set(e.link, e);
+    }
+    for (const link of links) if (!merged.has(link)) merged.set(link, { link, usedAt: now });
+    await put(USED_LINKS_KEY, JSON.stringify([...merged.values()]), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
+    console.log(`[used-links] recorded ${links.length}, ${merged.size} in ${USED_LINKS_DAYS}-day window`);
+  } catch (e) {
+    console.error("[used-links] WRITE FAILED — stories from this edition may repeat", e);
+  }
 }
 
 // ── RSS fetch with section quotas ─────────────────────────────────────────────
@@ -1711,6 +1766,9 @@ export async function buildPageData(editionKey: string, editionLabel: string): P
   ];
   // Awaited — see appendImageHistory. Floating this call is what let images repeat.
   await appendImageHistory(usedImageUrls);
+
+  // Record this edition's story links so the next build will not pick them again.
+  await appendUsedLinks(stories.map(s => s.link).filter(l => l && !l.includes("/insight/")));
 
   // Audit: if anything we just published was already in history when the build started, the
   // dedup failed and the reuse is on the page right now. Previously this was invisible — the
