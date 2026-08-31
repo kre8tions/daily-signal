@@ -4,6 +4,35 @@ A record of meaningful pipeline changes: what changed, why we tried it, what we 
 
 ---
 
+## s1-insight-hook-name-dedup (2026-08-31) — CURRENT for S1 Insight
+
+*(Scope: `getS1Insight()` only. Additive to `s1-insight-craft-rules` below, which stays current.)*
+
+**What changed:**
+
+- **New `s1-hook-history/used.json` blob** — 30-day rolling, one entry per edition: `{editionKey, firstName, fullName, domain, concept, usedAt}`. Double-read-union write, **awaited** (a floating write in a serverless fn gets frozen — the scar that stopped image history for days).
+- `getS1Insight` loads it before generating and:
+  - **Lens selection** walks forward from the deterministic index, skipping any lens whose `domain` ran in the last 3 editions or whose `concept` is already in history. Falls back to the deterministic pick if all are excluded.
+  - **Name exclusion** — recent first names + full names + a static autopilot set (`mara, sarah, elena, david, callum, priya, maya, teodora, nadia`) are rendered into the hook rule as a hard "use none of these" list, replacing the fixed 5-name blocklist.
+  - New `hookName` output field (full name of the invented protagonist, or `""` for an object/number/document hook).
+  - **Enforcement**: a returned first name that collides with history or the static set costs a regeneration. `MAX_ATTEMPTS` 2→3. If it still collides after 3, ship it and `console.warn` loudly.
+- **`APPLICATION_MODES`** — Para 4 opener now rotates (the hour before / mid-task / the morning after / the recurring moment / the decision point), seeded `mixedRandom(lensHash * 13 + 7717)` like `HOOK_MODES`/`TITLE_MODES`. The old prompt text that leaned on "The hour before the budget meeting" is gone.
+- **`hookName`** surfaced on the Story shell and as `<meta name="ds:s1-hook">` on the article page. `scripts/health-check.mjs` `checkS1Names()` reads it across the last 16 editions and fails on any first name in ≥2 editions or an identical full name.
+
+**Why:**
+
+Audit of Aug 25–31 (16 editions): "Priya" was the hook protagonist in **9 of 16**, across 8 different writer personas — a base-model default, not one writer. "Priya Mehta" and "Priya Osei" each appeared as an identical full name in two editions ("Priya Osei" in two consecutive ones). The lens selector landed on the finance domain 6 times that week, producing near-duplicate "compounding rewards who stays" essays. Para 4 opened "the hour before X" in ~15 of 16. `getS1Insight` was stateless per edition — no used-name/used-domain memory like `used-links` and `image-history` have — so every persona independently reached for the same first plausible name, and the prompt's own Para-4 example templated the opener.
+
+The fixed 5-name blocklist (`Mara, Sarah, Elena, David, Callum`) demonstrates the failure mode: a static blocklist just relocates the habit to the next name. Enforcement had to move into code and the exclusion list had to become dynamic.
+
+**What to observe:**
+
+- Do first names actually diversify, or does the model just cycle a slightly larger fixed set (e.g. Priya→Nadia→Renata)? The static set will need extending from the health-check output if so.
+- Does the lens-domain skip starve the pool on thin days? It falls back to the deterministic pick, but watch for the same *concept* recurring just outside the 3-edition window.
+- Does `APPLICATION_MODES` "mid-task" / "the decision point" produce weaker Para 4s than "the hour before"? The old frame was overused but it was also reliably concrete.
+
+---
+
 ## s1-insight-craft-rules (2026-08-10) — CURRENT STABLE for S1 Insight
 
 *(Scope: `getS1Insight()` only. Does not touch the S2–S11 article pipeline or synthesis — the `synthesis-theme-dedup-model-brainstorm` entry below remains current for those.)*

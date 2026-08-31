@@ -1,9 +1,9 @@
 # The Daily Signal — Claude Context
 
 <!-- STATUS:START -->
-Last updated: 2026-07-03 (session 4)
-Status: Live, 5 editions/day; timezone navigation fixed; all Claude content[0] reads hardened; 1 plane on S1
-Next: Custom domain + share button + Anime/Film/Comics filter (reject items with no named work)
+Last updated: 2026-08-31
+Status: Live, 4 editions/day, 6 days/week (Sat dark); S1 Insight hook-name + lens-domain cross-edition dedup added
+Next: share button on articles; Anime/Film/Comics filter (reject items with no named work)
 Blockers: none
 <!-- STATUS:END -->
 
@@ -91,6 +91,9 @@ Edition labels: early="First Light", morning="The Brief", afternoon="Afternoon",
 | `articles/v18-v22/{editionKey}/{slug}.json` | Legacy versioned blobs (read fallback only) |
 | `feature-creature/v20/{editionKey}.json` | FeatureCreature JSON |
 | `synthesis/v1/{editionKey}.json` | Synthesis JSON (includes `imageUrl`) |
+| `s1-insight-story/v1/{editionKey}.json` | S1 Insight Story shell (fast re-read cache) |
+| `s1-hook-history/used.json` | Rolling 30-day log of S1 hook names + lens domain `[{editionKey, firstName, fullName, domain, concept, usedAt}]` |
+| `image-history/used.json` | Rolling 30-day log of used Unsplash photo IDs |
 | `archive/editions/{key}.json` | Full PageData for edition |
 | `archive/index.json` | ArchiveEntry[] list (max 90) |
 | `howto/{actionSlug}.json` | HowTo JSON — generated on first How? click, cached permanently |
@@ -197,6 +200,13 @@ Optional fields: `preferRssImage?: boolean`, `slotOnly?: string`.
 - `loadUsedLinks` walks back 150 editions (~30 days) — hard filter, NO fallback to used links
 - Global slug cache (`by-slug/`) — reuse generated content if link recurs
 - **Cache validation requires BOTH `cached.body && cached.summary`**
+- **S1 Insight hook name + lens domain** (`s1-hook-history/used.json`, 30 days): `getS1Insight` skips lens domains used in the last 3 editions and concepts already seen; injects recent + autopilot first names as a hard exclusion list in the prompt; requires a `hookName` field back and regenerates on a first/full-name collision (`MAX_ATTEMPTS` 2→3), warning to the `/api/warm` log if it still ships one. Both `appendImageHistory` and `appendS1History` MUST be awaited — a floating write in a serverless function gets frozen before it completes.
+
+## S1 Insight (lead personal-development column)
+`getS1Insight()` in `lib/stories.ts` — one `claude-sonnet-4-6` call (not Haiku, not the Pass 0→2 pipeline), written from an `INSIGHT_LENSES` (`lib/palette.ts`) lens alone, no RSS source. Bypasses every fitness/uplift/section gate. Story shell at `s1-insight-story/v1/{editionKey}.json`, commentary at `articles/v4/{editionKey}/{slug}.json`.
+- Form is rotated per edition to stop any shape calcifying: `HOOK_MODES`, `TITLE_MODES`, `APPLICATION_MODES` (Para 4 opener — added 2026-08-31 after "the hour before X" ran in ~15 of 16 pieces because the prompt's own example used it), and a 40% `freeRhythm` flip. Seed these with `mixedRandom()`, never `seededRandom()` — consecutive edition keys give near-identical hashes and `Math.sin` skews low.
+- The model also converges on a favourite *invented* protagonist name ("Priya" led 9 of 16 hooks Aug 25-31 across 8 personas). Exclusion lists must be dynamic (from `s1-hook-history`) and enforced in code, not left to the prompt's self-check — see Dedup Rules.
+- Writer from `INSIGHT_WRITER_INDICES` (16 curated, behavioural/warm register only).
 
 ## Key Files
 | File | Purpose |
