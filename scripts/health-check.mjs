@@ -22,18 +22,61 @@ const STALE_DAYS = 90;   // some good sources publish quarterly; a check that cr
 const problems = [];
 const notes = [];
 
-const recentKeys = () => {
+const recentKeys = (n = EDITIONS) => {
   const slots = ["evening", "afternoon", "morning", "early"];
   const keys = [];
-  for (let d = 0; d < 4 && keys.length < EDITIONS; d++) {
+  for (let d = 0; d < 10 && keys.length < n; d++) {
     const dt = new Date();
     dt.setUTCDate(dt.getUTCDate() - d);
     const date = dt.toISOString().slice(0, 10);
     if (dt.getUTCDay() === 6) continue;              // Saturday is dark by design
-    for (const s of slots) { if (keys.length < EDITIONS) keys.push(`${date}_${s}`); }
+    for (const s of slots) { if (keys.length < n) keys.push(`${date}_${s}`); }
   }
   return keys;
 };
+
+// The S1 hook protagonist repeated across a week before anyone noticed — "Priya" led 9 of 16
+// pieces over Aug 25-31, twice as an identical full name. That is invisible to the card-count
+// and image checks. Look back further than the ops checks: a name only reads as repetitive
+// once you have several editions in view.
+const S1_NAME_LOOKBACK = 16;
+
+async function checkS1Names() {
+  const byFirst = new Map();   // first name -> Set(editionKey)
+  const byFull = new Map();    // "full name" -> Set(editionKey)
+  let named = 0, exposed = 0, missing = 0;
+  for (const key of recentKeys(S1_NAME_LOOKBACK)) {
+    const insightSlug = Buffer.from(`https://dailysignal.cc/insight/${key}`)
+      .toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    let html;
+    try {
+      const res = await fetch(`${SITE}/article/${insightSlug}?e=${key}`, { headers: { "User-Agent": "DailySignal-HealthCheck" } });
+      if (!res.ok) continue;                          // not built yet
+      html = await res.text();
+    } catch { continue; }
+
+    const meta = html.match(/<meta name="ds:s1-hook" content="([^"]+)"/);
+    if (!meta) { missing++; continue; }               // pre-dates the field, or a non-person hook
+    exposed++;
+    const full = meta[1].replace(/&#x27;|&apos;/g, "'").replace(/&amp;/g, "&").trim();
+    if (!full) continue;                              // explicit empty = non-person hook
+    named++;
+    const first = full.split(/\s+/)[0].toLowerCase();
+    if (!byFirst.has(first)) byFirst.set(first, new Set());
+    byFirst.get(first).add(key);
+    const fl = full.toLowerCase();
+    if (!byFull.has(fl)) byFull.set(fl, new Set());
+    byFull.get(fl).add(key);
+  }
+
+  for (const [first, keys] of byFirst) {
+    if (keys.size >= 2) problems.push(`S1 hook first name "${first}" repeats in ${keys.size} editions: ${[...keys].sort().join(", ")}`);
+  }
+  for (const [full, keys] of byFull) {
+    if (keys.size >= 2) problems.push(`S1 hook name "${full}" is identical across ${keys.size} editions: ${[...keys].sort().join(", ")}`);
+  }
+  notes.push(`S1 hooks: ${byFirst.size} distinct first names across ${named} named editions (${exposed} checked${missing ? `, ${missing} not exposing the name yet` : ""})`);
+}
 
 async function checkEditions() {
   const seenImages = new Map();
@@ -129,6 +172,7 @@ async function checkFeeds() {
 }
 
 await checkEditions();
+await checkS1Names();
 await checkFeeds();
 
 if (AS_JSON) {

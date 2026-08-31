@@ -8,9 +8,10 @@ import { NextStepCard } from "@/components/NextStepCard";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ e?: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const story = await getStoryBySlug(slug);
+  const { e: editionHint } = await searchParams;
+  const story = await getStoryBySlug(slug, editionHint);
   if (!story) return { title: "The Daily Signal" };
 
   const title = story.title;
@@ -20,6 +21,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${title} — The Daily Signal`,
     description,
+    // Machine-readable hook protagonist for scripts/health-check.mjs — the cross-edition
+    // repeated-name check reads this rather than parsing prose. Absent on non-person hooks
+    // and on editions built before the field existed.
+    ...(story.section === "Insight" && story.hookName ? { other: { "ds:s1-hook": story.hookName } } : {}),
     openGraph: {
       title,
       description,

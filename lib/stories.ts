@@ -24,6 +24,9 @@ export interface Story {
   pullquote?: string; cta?: { header: string; body: string }; hasKeyFacts?: boolean; cardStyle: "full" | "pullquote" | "brief";
   imageQuery?: string; content?: string; generationError?: string;
   generationStatus?: "ok" | "no_body" | "pass1_failed" | "missing";
+  // S1 Insight only: the invented protagonist's full name (or absent for a non-person hook).
+  // Surfaced as a <meta> on the article page so health-check can flag cross-edition repeats.
+  hookName?: string;
   // S1 Insight only: links of stories in the same edition that genuinely connect to the
   // finished piece, chosen after it is written. May be absent or empty — "if applicable"
   // has to include "not applicable", or we are back to forcing a connection that isn't there.
@@ -1309,8 +1312,84 @@ const TITLE_MODES = [
   "THE OVERHEARD FRAGMENT — a phrase in quotation marks, something a person would actually say, then nothing else. Let it sit unexplained.",
 ];
 
+// Same failure the hook and title had, one level down. Para 4 keeps opening "The hour before
+// [the budget meeting / the hard conversation]" — 15 of 16 pieces across the Aug 25-31 audit —
+// because the prompt's own example used that frame. Rotate the framing the way HOOK_MODES and
+// TITLE_MODES already do. None of these permit a named weekday.
+const APPLICATION_MODES = [
+  "THE HOUR BEFORE — the reader in the final hour before one specific hard thing: a conversation, a deadline, a decision. Name the thing precisely. Do not use this frame as a runway to a generic pep talk.",
+  "MID-TASK — the reader is already inside the work when the principle bites. No run-up, no scene-setting. They are three paragraphs into the draft, halfway through the call, and something the piece explained is now happening to them.",
+  "THE MORNING AFTER — the reader looking back at something that already went a particular way, deciding what to do now. The principle governs the review, not the original act.",
+  "THE RECURRING MOMENT — a situation the reader meets every week, rendered concretely enough that they recognise the specific instance, not the category.",
+  "THE DECISION POINT — the reader holding two real options, mid-choice. The principle is what decides which way, and the paragraph stays in that suspended moment rather than resolving it early.",
+];
+
 const INSIGHT_LINK_BASE = "https://dailysignal.cc/insight/";
 const INSIGHT_PROMPT_V = "v4"; // must match getFullArticle's PROMPT_V
+
+// ── S1 hook history — cross-edition dedup for the invented protagonist ─────────
+// getS1Insight is stateless per edition: each call picks a lens and a persona from the
+// editionKey hash alone and writes a fresh piece. With no memory, eight different personas
+// independently reached for the same first name — "Priya" led 9 of 16 hooks across Aug 25-31,
+// "Priya Mehta" and "Priya Osei" each appeared as an identical full name in two editions, and
+// the lens selector landed on the finance domain 6 times that week. This blob is the missing
+// memory: recent names and lens domains, fed back into generation as an exclusion list. Same
+// 30-day rolling window and double-read union as appendImageHistory (see the scar comment there).
+const S1_HISTORY_KEY = "s1-hook-history/used.json";
+type S1HistoryEntry = { editionKey: string; firstName: string; fullName: string; domain: string; concept: string; usedAt: string };
+
+const firstNameOf = (full: string): string => (full || "").trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+
+// First names the base model falls back to on autopilot. The dynamic history list handles the
+// rest; this is the floor that applies even on a cold blob. Extend it as new attractors appear
+// in the health-check output rather than hoping the model self-polices.
+const S1_BANNED_FIRST_NAMES = new Set(["mara", "sarah", "elena", "david", "callum", "priya", "maya", "teodora", "nadia"]);
+
+async function loadS1History(): Promise<{ entries: S1HistoryEntry[]; firstNames: Set<string>; fullNames: Set<string>; recentDomains: string[]; concepts: Set<string> }> {
+  const empty = { entries: [] as S1HistoryEntry[], firstNames: new Set<string>(), fullNames: new Set<string>(), recentDomains: [] as string[], concepts: new Set<string>() };
+  try {
+    const blob = await head(S1_HISTORY_KEY);
+    if (!blob) return empty;
+    const res = await fetch(blob.url, { cache: "no-store" });
+    if (!res.ok) return empty;
+    const raw = await res.json() as S1HistoryEntry[];
+    const cutoff = Date.now() - THIRTY_DAYS_MS;
+    const entries = raw.filter(e => new Date(e.usedAt).getTime() > cutoff).sort((a, b) => b.usedAt.localeCompare(a.usedAt));
+    return {
+      entries,
+      firstNames: new Set(entries.map(e => firstNameOf(e.fullName)).filter(Boolean)),
+      fullNames: new Set(entries.map(e => (e.fullName || "").trim().toLowerCase()).filter(Boolean)),
+      recentDomains: entries.slice(0, 3).map(e => e.domain).filter(Boolean),
+      concepts: new Set(entries.map(e => e.concept).filter(Boolean)),
+    };
+  } catch { return empty; }
+}
+
+// MUST be awaited. A floating promise in a serverless function can be frozen before it
+// completes — that is exactly how appendImageHistory silently dropped editions.
+async function appendS1History(entry: Omit<S1HistoryEntry, "usedAt">): Promise<void> {
+  const read = async (): Promise<S1HistoryEntry[]> => {
+    const blob = await head(S1_HISTORY_KEY);
+    if (!blob) return [];
+    const res = await fetch(blob.url, { cache: "no-store" });
+    return res.ok ? await res.json() as S1HistoryEntry[] : [];
+  };
+  try {
+    const cutoff = Date.now() - THIRTY_DAYS_MS;
+    const now = new Date().toISOString();
+    const merged = new Map<string, S1HistoryEntry>();
+    for (const pass of [await read(), await read()]) {
+      for (const e of pass) {
+        if (new Date(e.usedAt).getTime() > cutoff) merged.set(e.editionKey, e);
+      }
+    }
+    merged.set(entry.editionKey, { ...entry, usedAt: now });   // this edition's entry wins on rewarm
+    await put(S1_HISTORY_KEY, JSON.stringify([...merged.values()]), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true });
+    console.log(`[s1-history] recorded ${entry.editionKey} — ${entry.fullName || "(no name)"} / ${entry.domain}, ${merged.size} in 30-day window`);
+  } catch (e) {
+    console.error("[s1-history] WRITE FAILED — S1 hook names may repeat", e);
+  }
+}
 
 /**
  * Match edition stories to the FINISHED insight. Runs after the piece is written and the
@@ -1391,11 +1470,19 @@ export async function getS1Insight(
     }
   } catch { /* generate fresh */ }
 
-  // Two attempts. The failure that dropped the column on 2026-08-12_morning was intermittent
-  // — the four editions either side of it generated fine on identical code — so a single
-  // retry covers the common causes (a truncated or non-JSON response, a transient API error)
-  // without masking a genuine, repeatable break.
-  const MAX_ATTEMPTS = 2;
+  // Cross-edition memory for the invented protagonist and the lens domain. Loaded once here,
+  // outside the retry loop, and consulted on every attempt. A read failure returns an empty
+  // history — the piece still generates, it just loses this one guard for the day.
+  const s1History = await loadS1History();
+  // Set when an attempt returns a first name already used recently. The next attempt gets an
+  // explicit, harder instruction naming the collision.
+  let lastCollisionName = "";
+
+  // Three attempts. Two covered the intermittent non-JSON / transient-API failure that dropped
+  // 2026-08-12_morning. The third is headroom for a name-collision regeneration — a distinct
+  // failure class from a broken response, and one worth one extra retry rather than shipping a
+  // ninth "Priya".
+  const MAX_ATTEMPTS = 3;
   let lastError: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
    if (status) status.attempts = attempt;
@@ -1404,7 +1491,15 @@ export async function getS1Insight(
     // Compute lens deterministically from editionKey directly — bypasses the _editionKeyHash
     // singleton which can be corrupted when multiple editions build concurrently.
     const lensHash = editionKey.split("").reduce((a, c, i) => a + c.charCodeAt(0) * (i + 1), 0);
-    const lens = INSIGHT_LENSES[(lensHash * 11 + 17) % INSIGHT_LENSES.length];
+    // Walk forward from the deterministic pick, skipping any lens whose domain ran in the last
+    // 3 editions or whose exact concept is already in the 30-day history. Falls back to the
+    // deterministic pick if every lens is excluded (a starved pool, not a bug).
+    const lensStart = (lensHash * 11 + 17) % INSIGHT_LENSES.length;
+    let lens = INSIGHT_LENSES[lensStart];
+    for (let i = 0; i < INSIGHT_LENSES.length; i++) {
+      const cand = INSIGHT_LENSES[(lensStart + i * 7) % INSIGHT_LENSES.length];
+      if (!s1History.recentDomains.includes(cand.domain) && !s1History.concepts.has(cand.concept)) { lens = cand; break; }
+    }
     const writerIdx = INSIGHT_WRITER_INDICES[(lensHash * 3 + 7) % INSIGHT_WRITER_INDICES.length];
     const insightWriter = WRITERS[writerIdx];
 
@@ -1416,6 +1511,19 @@ export async function getS1Insight(
     const freeRhythm = mixedRandom(lensHash) < 0.4;
     const hookMode = HOOK_MODES[Math.floor(mixedRandom(lensHash * 3 + 991) * HOOK_MODES.length)];
     const titleMode = TITLE_MODES[Math.floor(mixedRandom(lensHash * 7 + 4441) * TITLE_MODES.length)];
+    const applicationMode = APPLICATION_MODES[Math.floor(mixedRandom(lensHash * 13 + 7717) * APPLICATION_MODES.length)];
+
+    // Names used in the last 30 days, plus the static autopilot set. Rendered into the prompt
+    // as a hard exclusion list rather than trusting the model's "pick from a different tradition"
+    // self-check, which it has repeatedly failed.
+    const bannedFirstNames = [...new Set([...S1_BANNED_FIRST_NAMES, ...s1History.firstNames])].sort();
+    const recentFullNames = [...s1History.fullNames].filter(Boolean);
+    const nameAvoidBlock = [
+      `- Do NOT use any of these first names for the invented person (used recently or on autopilot): ${bannedFirstNames.join(", ")}.`,
+      recentFullNames.length ? `- These full names ran in the last month — do not reuse any of them: ${recentFullNames.join("; ")}.` : "",
+      lastCollisionName ? `- Your previous attempt used "${lastCollisionName}", which is on the banned list. Pick a genuinely different name — different first name, different naming tradition.` : "",
+      `- Pick a first name from outside the usual Anglo/South-Asian defaults the last pieces leaned on. Vary the naming tradition edition to edition.`,
+    ].filter(Boolean).join("\n");
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -1440,10 +1548,13 @@ TWO RULES THAT APPLY TO EVERY PARAGRAPH, NOT JUST THE ONE THAT NAMES THEM:
 STRUCTURE (five paragraphs, pure prose — no bullet points, no headers in the body):
 - Para 1 — HOOK, and today you are writing it in this mode: ${hookMode}
   Whatever the mode, the opening is one concrete particular — never a type of person, never a recurring pattern, never 'every June someone does X' or 'every summer people do Y'. Do not end the hook on a defeat or reversal by reflex; that has become its own habit.
-  IF THE HOOK NAMES A PERSON, it must be an invented ordinary person — someone with no public record, whose life you are free to furnish. Give them a full name that belongs to them and to this world, and avoid the autopilot defaults: never Mara, Sarah, Elena, David, or Callum. A blocklist always trails the habit, so apply the underlying test too — if the name you have chosen is the first plausible one that came to mind, discard it and pick again from a different naming tradition. Use a REAL, publicly known person here only if the scene is documented and you could point to where it is recorded — otherwise you are inventing socks and weather for someone who actually lived, which is the failure the global rules above forbid. The ordinary invented person is almost always the better choice: the hook needs a human being, not an authority.
+  IF THE HOOK NAMES A PERSON, it must be an invented ordinary person — someone with no public record, whose life you are free to furnish. Give them a full name that belongs to them and to this world. NAME CONSTRAINTS (these are hard — a repeated protagonist name across editions is the single most visible tell that these pieces are generated):
+${nameAvoidBlock}
+  Use a REAL, publicly known person here only if the scene is documented and you could point to where it is recorded — otherwise you are inventing socks and weather for someone who actually lived, which is the failure the global rules above forbid. The ordinary invented person is almost always the better choice: the hook needs a human being, not an authority.
 - Para 2 — MECHANISM: State the principle and explain why the world works this way. Write it as something you know to be true. No citations, no named authors — in THIS paragraph only. The principle belongs in your own voice here; Para 3 is where it gets anchored to something real.
 - Para 3 — CASE: Ground the principle in one named case — a real person, company, product, year, or documented moment. Not hypothetical. VERIFIABILITY IS THE BAR, and it is absolute: if you cannot name the specific study, book, person, or documented event that makes this checkable, choose a different case. You may name it here — a bare name is allowed in this paragraph and nowhere else, because committing to a real source is what keeps the example honest. Never credit a method, programme, selection criterion, or finding to an organisation-plus-date unless it is a well-documented fact you are certain of: "In the early 1980s, NASA used this to assess candidates" reads as verifiable and is the easiest sentence in the piece to invent. Check what the example connotes, not just whether it is true: an example carrying suffering, cruelty, or condescension will undercut the warmth of the piece even when the science is sound. A confident, specific, checkable-looking claim that turns out to be false costs the publication more than a duller case that is true.
-- Para 4 — APPLICATION: Serve the reader's own need. If the hook established something the reader lacks, this paragraph addresses the reader's lack — it does not train them to supply it to someone else. The reader should finish this paragraph better off, not with an assignment to improve others. One scenario only, fully inhabited. Not a list of situations to choose from — the reader can occupy one room, not three. Define the moment by what the reader is doing, never by a day of the week: a named weekday is a stand-in for specificity, not specificity itself. Never write "Tuesday afternoon", "Monday morning", or any "So here is your [day]" opener. "The hour before the budget meeting" is a moment. "Tuesday" is a placeholder.
+- Para 4 — APPLICATION, framed this way today: ${applicationMode}
+  Serve the reader's own need. If the hook established something the reader lacks, this paragraph addresses the reader's lack — it does not train them to supply it to someone else. The reader should finish this paragraph better off, not with an assignment to improve others. One scenario only, fully inhabited. Not a list of situations to choose from — the reader can occupy one room, not three. Define the moment by what the reader is doing, never by a day of the week: a named weekday is a stand-in for specificity, not specificity itself. Never write "Tuesday afternoon", "Monday morning", or any "So here is your [day]" opener. Do NOT default to "the hour before [X]" unless the framing above calls for it — that opener has run in nearly every recent piece and is now its own tell.
 - Para 5 — CLOSE: One to three sentences, and the strongest writing in the piece. The single most quotable sentence must live here, not in the hook. This is also where the promise made by the title gets paid — if the title named something the reader wants, this is the moment they get it. Slightly uncomfortable. True beyond today. It does NOT have to be an epigram. A neat closing inversion ("Your stress response was never the enemy. Your story about it was.") is the most machine-sounding sentence a piece can end on — strongest does not mean cleverest, and a plain ending that is simply true beats a symmetry that lands too well.
 - If the hook named a person, return to them somewhere in Para 4 or Para 5. One clause is enough. Never introduce a named person and abandon them. If the hook opened on an object, number, line, procedure or document instead, return to THAT — the thing the piece opened on must reappear once, so the reader feels the circle close.
 
@@ -1492,6 +1603,7 @@ OUTPUT — return JSON only, no markdown:
   },
   "hasKeyFacts": true,
   "writer": "${insightWriter.name}",
+  "hookName": "The full name of the invented person in your hook (e.g. 'Renata Halloran'), or an empty string if the hook opened on an object, number, document, or overheard line rather than a person. Must exactly match the name as it appears in the body.",
   "imageQuery": "3-5 words for Unsplash — atmospheric and abstract, not literal. Captures the emotional tone of the piece."
 }`,
       }],
@@ -1501,6 +1613,20 @@ OUTPUT — return JSON only, no markdown:
     const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     const parsed = JSON.parse(cleaned);
     if (!parsed.ownedTitle || !parsed.body) return null;
+
+    // Name-collision guard. The prompt already carries the exclusion list; this is the
+    // enforcement half — the model has repeatedly ignored the instruction, so a collision
+    // costs a regeneration rather than shipping. Only names count as collisions; an
+    // object/number/document hook returns hookName: "" and passes straight through.
+    const hookName = typeof parsed.hookName === "string" ? parsed.hookName.trim() : "";
+    const hookFirst = firstNameOf(hookName);
+    const nameTaken = Boolean(hookFirst) && (S1_BANNED_FIRST_NAMES.has(hookFirst) || s1History.firstNames.has(hookFirst) || s1History.fullNames.has(hookName.toLowerCase()));
+    if (nameTaken && attempt < MAX_ATTEMPTS) {
+      lastCollisionName = hookName;
+      console.warn(`[s1-insight] ${editionKey} attempt ${attempt}: hook name "${hookName}" collides with recent history — regenerating`);
+      continue;
+    }
+    if (nameTaken) console.warn(`[s1-insight] ${editionKey}: shipping repeated hook name "${hookName}" after ${MAX_ATTEMPTS} attempts — health-check will flag it`);
 
     const imgQuery = (parsed.imageQuery as string | undefined)?.trim();
     const img = await fetchUnsplash(parsed.ownedTitle as string, "Insight", 1, imgQuery, blocked).catch(() => undefined);
@@ -1521,6 +1647,7 @@ OUTPUT — return JSON only, no markdown:
       imageQuery: imgQuery,
       cta: parsed.cta && parsed.cta.header && parsed.cta.body ? { header: parsed.cta.header as string, body: parsed.cta.body as string } : undefined,
       hasKeyFacts: true,
+      hookName: hookName || undefined,
     };
     put(blobKey, JSON.stringify(commentary), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
 
@@ -1555,10 +1682,15 @@ OUTPUT — return JSON only, no markdown:
       // summary alone picks up shared keywords rather than a shared mechanism.
       content: capEmDashes(parsed.body as string),
       generationStatus: "ok",
+      hookName: hookName || undefined,
     };
 
     // Cache the story shell separately for fast re-reads
     put(storyCacheKey, JSON.stringify(story), { access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true }).catch(() => {});
+
+    // Record the name and lens domain so the next editions can avoid them. Awaited — a
+    // floating write here is exactly what let image history drop editions.
+    await appendS1History({ editionKey, firstName: hookFirst, fullName: hookName, domain: lens.domain, concept: lens.concept }).catch(() => {});
     return story;
    } catch (e) {
     lastError = e;
@@ -2189,6 +2321,7 @@ export interface ArticleCommentary {
   imageQuery?: string;
   cta?: { header: string; body: string };
   hasKeyFacts?: boolean;
+  hookName?: string;   // S1 Insight only — invented protagonist's full name
 }
 
 // Scans body for colon/semicolon violations and rewrites offending sentences via a small Claude call.
